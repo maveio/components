@@ -1,6 +1,5 @@
 import '../themes/main';
 
-import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
@@ -46,10 +45,10 @@ export class Player extends LitElement {
       if (this._embed.video.src.endsWith('.m3u8') && Hls.isSupported()) {
         this.hls.loadSource(this._embed.video.src);
         this.hls.attachMedia(video);
-        new Metrics(this.hls, this.embed, metadata).monitor();
+        // new Metrics(this.hls, this.embed, metadata).monitor();
       } else {
         video.src = this._embed.video.src;
-        new Metrics(video, this.embed, metadata).monitor();
+        // new Metrics(video, this.embed, metadata).monitor();
       }
     }
   }

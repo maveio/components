@@ -30,6 +30,8 @@ export default class Main extends LitElement {
     media-controller {
       width: 100%;
       aspect-ratio: 16 / 9;
+      margin: 0;
+      padding: 0;
 
       --media-icon-color: transparent;
 
@@ -59,7 +61,8 @@ export default class Main extends LitElement {
 
     media-control-bar {
       position: relative;
-      padding: 0 4px 4px 4px;
+      margin: 0;
+      padding: 0 6px 2px 4px;
     }
 
     .small-button {
@@ -164,12 +167,12 @@ export default class Main extends LitElement {
     div[slot='top-chrome'] {
       width: 100%;
       display: flex;
-      padding: 1px 0 0 0;
+      padding: 0;
       flex-direction: row-reverse;
     }
 
     div[slot='top-chrome'] .small-button {
-      margin: 4px;
+      margin: 7px;
     }
 
     .media-volume-wrapper {
@@ -226,13 +229,6 @@ export default class Main extends LitElement {
 
     media-captions-button[media-subtitles-list].small-button {
       display: flex;
-    }
-
-    media-controller:not(.sm) media-control-bar {
-      position: static;
-      background: transparent;
-      margin: 0;
-      padding: 22px 15px;
     }
   `;
 
