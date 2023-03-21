@@ -24,7 +24,6 @@ export default class Main extends LitElement {
       --tertiary-color: transparent;
 
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
     media-controller {
@@ -39,7 +38,7 @@ export default class Main extends LitElement {
       --media-control-hover-background: transparent;
 
       --media-range-track-height: 1px;
-      --media-range-track-background: rgba(255, 255, 255, 0.25);
+      --media-range-track-background: rgba(255, 255, 255, 0.1);
       --media-range-track-pointer-background: rgba(255, 255, 255, 0.25);
 
       --media-range-thumb-background: transparent;
@@ -54,7 +53,7 @@ export default class Main extends LitElement {
     }
 
     media-loading-indicator {
-      --media-icon-color: #fff;
+      --media-icon-color: rgba(255, 255, 255, 1);
     }
 
     media-controller[media-is-fullscreen] {
@@ -73,7 +72,7 @@ export default class Main extends LitElement {
       display: flex;
       height: 48px;
       width: 48px;
-      opacity: 0.9;
+      opacity: 0.95;
       transition-property: transform;
       transform-origin: center;
       transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -111,10 +110,12 @@ export default class Main extends LitElement {
 
     media-time-range {
       height: 48px;
-      margin: 0 -5px;
+      margin: 0 -8px 0 -2px;
+      opacity: 0.5;
     }
 
     media-time-range:hover {
+      opacity: 1;
       --media-range-thumb-transform: scale(1);
       --media-range-thumb-background: #fff;
     }
@@ -127,28 +128,32 @@ export default class Main extends LitElement {
       height: 100%;
       --media-range-thumb-width: 16px;
       --media-range-thumb-height: 16px;
+      --media-range-thumb-background: #fff;
+      --media-range-thumb-transform: scale(1);
     }
 
     media-volume-range:hover {
       height: 100%;
       --media-range-thumb-width: 16px;
       --media-range-thumb-height: 16px;
-      --media-range-thumb-transform: scale(1.15);
     }
 
     media-time-display {
+      margin: 0 0 0 -8px;
       padding: 0 !important;
       min-width: 56px;
-      padding: 0;
-      margin: 0 0 0 -8px;
-      letter-spacing: 0.005rem;
     }
 
     media-time-display,
     media-preview-time-display {
+      letter-spacing: 0.005rem;
       opacity: 0.9;
       font-size: 14px;
       font-family: Sofia, sans-serif;
+    }
+
+    media-preview-time-display {
+      display: none;
     }
 
     .mave-gradient-bottom {
@@ -329,7 +334,7 @@ export default class Main extends LitElement {
               viewBox="0 0 24 24"
               fill="#fff"
               stroke="#fff"
-              stroke-width="1"
+              stroke-width="0.75"
               stroke-linecap="round"
               stroke-linejoin="round"
             >
@@ -390,7 +395,7 @@ export default class Main extends LitElement {
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 stroke="currentColor"
-                stroke-width="1.1"
+                stroke-width="1.2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
@@ -406,7 +411,7 @@ export default class Main extends LitElement {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.1"
+                stroke-width="1.2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
@@ -421,7 +426,7 @@ export default class Main extends LitElement {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.1"
+                stroke-width="1.2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
@@ -459,7 +464,7 @@ export default class Main extends LitElement {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.2"
+              stroke-width="1.25"
               stroke-linecap="round"
               stroke-linejoin="round"
               class="feather feather-maximize"
@@ -476,7 +481,7 @@ export default class Main extends LitElement {
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="1.2"
+              stroke-width="1.25"
               stroke-linecap="round"
               stroke-linejoin="round"
               class="feather feather-maximize"
