@@ -42,9 +42,11 @@ export default class Main extends LitElement {
       --media-range-track-background: rgba(255, 255, 255, 0.25);
       --media-range-track-pointer-background: rgba(255, 255, 255, 0.25);
 
-      --media-range-thumb-background: #fff;
+      --media-range-thumb-background: transparent;
       --media-range-thumb-width: 20px;
       --media-range-thumb-height: 20px;
+
+      --media-range-thumb-transform: scale(0);
 
       --media-range-thumb-transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -113,7 +115,8 @@ export default class Main extends LitElement {
     }
 
     media-time-range:hover {
-      --media-range-thumb-transform: scale(1.15);
+      --media-range-thumb-transform: scale(1);
+      --media-range-thumb-background: #fff;
     }
 
     media-time-range span {
@@ -149,15 +152,12 @@ export default class Main extends LitElement {
     }
 
     .mave-gradient-bottom {
-      padding-top: 37px;
       position: absolute;
       width: 100%;
-      height: 200px;
+      height: 50px;
       bottom: 0;
       pointer-events: none;
-      background-position: bottom;
-      background-repeat: repeat-x;
-      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAACqCAYAAABsziWkAAAAAXNSR0IArs4c6QAAAQVJREFUOE9lyNdHBQAAhfHb3nvvuu2997jNe29TJJEkkkgSSSSJJJJEEkkiifRH5jsP56Xz8PM5gcC/xfDEmjhKxEOCSaREEiSbFEqkQppJpzJMJiWyINvkUCIX8kw+JQqg0BRRxaaEEqVQZsopUQGVpooS1VBjglStqaNEPTSYRko0QbNpoUQrtJl2qsN0UqILuk0PJXqhz/RTYgAGzRA1bEYoMQpjZpwSExAyk5SYgmkzQ82aOUqEIWKilJiHBbNIiSVYhhVYhTVYhw3YhC3Yhh3YhT3YhwM4hCM4hhM4hTM4hwu4hCu4hhu4hTu4hwd4hCd4hhd4hTd4hw/4hC/4hh/4/QM2/id28uIEJAAAAABJRU5ErkJggg==');
+      background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.5) 100%);
     }
 
     div[slot='centered-chrome'] {
