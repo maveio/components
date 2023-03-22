@@ -1,6 +1,7 @@
 export type Embed = {
   id: string;
   name: string;
+  space_id: string;
   poster: {
     image_src: string;
     initial_frame_src: string;
@@ -15,6 +16,7 @@ export type Embed = {
     width: string;
   };
   video: {
+    id: string;
     aspect_ratio: string;
     filetype: string;
     original: string;
