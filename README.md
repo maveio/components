@@ -8,7 +8,7 @@
 </p>
 <br />
 
-# &lt;mave-elements /&gt;
+# components
 
 privacy friendly (🇪🇺), iframe-less, video UI elements - using webcomponts that are fast and have a small footprint.
 
