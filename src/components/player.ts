@@ -159,11 +159,10 @@ export class Player extends LitElement {
   }
 
   _renderTracks() {
-    console.log(this._embed);
     if (this._embed.subtitles.length > 0) {
       return this._embed.subtitles.map((track) => {
         return html`
-          <track default kind="subtitles" src=${track.path} srclang=${track.language} />
+          <track label=${track.label} kind="subtitles" srclang=${track.language} src=${track.path}></track>
         `;
       });
     }
@@ -198,6 +197,7 @@ export class Player extends LitElement {
                   poster=${this.handlePoster()}
                   ${ref(this.handleVideo)}
                   slot="media"
+                  crossorigin="anonymous"
                 >
                   ${this._renderTracks()}
                 </video>

@@ -182,19 +182,52 @@ export default class Main extends LitElement {
             <media-preview-time-display slot="preview"></media-preview-time-display>
           </media-time-range>
           <media-captions-button class="small-button">
-            <svg slot="off" viewBox="0 0 16 16">
+            <svg
+              slot="on"
+              width="24px"
+              height="24px"
+              viewBox="0 0 24 24"
+              stroke-width="1"
+              fill="#fff"
+              xmlns="http://www.w3.org/2000/svg"
+              color="#fff"
+            >
               <path
-                d="M12.6 13.7H3.4C2 13.7.8 12.6.8 11.1V4.9c0-1.4 1.1-2.6 2.6-2.6h9.3c1.4 0 2.6 1.1 2.6 2.6v6.2c-.1 1.5-1.3 2.6-2.7 2.6z"
-              />
-              <path
+                d="M1 15V9a6 6 0 016-6h10a6 6 0 016 6v6a6 6 0 01-6 6H7a6 6 0 01-6-6z"
+                stroke="#fff"
                 fill="#fff"
-                d="M4.7 8H3.2c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h1.5c.2 0 .4.2.4.4s-.2.4-.4.4zM12.5 8H6.7c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h5.7c.2 0 .4.2.4.4s-.1.4-.3.4zM7.7 10.2H3.2c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h4.6c.2 0 .4.2.4.4-.1.2-.3.4-.5.4zM12.5 10.2H9.8c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h2.7c.2 0 .4.2.4.4s-.2.4-.4.4z"
-              />
-            </svg>
-            <svg slot="on" viewBox="0 0 16 16">
+                stroke-width="1"
+              ></path>
               <path
-                d="M4.7 8H3.2c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h1.5c.2 0 .4.2.4.4s-.2.4-.4.4zM12.5 8H6.7c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h5.7c.2 0 .4.2.4.4s-.1.4-.3.4zM7.7 10.2H3.2c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h4.6c.2 0 .4.2.4.4-.1.2-.3.4-.5.4zM12.5 10.2H9.8c-.2 0-.4-.2-.4-.4s.2-.4.4-.4h2.7c.2 0 .4.2.4.4s-.2.4-.4.4z"
-              />
+                d="M10.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0A2.828 2.828 0 005.5 11.828v.344A2.828 2.828 0 008.328 15v0c.75 0 1.47-.298 2-.828L10.5 14M18.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0a2.828 2.828 0 00-2.828 2.828v.344A2.828 2.828 0 0016.328 15v0c.75 0 1.47-.298 2-.828L18.5 14"
+                stroke="#000"
+                fill="#fff"
+                stroke-width="1"
+                stroke-linecap="round"
+              ></path>
+            </svg>
+
+            <svg
+              slot="off"
+              width="24px"
+              height="24px"
+              viewBox="0 0 24 24"
+              stroke-width="1"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              color="#fff"
+            >
+              <path
+                d="M1 15V9a6 6 0 016-6h10a6 6 0 016 6v6a6 6 0 01-6 6H7a6 6 0 01-6-6z"
+                stroke="#fff"
+                stroke-width="1"
+              ></path>
+              <path
+                d="M10.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0A2.828 2.828 0 005.5 11.828v.344A2.828 2.828 0 008.328 15v0c.75 0 1.47-.298 2-.828L10.5 14M18.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0a2.828 2.828 0 00-2.828 2.828v.344A2.828 2.828 0 0016.328 15v0c.75 0 1.47-.298 2-.828L18.5 14"
+                stroke="#fff"
+                stroke-width="1"
+                stroke-linecap="round"
+              ></path>
             </svg>
           </media-captions-button>
           <div class="media-volume-wrapper">

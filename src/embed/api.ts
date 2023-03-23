@@ -37,6 +37,7 @@ export type Embed = {
 export type Subtitle = {
   language: string;
   path: string;
+  label: string;
 };
 
 export type Collection = {
