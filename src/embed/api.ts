@@ -10,10 +10,13 @@ export type Embed = {
   };
   settings: {
     aspect_ratio: string;
-    autoplay: boolean;
+    opacity: number | null;
+    autoplay: 'always' | 'on_show';
     height: string;
     loop: boolean;
     width: string;
+    color: string;
+    controls: 'big' | 'full' | 'none';
   };
   video: {
     id: string;

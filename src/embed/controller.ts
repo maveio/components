@@ -5,7 +5,7 @@ import * as API from './api';
 
 export enum EmbedType {
   Collection,
-  Embed
+  Embed,
 }
 
 export class EmbedController {
@@ -30,7 +30,6 @@ export class EmbedController {
           } else {
             return data as Partial<API.Collection>;
           }
-
         } catch {
           throw new Error(`Failed to fetch "${this.embed}"`);
         }

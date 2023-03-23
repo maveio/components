@@ -59,15 +59,15 @@ export class Clip extends LitElement {
 
     return html`
       ${this.embedController.render({
-      // TODO: add loading state with loading player UI
-      pending: () => html`<video muted autoplay playsinline loop></video>`,
-      error: (error: unknown) =>
-        // TODO: add error state with error player UI
-        html`<p>${error instanceof Error ? error.message : nothing}</p>`,
-      complete: (data) => {
-        this._embed = data as Embed;
+        // TODO: add loading state with loading player UI
+        pending: () => html`<video muted autoplay playsinline loop></video>`,
+        error: (error: unknown) =>
+          // TODO: add error state with error player UI
+          html`<p>${error instanceof Error ? error.message : nothing}</p>`,
+        complete: (data) => {
+          this._embed = data as Embed;
 
-        return html`
+          return html`
             <video
               muted
               autoplay
@@ -77,15 +77,15 @@ export class Clip extends LitElement {
               poster=${this._embed.poster.initial_frame_src}
             >
               ${this._source
-            ? html` <source
+                ? html` <source
                     src=${this._embed.video.sources.mp4['720p']}
                     type="video/${this._embed.video.filetype || 'mp4'}"
                   />`
-            : nothing}
+                : nothing}
             </video>
           `;
-      },
-    })}
+        },
+      })}
     `;
   }
 }

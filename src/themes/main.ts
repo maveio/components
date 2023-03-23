@@ -18,17 +18,13 @@ export default class Main extends LitElement {
   static styles = css`
     :host {
       display: flex;
-
-      --primary-color: transparent;
-      --secondary-color: transparent;
-      --tertiary-color: transparent;
-
       -webkit-font-smoothing: antialiased;
     }
 
     media-controller {
-      width: 100%;
-      aspect-ratio: 16 / 9;
+      width: var(--width, 100%);
+      height: var(--height);
+      aspect-ratio: var(--aspect-ratio, 16 / 9);
       margin: 0;
       padding: 0;
 
@@ -61,6 +57,7 @@ export default class Main extends LitElement {
     }
 
     media-control-bar {
+      display: var(--media-control-bar-display, flex);
       position: relative;
       margin: 0;
       padding: 0 6px 2px 4px;
@@ -157,16 +154,37 @@ export default class Main extends LitElement {
     }
 
     .mave-gradient-bottom {
+      display: var(--media-control-bar-display, flex);
       position: absolute;
       width: 100%;
       height: 50px;
       bottom: 0;
       pointer-events: none;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.5) 100%);
+      background: var(
+        --primary-color,
+        linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.5) 100%)
+      );
     }
 
     div[slot='centered-chrome'] {
-      pointer-events: none;
+      display: var(--big-button-display, none);
+      justify-content: center;
+      align-items: center;
+      border-radius: 1000px;
+      background-color: var(--primary-color);
+      padding: 12px;
+    }
+
+    div[slot='centered-chrome'] media-play-button {
+      width: 72px;
+      height: 72px;
+      --media-icon-color: white;
+    }
+
+    div[slot='centered-chrome'] media-play-button svg {
+      width: 80px;
+      height: 80px;
+      text: white;
     }
 
     div[slot='top-chrome'] {
@@ -322,7 +340,38 @@ export default class Main extends LitElement {
           </media-airplay-button>
         </div>
         <div slot="centered-chrome">
-          <media-loading-indicator></media-loading-indicator>
+          <media-play-button>
+            <svg
+              slot="play"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="#fff"
+              stroke="#fff"
+              stroke-width="0.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="margin-left: 8px;"
+            >
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg
+              slot="pause"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="#fff"
+              stroke="#fff"
+              stroke-width="1"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </media-play-button>
         </div>
         <media-control-bar>
           <media-play-button class="small-button">
