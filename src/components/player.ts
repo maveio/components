@@ -162,7 +162,6 @@ export class Player extends LitElement {
     return html`
       <slot name="video">
         ${this.embedController.render({
-          // TODO: add loading state with loading player UI
           pending: () =>
             html`
               <mave-theme-main style=${this.styles}
@@ -170,7 +169,6 @@ export class Player extends LitElement {
               ></mave-theme-main>
             `,
           error: (error: unknown) =>
-            // TODO: add error state with error player UI
             html`<p>${error instanceof Error ? error.message : nothing}</p>`,
           complete: (data) => {
             if (!this._embed) this._embed = data as Embed;
@@ -178,12 +176,12 @@ export class Player extends LitElement {
             return html`
               <mave-theme-main style=${this.styles}>
                 <video
-                  autoplay=${this.autoplay == 'always' ||
+                  ?autoplay=${this.autoplay == 'always' ||
                   (this._embed.settings.autoplay == 'always' && this.autoplay != 'lazy')
                     ? true
-                    : nothing}
-                  loop=${this.loop || this._embed.settings.loop}
-                  muted=${this.autoplay == 'always' ||
+                    : false}
+                  ?loop=${this.loop || this._embed.settings.loop}
+                  ?muted=${this.autoplay == 'always' ||
                   this._embed.settings.autoplay == 'always' ||
                   this.autoplay == 'lazy'}
                   poster=${this.handlePoster()}
