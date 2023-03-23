@@ -31,6 +31,12 @@ export type Embed = {
     };
     src: string;
   };
+  subtitles: Subtitle[];
+};
+
+export type Subtitle = {
+  language: string;
+  path: string;
 };
 
 export type Collection = {

@@ -158,6 +158,17 @@ export class Player extends LitElement {
     });
   }
 
+  _renderTracks() {
+    console.log(this._embed);
+    if (this._embed.subtitles.length > 0) {
+      return this._embed.subtitles.map((track) => {
+        return html`
+          <track default kind="subtitles" src=${track.path} srclang=${track.language} />
+        `;
+      });
+    }
+  }
+
   render() {
     return html`
       <slot name="video">
@@ -187,7 +198,9 @@ export class Player extends LitElement {
                   poster=${this.handlePoster()}
                   ${ref(this.handleVideo)}
                   slot="media"
-                ></video>
+                >
+                  ${this._renderTracks()}
+                </video>
               </mave-theme-main>
             `;
           },
