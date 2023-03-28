@@ -7,9 +7,6 @@
   "editor.wordBasedSuggestions": false,
   "editor.trimAutoWhitespace": false,
   "editor.acceptSuggestionOnEnter": "off",
-  "editor.codeActionsOnSave": [
-    "source.organizeImports",
-    "source.fixAll.eslint"
-  ],
+  "editor.codeActionsOnSave": ["source.organizeImports", "source.fixAll.eslint"],
   "elixirLS.suggestSpecs": false
 }

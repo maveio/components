@@ -2,11 +2,7 @@
   "compilerOptions": {
     "declaration": true,
     "target": "ESNext",
-    "lib": [
-      "esnext",
-      "dom",
-      "DOM.Iterable"
-    ],
+    "lib": ["esnext", "dom", "DOM.Iterable"],
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -17,10 +13,7 @@
     "emitDeclarationOnly": true,
     "strictPropertyInitialization": false,
     "experimentalDecorators": true,
-    "useDefineForClassFields": false,
+    "useDefineForClassFields": false
   },
-  "include": [
-    "src/**/*",
-    "lib/index.d.ts"
-  ]
+  "include": ["src/**/*", "lib/index.d.ts"]
 }

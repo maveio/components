@@ -12,7 +12,7 @@ export class EmbedController {
   host: ReactiveControllerHost;
   private task: Task;
   private type: EmbedType;
-  private _embed = '';
+  private _embed: string;
 
   constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
     this.host = host;

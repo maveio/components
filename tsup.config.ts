@@ -19,8 +19,8 @@ export default defineConfig({
   skipNodeModulesBundle: true,
   clean: true,
   dts: true,
-  sourcemap: true,
-  target: 'esnext',
+  sourcemap: env !== 'production',
+  target: 'es2020',
   noExternal: [
     'lit',
     'media-chrome',

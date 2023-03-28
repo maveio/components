@@ -25,14 +25,10 @@ lets your users **upload & share videos** using the [mave.io](https://mave.io) v
 
 ![Tutorial][tutorial]
 
-
 ## Installation
-
 
 ## Configuration
 
-
 ## Third-party integrations
-
 
 [tutorial]: docs/tutorial.webp

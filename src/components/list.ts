@@ -31,48 +31,49 @@ export class List extends LitElement {
   render() {
     return html`
       ${this.embedController.render({
-      // TODO: add loading state with loading player UI
-      pending: () => html`<slot></slot>`,
-      error: (error: unknown) =>
-        // TODO: add error state with error player UI
-        html`<p>${error instanceof Error ? error.message : nothing}</p>`,
-      complete: (data) => {
-        this._collection = data as Collection;
+        // TODO: add loading state with loading player UI
+        pending: () => html`<slot></slot>`,
+        error: (error: unknown) =>
+          // TODO: add error state with error player UI
+          html`<p>${error instanceof Error ? error.message : nothing}</p>`,
+        complete: (data) => {
+          this._collection = data as Collection;
 
-        const templates = this._slottedChildren.map(item => {
-          if (item.getAttribute('name') == 'list-title') {
-            item.textContent = this._collection.name;
-            return html`${item}`;
-          }
+          const templates = this._slottedChildren
+            .map((item) => {
+              if (item.getAttribute('name') == 'list-title') {
+                item.textContent = this._collection.name;
+                return html`${item}`;
+              }
 
-          if (item.getAttribute('name') == 'list-item') {
-            const result = this._collection.embeds.map(embed => {
-              const template = (item as HTMLTemplateElement).content.cloneNode(true) as DocumentFragment;
-              const title = template.querySelector('[slot="item-title"]');
-              if (title) {
-                title.textContent = embed.name;
-                title.removeAttribute('slot')
+              if (item.getAttribute('name') == 'list-item') {
+                const result = this._collection.embeds.map((embed) => {
+                  const template = (item as HTMLTemplateElement).content.cloneNode(
+                    true,
+                  ) as DocumentFragment;
+                  const title = template.querySelector('[slot="item-title"]');
+                  if (title) {
+                    title.textContent = embed.name;
+                    title.removeAttribute('slot');
+                  }
+                  const player = template.querySelector('[slot="item-player"]');
+                  if (player) {
+                    player.setAttribute('embed', embed.id);
+                    player.removeAttribute('slot');
+                  }
+                  console.log(template);
+                  return html`${template}`;
+                });
+
+                return html`${result}`;
               }
-              const player = template.querySelector('[slot="item-player"]');
-              if (player) {
-                player.setAttribute('embed', embed.id);
-                player.removeAttribute('slot')
-              }
-              console.log(template)
-              return html`${template}`;
             })
+            .filter((t) => t);
 
-            return html`${result}`
-          }
-        }).filter(t => t)
-
-        return html`
-          ${templates}
-        `;
-      },
-    })
-      }
-`;
+          return html` ${templates} `;
+        },
+      })}
+    `;
   }
 }
 
