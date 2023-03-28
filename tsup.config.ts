@@ -41,8 +41,9 @@ export default defineConfig({
   esbuildPlugins: [
     replace({
       __buildVersion: json.version,
-      __MAVE_ENDPOINT__: process.env.MAVE_ENDPOINT,
-      __MAVE_UPLOAD_ENDPOINT__: process.env.MAVE_UPLOAD_ENDPOINT,
+      __MAVE_ENDPOINT__: process.env.MAVE_ENDPOINT || 'https://mave.io/api/v1',
+      __MAVE_UPLOAD_ENDPOINT__:
+        process.env.MAVE_UPLOAD_ENDPOINT || 'https://upload.mave.io/files',
     }),
   ],
 });
