@@ -1,4 +1,5 @@
 import { IntersectionController } from '@lit-labs/observers/intersection_controller.js';
+import { Metrics } from '@maveio/metrics';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
@@ -29,6 +30,7 @@ export class Clip extends LitElement {
   `;
 
   private embedController = new EmbedController(this);
+  private _metrics: Metrics;
   private _embed: Embed;
 
   connectedCallback() {
@@ -36,10 +38,32 @@ export class Clip extends LitElement {
     this.embedController.embed = this.embed;
   }
 
+  requestUpdate(name?: PropertyKey, oldValue?: unknown) {
+    super.requestUpdate(name, oldValue);
+    if (name === 'embed') {
+      this.embedController.embed = this.embed;
+    }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._metrics) {
+      this._metrics.demonitor();
+    }
+  }
+
   handleVideo(videoElement?: Element) {
     if (videoElement) {
       this._intersectionObserver.observe(videoElement);
       this._videoElement = videoElement as HTMLMediaElement;
+
+      const metadata = {
+        component: 'clip',
+        video_id: this._embed.video.id,
+        space_id: this._embed.space_id,
+      };
+
+      this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
     }
   }
 

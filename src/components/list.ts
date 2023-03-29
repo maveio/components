@@ -22,6 +22,13 @@ export class List extends LitElement {
     this.embedController.embed = this.embed;
   }
 
+  requestUpdate(name?: PropertyKey, oldValue?: unknown) {
+    super.requestUpdate(name, oldValue);
+    if (name === 'embed') {
+      this.embedController.embed = this.embed;
+    }
+  }
+
   get _slottedChildren() {
     const slot = this.shadowRoot?.querySelector('slot');
     return slot?.assignedElements({ flatten: true }) || [];
