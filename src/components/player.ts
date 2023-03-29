@@ -177,16 +177,12 @@ export class Player extends LitElement {
     return html`
       <slot name="video">
         ${this.embedController.render({
-          pending: () =>
-            html`
-              <mave-theme-main style=${this.styles}
-                ><video slot="media"></video
-              ></mave-theme-main>
-            `,
+          pending: this.renderPending,
           error: (error: unknown) =>
             html`<p>${error instanceof Error ? error.message : nothing}</p>`,
           complete: (data) => {
             if (!this._embed) this._embed = data as Embed;
+            if (!data) return this.renderPending();
 
             return html`
               <mave-theme-main style=${this.styles}>
@@ -211,6 +207,12 @@ export class Player extends LitElement {
           },
         })}
       </slot>
+    `;
+  }
+
+  renderPending() {
+    return html`
+      <mave-theme-main style=${this.styles}><video slot="media"></video></mave-theme-main>
     `;
   }
 }

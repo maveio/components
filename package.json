@@ -15,6 +15,7 @@
     "build": "tsup",
     "build:watch": "tsup --watch",
     "build:prod": "env NODE_ENV=production tsup",
+    "build:prod:watch": "npm run build:prod -- --watch",
     "prepublishOnly": "npm run build:prod",
     "test": "jest",
     "test:watch": "jest --watchAll",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@types/jest": "^29.4.0",
     "@types/phoenix": "^1.5.5",
+    "@types/react": "^18.0.31",
     "@typescript-eslint/eslint-plugin": "^5.52.0",
     "@typescript-eslint/parser": "^5.52.0",
     "dotenv": "^16.0.3",
@@ -67,12 +69,13 @@
   "homepage": "https://github.com/maveio/components#readme",
   "dependencies": {
     "@lit-labs/observers": "^1.1.0",
+    "@lit-labs/react": "^1.1.1",
     "@lit-labs/task": "^2.0.0",
-    "@maveio/metrics": "file:../mave-metrics/tracker",
     "hls.js": "^1.3.4",
     "lit": "^2.6.1",
     "media-chrome": "^0.18.5",
     "phoenix": "^1.7.1",
+    "react": "^18.2.0",
     "tus-js-client": "^3.1.0"
   }
 }

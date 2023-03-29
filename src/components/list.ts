@@ -1,8 +1,7 @@
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { repeat } from 'lit/directives/repeat.js';
 
-import { Collection, Embed } from '../embed/api';
+import { Collection } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
 
 @customElement('mave-list')
@@ -32,12 +31,13 @@ export class List extends LitElement {
     return html`
       ${this.embedController.render({
         // TODO: add loading state with loading player UI
-        pending: () => html`<slot></slot>`,
+        pending: this.renderPending,
         error: (error: unknown) =>
           // TODO: add error state with error player UI
           html`<p>${error instanceof Error ? error.message : nothing}</p>`,
         complete: (data) => {
           this._collection = data as Collection;
+          if (!data) return this.renderPending();
 
           const templates = this._slottedChildren
             .map((item) => {
@@ -74,6 +74,10 @@ export class List extends LitElement {
         },
       })}
     `;
+  }
+
+  renderPending() {
+    return html`<slot></slot>`;
   }
 }
 

@@ -55,17 +55,16 @@ export class Clip extends LitElement {
   }
 
   render() {
-    if (!this.embed) return '';
-
     return html`
       ${this.embedController.render({
         // TODO: add loading state with loading player UI
-        pending: () => html`<video muted autoplay playsinline loop></video>`,
+        pending: this.renderPending,
         error: (error: unknown) =>
           // TODO: add error state with error player UI
           html`<p>${error instanceof Error ? error.message : nothing}</p>`,
         complete: (data) => {
           this._embed = data as Embed;
+          if (!data) return this.renderPending();
 
           return html`
             <video
@@ -87,6 +86,10 @@ export class Clip extends LitElement {
         },
       })}
     `;
+  }
+
+  renderPending() {
+    return html`<video muted autoplay playsinline loop></video>`;
   }
 }
 

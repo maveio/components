@@ -19,16 +19,20 @@ export class EmbedController {
     this.type = embedType;
 
     this.task = new Task(
-      host,
+      this.host,
       async () => {
         try {
-          if (!this.embed) return;
-          const response = await fetch(`${API.baseUrl}/${this.embed}`);
-          const data = await response.json();
-          if (this.type == EmbedType.Embed) {
-            return data as Partial<API.Embed>;
+          if (!this.embed) {
+            console.warn('No embed attr provided for mave-player');
+            return;
           } else {
-            return data as Partial<API.Collection>;
+            const response = await fetch(`${API.baseUrl}/${this.embed}`);
+            const data = await response.json();
+            if (this.type == EmbedType.Embed) {
+              return data as Partial<API.Embed>;
+            } else {
+              return data as Partial<API.Collection>;
+            }
           }
         } catch {
           throw new Error(`Failed to fetch "${this.embed}"`);
@@ -50,6 +54,6 @@ export class EmbedController {
   }
 
   render(renderFunctions: StatusRenderer<unknown>) {
-    return this.task.render(renderFunctions);
+    return this.task?.render(renderFunctions);
   }
 }

@@ -10,7 +10,7 @@ const env = process.env.NODE_ENV;
 export default defineConfig({
   platform: 'browser',
   entry: ['src/**/*.ts'],
-  entryPoints: ['src/index.ts'],
+  entryPoints: ['src/index.ts', 'src/react.ts'],
   format: ['cjs', 'esm'],
   splitting: true,
   minify: env === 'production',
@@ -37,6 +37,7 @@ export default defineConfig({
     'querystringify',
     '@lit-labs/observers',
     '@maveio/metrics',
+    '@lit-labs/react',
   ],
   esbuildPlugins: [
     replace({
