@@ -10,25 +10,8 @@
 
 # components
 
-privacy friendly (🇪🇺), iframe-less, video UI elements - using webcomponts that are fast and have a small footprint.
+This package is part of [mave.io](https://mave.io). This library provides privacy friendly (🇪🇺), iframe-less, video UI elements with videos hosted on [mave.io](https://mave.io) - using webcomponents that are fast and have a small footprint.
 
-lets your users **upload & share videos** using the [mave.io](https://mave.io) video infrastructure.
-
-[Getting started](#getting-started) •
-[Installation](#installation) •
-[Configuration](#configuration) •
-[Integrations](#third-party-integrations)
+It lets your users **upload & share videos** using the [mave.io](https://mave.io) video infrastructure.
 
 </div>
-
-## Getting started
-
-![Tutorial][tutorial]
-
-## Installation
-
-## Configuration
-
-## Third-party integrations
-
-[tutorial]: docs/tutorial.webp
