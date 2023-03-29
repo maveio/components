@@ -4,9 +4,9 @@ import { IntersectionController } from '@lit-labs/observers/intersection_control
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html, LitElement, nothing } from 'lit';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
-import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
@@ -26,6 +26,11 @@ export class Player extends LitElement {
   static styles = css`
     :host {
       display: block;
+    }
+
+    video::cue {
+      font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+      font-weight: 500;
     }
 
     :host,
