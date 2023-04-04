@@ -20,9 +20,13 @@ export default class Socket {
 
       if (window) {
         const socketUrl = '__MAVE_ENDPOINT__/socket'.replace(/^http/, 'ws');
+
         Socket.instance.socket = new Phoenix(socketUrl, {
           params: {
             token,
+          },
+          reconnectAfterMs: (tries: number) => {
+            return [1000, 3000, 5000, 10000][tries - 1] || 10000;
           },
         });
 
@@ -36,6 +40,7 @@ export default class Socket {
     } else {
       const channel = Socket.instance.socket.channel(`embed:${token}`);
       channel.join();
+
       Socket.instance.channels.push({
         token,
         channel,
