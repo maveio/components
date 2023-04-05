@@ -116,7 +116,7 @@ export class Upload extends LitElement {
 
   renderUpload() {
     return html` <form
-      style="width: 100vw; height: 100vh; font-family: system-ui; display: flex; flex-direction: column; justify-content: center; align-items: center;"
+      style="width: 100%; aspect-ratio: 16/9; font-family: system-ui; display: flex; flex-direction: column; justify-content: center; align-items: center;"
       onDragOver="this.style.boxShadow='inset 0 0 0 2px blue'"
       onDragLeave="this.style.boxShadow='inset 0 0 0 2px transparent'"
     >
@@ -150,7 +150,7 @@ export class Upload extends LitElement {
         ? this.renderProcessing()
         : html`
             <div
-              style="position: absolute; top; 0; left: 0; flex-direction: column; justify-content: center; align-items: center; background: white; width: 100%; height: 100%; box-shadow: inset 0 0 0 1px #eee;"
+              style="display: flex; position: absolute; top; 0; left: 0; flex-direction: column; justify-content: center; align-items: center; background: white; width: 100%; height: 100%; box-shadow: inset 0 0 0 1px #eee;"
             >
               <lottie-player
                 src="https://assets1.lottiefiles.com/packages/lf20_z7DhMX.json"
