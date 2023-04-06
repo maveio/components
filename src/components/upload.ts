@@ -1,3 +1,5 @@
+import '@lottiefiles/lottie-player';
+
 import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Channel } from 'phoenix';
