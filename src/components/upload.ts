@@ -206,24 +206,29 @@ export class Upload extends LitElement {
   }
 
   renderProcessing() {
-    return html`${this._completed
-      ? html`done`
-      : html`<div
-          style="display: flex; position: absolute; top; 0; left: 0; flex-direction: column; justify-content: center; align-items: center; background: white; width: 100%; height: 100%; box-shadow: inset 0 0 0 1px #eee;"
-        >
-          <lottie-player
+    return html`<div
+      style="display: flex; position: absolute; top; 0; left: 0; flex-direction: column; justify-content: center; align-items: center; background: white; width: 100%; height: 100%; box-shadow: inset 0 0 0 1px #eee;"
+    >
+      ${this._completed
+        ? html` <lottie-player
+            src="https://assets1.lottiefiles.com/packages/lf20_tnlxlkom.json"
+            background="transparent"
+            style="width: 200px; height: 200px; padding-bottom: 20px;"
+            autoplay
+          ></lottie-player>`
+        : html` <lottie-player
             src="https://assets10.lottiefiles.com/private_files/lf30_4kmk2efh.json"
             background="transparent"
             speed="2"
             style="width: 200px; height: 200px; padding-bottom: 20px;"
             loop
             autoplay
-          ></lottie-player>
-          <div style="width: 100%; height: 3px;"></div>
-          <div style="margin-top: 16px; opacity: 0.6; padding-bottom: 24px;">
-            processing...
-          </div>
-        </div>`}`;
+          ></lottie-player>`}
+      <div style="width: 100%; height: 3px;"></div>
+      <div style="margin-top: 16px; opacity: 0.6; padding-bottom: 24px;">
+        ${this._completed ? html`done` : html`just a minute...`}
+      </div>
+    </div>`;
   }
 }
 
