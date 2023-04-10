@@ -1,13 +1,12 @@
 import { IntersectionController } from '@lit-labs/observers/intersection_controller.js';
 import { Metrics } from '@maveio/metrics';
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 
-@customElement('mave-clip')
 export class Clip extends LitElement {
   @property() embed: string;
   @state() _source = false;
@@ -114,6 +113,12 @@ export class Clip extends LitElement {
 
   renderPending() {
     return html`<video muted autoplay playsinline loop></video>`;
+  }
+}
+
+if (window && window.customElements) {
+  if (!window.customElements.get('mave-clip')) {
+    window.customElements.define('mave-clip', Clip);
   }
 }
 

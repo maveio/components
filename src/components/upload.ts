@@ -1,11 +1,15 @@
 import '@lottiefiles/lottie-player';
 
 import { css, html, LitElement } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { Channel } from 'phoenix';
 import * as tus from 'tus-js-client';
 
 import Data from '../embed/socket';
+
+interface ErrorMessage {
+  message: string;
+}
 
 const fileTypes = [
   'video/3gpp',
@@ -16,7 +20,6 @@ const fileTypes = [
   'video/webm',
 ];
 
-@customElement('mave-upload')
 export class Upload extends LitElement {
   @property() token: string;
   @state() _progress: number;
@@ -132,9 +135,9 @@ export class Upload extends LitElement {
   }
 
   // registry call
-  error() {
-    // console.warn(`[mave elements] ${data.message}`);
-    // this.dispatchEvent(new CustomEvent('error', { bubbles: true, detail: data }));
+  error(error: ErrorMessage) {
+    console.warn(`[mave-upload] ${error.message}`);
+    this.dispatchEvent(new CustomEvent('error', { bubbles: true, detail: error }));
   }
 
   render() {
@@ -143,7 +146,10 @@ export class Upload extends LitElement {
 
   renderUpload() {
     return html` <form
-      style="width: 100%; aspect-ratio: 16/9; font-family: system-ui; display: flex; flex-direction: column; justify-content: center; align-items: center;"
+      style="width: 100%; aspect-ratio: 16/9; font-family: system-ui; display: flex; flex-direction: column; justify-content: center; align-items: center; ${!this
+        ._upload_id
+        ? 'pointer-events: none; opacity: 0.5;'
+        : ''}"
       @dragover=${(e: DragEvent) => e.preventDefault()}
       @drop=${this.handleDrop}
       onDragOver="this.style.boxShadow='inset 0 0 0 2px blue'"
@@ -229,6 +235,12 @@ export class Upload extends LitElement {
         ${this._completed ? html`done` : html`just a minute...`}
       </div>
     </div>`;
+  }
+}
+
+if (window && window.customElements) {
+  if (!window.customElements.get('mave-upload')) {
+    window.customElements.define('mave-upload', Upload);
   }
 }
 

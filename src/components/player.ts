@@ -4,14 +4,13 @@ import { IntersectionController } from '@lit-labs/observers/intersection_control
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 
-@customElement('mave-player')
 export class Player extends LitElement {
   @property() embed: string;
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
@@ -22,6 +21,8 @@ export class Player extends LitElement {
   @property() color?: string;
   @property() opacity?: string;
   @property() loop?: boolean;
+
+  @state() popped = false;
 
   static styles = css`
     :host {
@@ -54,7 +55,35 @@ export class Player extends LitElement {
   private _metrics: Metrics;
   private _intersected = false;
 
+  private _queue: { (): void }[] = [];
+
   private hls: Hls = new Hls({ startLevel: 3 });
+
+  pop({ x, y }: { x: number; y: number }) {
+    console.log('POP!', x, y);
+    this.popped = true;
+  }
+
+  close() {
+    console.log('CLOSE!');
+    this.popped = false;
+  }
+
+  play() {
+    if (this._videoElement) {
+      this._videoElement.play();
+    } else {
+      this._queue.push(() => this._videoElement?.play());
+    }
+  }
+
+  pause() {
+    if (this._videoElement) {
+      this._videoElement.pause();
+    } else {
+      this._queue.push(() => this._videoElement?.pause());
+    }
+  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -94,6 +123,11 @@ export class Player extends LitElement {
       } else {
         this._videoElement.src = this._embed.video.src;
         this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
+      }
+
+      if (this._queue.length) {
+        this._queue.forEach((fn) => fn());
+        this._queue = [];
       }
     }
   }
@@ -222,6 +256,12 @@ export class Player extends LitElement {
     return html`
       <mave-theme-main style=${this.styles}><video slot="media"></video></mave-theme-main>
     `;
+  }
+}
+
+if (window && window.customElements) {
+  if (!window.customElements.get('mave-player')) {
+    window.customElements.define('mave-player', Player);
   }
 }
 

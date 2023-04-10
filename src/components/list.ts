@@ -1,10 +1,9 @@
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 
 import { Collection } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
 
-@customElement('mave-list')
 export class List extends LitElement {
   @property() embed: string;
 
@@ -63,12 +62,11 @@ export class List extends LitElement {
                     title.textContent = embed.name;
                     title.removeAttribute('slot');
                   }
-                  const player = template.querySelector('[slot="item-player"]');
+                  const player = template.querySelector('mave-clip');
                   if (player) {
                     player.setAttribute('embed', embed.id);
                     player.removeAttribute('slot');
                   }
-                  console.log(template);
                   return html`${template}`;
                 });
 
@@ -85,6 +83,12 @@ export class List extends LitElement {
 
   renderPending() {
     return html`<slot></slot>`;
+  }
+}
+
+if (window && window.customElements) {
+  if (!window.customElements.get('mave-list')) {
+    window.customElements.define('mave-list', List);
   }
 }
 

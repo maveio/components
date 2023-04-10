@@ -19,7 +19,7 @@ export default class Socket {
       Socket.instance = new Socket();
 
       if (window) {
-        const socketUrl = '__MAVE_ENDPOINT__/socket'.replace(/^http/, 'ws');
+        const socketUrl = '__MAVE_SOCKET_ENDPOINT__';
 
         Socket.instance.socket = new Phoenix(socketUrl, {
           params: {

@@ -42,6 +42,8 @@ export default defineConfig({
     replace({
       __buildVersion: json.version,
       __MAVE_ENDPOINT__: process.env.MAVE_ENDPOINT || 'https://mave.io/api/v1',
+      __MAVE_SOCKET_ENDPOINT__:
+        process.env.MAVE_SOCKET_ENDPOINT || 'wss://mave.io/socket',
       __MAVE_UPLOAD_ENDPOINT__:
         process.env.MAVE_UPLOAD_ENDPOINT || 'https://upload.mave.io/files',
     }),
