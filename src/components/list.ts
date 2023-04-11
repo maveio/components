@@ -52,7 +52,7 @@ export class List extends LitElement {
                 return html`${item}`;
               }
 
-              if (item.getAttribute('name') == 'list-item') {
+              if (item.nodeName === 'TEMPLATE') {
                 const result = this._collection.embeds.map((embed) => {
                   const template = (item as HTMLTemplateElement).content.cloneNode(
                     true,

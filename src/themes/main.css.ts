@@ -4,6 +4,7 @@ export default css`
   :host {
     display: flex;
     -webkit-font-smoothing: antialiased;
+    aspect-ratio: var(--aspect-ratio, 16 / 9);
   }
 
   media-controller {
@@ -12,6 +13,8 @@ export default css`
     aspect-ratio: var(--aspect-ratio, 16 / 9);
     margin: 0;
     padding: 0;
+
+    --media-background-color: transparent;
 
     --media-icon-color: transparent;
 

@@ -35,8 +35,14 @@ export class Player extends LitElement {
       font-weight: 500;
     }
 
+    video:focus-visible {
+      outline: 0;
+    }
+
     :host,
-    media-controller {
+    media-controller,
+    mave-theme-main,
+    video {
       width: 100%;
       max-height: 100vh;
     }
@@ -52,6 +58,18 @@ export class Player extends LitElement {
   @state()
   private _embed: Embed;
 
+  get spaceId(): string {
+    return this.embed.substring(0, 5);
+  }
+
+  get embedId(): string {
+    return this.embed.substring(5, this.embed.length);
+  }
+
+  get poster(): string {
+    return `https://space-${this.spaceId}.video-dns.com/${this.embedId}/poster.webp`;
+  }
+
   private _metrics: Metrics;
   private _intersected = false;
 
@@ -59,13 +77,11 @@ export class Player extends LitElement {
 
   private hls: Hls = new Hls({ startLevel: 3 });
 
-  pop({ x, y }: { x: number; y: number }) {
-    console.log('POP!', x, y);
+  pop() {
     this.popped = true;
   }
 
   close() {
-    console.log('CLOSE!');
     this.popped = false;
   }
 
@@ -155,12 +171,6 @@ export class Player extends LitElement {
     }
   }
 
-  handlePoster() {
-    return this._embed.poster.image_src
-      ? this._embed.poster.image_src
-      : this._embed.poster.initial_frame_src;
-  }
-
   updateEmbed(embed: Embed) {
     this._embed = embed;
     this.color = this._embed.settings.color;
@@ -237,7 +247,7 @@ export class Player extends LitElement {
                   ?muted=${this.autoplay == 'always' ||
                   this._embed.settings.autoplay == 'always' ||
                   this.autoplay == 'lazy'}
-                  poster=${this.handlePoster()}
+                  poster=${this.poster}
                   ${ref(this.handleVideo)}
                   slot="media"
                   crossorigin="anonymous"
