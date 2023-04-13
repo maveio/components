@@ -13,6 +13,7 @@ export class EmbedController {
   private task: Task;
   private type: EmbedType;
   private _embed: string;
+  private _token: string;
 
   constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
     this.host = host;
@@ -22,17 +23,25 @@ export class EmbedController {
       this.host,
       async () => {
         try {
-          if (!this.embed) {
+          if (this.type == EmbedType.Embed && !this.embed) {
             console.warn('No embed attr provided for mave-player');
             return;
+          }
+          if (this.type == EmbedType.Collection && !this.token) {
+            console.warn('No token attr provided for mave-list');
+            return;
+          }
+
+          const response = await fetch(
+            `${API.baseUrl}/${
+              this.type == EmbedType.Embed ? this.embed : `collection/${this.token}`
+            }`,
+          );
+          const data = await response.json();
+          if (this.type == EmbedType.Embed) {
+            return data as Partial<API.Embed>;
           } else {
-            const response = await fetch(`${API.baseUrl}/${this.embed}`);
-            const data = await response.json();
-            if (this.type == EmbedType.Embed) {
-              return data as Partial<API.Embed>;
-            } else {
-              return data as Partial<API.Collection>;
-            }
+            return data as Partial<API.Collection>;
           }
         } catch {
           throw new Error(`Failed to fetch "${this.embed}"`);
@@ -51,6 +60,17 @@ export class EmbedController {
 
   get embed() {
     return this._embed;
+  }
+
+  set token(value: string) {
+    if (this._token != value) {
+      this._token = value;
+      this.host.requestUpdate();
+    }
+  }
+
+  get token() {
+    return this._token;
   }
 
   render(renderFunctions: StatusRenderer<unknown>) {

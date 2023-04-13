@@ -70,6 +70,29 @@ export class Pop extends LitElement {
       opacity: 1;
       transform: scale(1);
     }
+
+    .button-close {
+      position: fixed;
+      top: 0.8rem;
+      right: 0.6rem;
+      width: 2.75rem;
+      height: 2.75rem;
+      transition-property: transform;
+      transition-duration: 100ms;
+      transition-timing-function: ease-out:
+    }
+
+    .button-close:hover {
+      cursor: pointer;
+      transform: scale(1.3);
+    }
+
+    .button-close svg {
+      color: white;
+      width: 2.75rem;
+      height: 2.75rem;
+      transform: rotate(45deg);
+    }
   `;
 
   open(player: Player) {
@@ -138,8 +161,26 @@ export class Pop extends LitElement {
       <dialog>
         <div class="backdrop"></div>
         <div class="content" @click=${this.possibleClose}></div>
-        <slot name="close"></slot>
-      </dialog
+        <div class="button-close" @click=${this.close}>
+          <svg
+            width="24px"
+            height="24px"
+            stroke-width="1"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            color="currentColor"
+          >
+            <path
+              d="M6 12h6m6 0h-6m0 0V6m0 6v6"
+              stroke="currentColor"
+              stroke-width="1"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+          </svg>
+        </div>
+      </dialog>
     `;
   }
 }

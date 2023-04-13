@@ -39,6 +39,16 @@ export class Upload extends LitElement {
       font-family: system-ui;
       box-shadow: inset 0 0 0 1px #eee;
     }
+
+    .state {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: white;
+      width: 100%;
+      height: 100%;
+    }
   `;
 
   connectedCallback() {
@@ -146,10 +156,8 @@ export class Upload extends LitElement {
 
   renderUpload() {
     return html` <form
-      style="width: 100%; aspect-ratio: 16/9; font-family: system-ui; display: flex; flex-direction: column; justify-content: center; align-items: center; ${!this
-        ._upload_id
-        ? 'pointer-events: none; opacity: 0.5;'
-        : ''}"
+      class="state"
+      style="${!this._upload_id ? 'pointer-events: none; opacity: 0.5;' : ''}"
       @dragover=${(e: DragEvent) => e.preventDefault()}
       @drop=${this.handleDrop}
       onDragOver="this.style.boxShadow='inset 0 0 0 2px blue'"
@@ -184,9 +192,7 @@ export class Upload extends LitElement {
       ${this._progress == 100
         ? this.renderProcessing()
         : html`
-            <div
-              style="display: flex; position: absolute; top; 0; left: 0; flex-direction: column; justify-content: center; align-items: center; background: white; width: 100%; height: 100%; box-shadow: inset 0 0 0 1px #eee;"
-            >
+            <div class="state">
               <lottie-player
                 src="https://assets1.lottiefiles.com/packages/lf20_z7DhMX.json"
                 background="transparent"
@@ -212,9 +218,7 @@ export class Upload extends LitElement {
   }
 
   renderProcessing() {
-    return html`<div
-      style="display: flex; position: absolute; top; 0; left: 0; flex-direction: column; justify-content: center; align-items: center; background: white; width: 100%; height: 100%; box-shadow: inset 0 0 0 1px #eee;"
-    >
+    return html`<div class="state">
       ${this._completed
         ? html` <lottie-player
             src="https://assets1.lottiefiles.com/packages/lf20_tnlxlkom.json"
