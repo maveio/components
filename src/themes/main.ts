@@ -136,8 +136,10 @@ export default class Main extends LitElement {
               <rect x="14" y="4" width="4" height="16"></rect>
             </svg>
           </media-play-button>
+          <media-loading-indicator loading-delay="100"></media-loading-indicator>
         </div>
         <media-control-bar>
+          <media-loading-indicator loading-delay="100"></media-loading-indicator>
           <media-play-button class="small-button">
             <svg
               slot="play"

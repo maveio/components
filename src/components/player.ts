@@ -264,7 +264,9 @@ export class Player extends LitElement {
 
   renderPending() {
     return html`
-      <mave-theme-main style=${this.styles}><video slot="media"></video></mave-theme-main>
+      <mave-theme-main style=${this.styles}
+        ><video slot="media" poster=${this.poster}></video
+      ></mave-theme-main>
     `;
   }
 }

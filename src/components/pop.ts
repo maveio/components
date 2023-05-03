@@ -147,6 +147,8 @@ export class Pop extends LitElement {
     this._backdrop.addEventListener(
       'transitionend',
       () => {
+        this._content.innerHTML = '';
+
         this.dispatchEvent(new Event('closed', { bubbles: true }));
 
         // Enable scroll on parent

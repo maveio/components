@@ -89,6 +89,39 @@ export default css`
     height: 28px;
   }
 
+  media-loading-indicator {
+    flex: none;
+    display: none;
+    height: 48px;
+    width: 48px;
+  }
+
+  media-loading-indicator svg {
+    height: 28px;
+  }
+
+  media-controller[media-loading]:not([media-paused]) div[slot='centered-chrome'] {
+    background-color: transparent;
+  }
+
+  div[slot='centered-chrome'] media-loading-indicator {
+    width: 72px;
+    height: 72px;
+  }
+
+  div[slot='centered-chrome'] media-loading-indicator svg {
+    width: 80px;
+    height: 80px;
+  }
+
+  media-loading-indicator[media-loading]:not([media-paused]) {
+    display: flex;
+  }
+
+  media-controller[media-loading]:not([media-paused]) media-play-button {
+    display: none;
+  }
+
   media-fullscreen-button.small-button svg {
     height: 24px;
   }

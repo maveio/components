@@ -1,5 +1,0 @@
-localhost:80 {
-  root * /usr/share/caddy
-  file_server
-  header Access-Control-Allow-Origin *
-}
