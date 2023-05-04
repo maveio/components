@@ -6,6 +6,7 @@ import { Channel } from 'phoenix';
 import * as tus from 'tus-js-client';
 
 import Data from '../embed/socket';
+import { LanguageController, localized, msg } from '../utils/localization';
 
 interface ErrorMessage {
   message: string;
@@ -20,12 +21,16 @@ const fileTypes = [
   'video/webm',
 ];
 
+@localized()
 export class Upload extends LitElement {
   @property() token: string;
+  @property() locale: string;
   @state() _progress: number;
   @state() _upload_id: string;
   @state() _completed = false;
   private channel: Channel;
+
+  private languageController = new LanguageController(this);
 
   static styles = css`
     :host {
@@ -53,12 +58,20 @@ export class Upload extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    this.languageController.locale = this.locale || 'en';
     this.channel = Data.connect(this.token);
     this.channel.on('initiate', ({ upload_id }) => {
       this._upload_id = upload_id;
     });
     this.channel.on('completed', this.completed.bind(this));
     this.channel.on('error', this.error.bind(this));
+  }
+
+  requestUpdate(name?: PropertyKey, oldValue?: unknown) {
+    super.requestUpdate(name, oldValue);
+    if (name === 'locale') {
+      this.languageController.locale = this.locale;
+    }
   }
 
   disconnectedCallback() {
@@ -154,19 +167,31 @@ export class Upload extends LitElement {
     return html`${this._progress ? this.renderProgress() : this.renderUpload()}`;
   }
 
+  setOpacity() {
+    if (!this.languageController.loaded) {
+      return 'pointer-events: none; opacity: 0;';
+    }
+    if (!this._upload_id) {
+      return 'pointer-events: none; opacity: 0.5;';
+    }
+    return '';
+  }
+
   renderUpload() {
-    return html` <form
+    return html`<form
       class="state"
-      style="${!this._upload_id ? 'pointer-events: none; opacity: 0.5;' : ''}"
+      style=${this.setOpacity()}
       @dragover=${(e: DragEvent) => e.preventDefault()}
       @drop=${this.handleDrop}
       onDragOver="this.style.boxShadow='inset 0 0 0 2px blue'"
       onDragLeave="this.style.boxShadow='inset 0 0 0 2px transparent'"
     >
       <div style="font-size: 32px; padding-bottom: 14px; font-weight: 300; opacity: 0.9;">
-        drop video here
+        ${msg('drop video here')}
       </div>
-      <div style="padding-bottom: 40px; opacity: 0.5;">or browse your files</div>
+      <div style="padding-bottom: 40px; opacity: 0.5;">
+        ${msg('or browse your files')}
+      </div>
       <div
         style="position: relative; background: #1997FF; width: 150px; height: 40px; overflow: hidden; border-radius: 16px; color: white;"
         onMouseOver="this.style.opacity='0.9'"
@@ -179,14 +204,13 @@ export class Upload extends LitElement {
           style="position: absolute; top: 0; left: -150px; display: block; width: 500px; height: 100%; opacity: 0; cursor: pointer;"
         />
         <div
-          style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"
+          style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;"
         >
-          <div style="padding-bottom: 2px;">select file</div>
+          <div style="padding-bottom: 2px;">${msg('select file')}</div>
         </div>
       </div>
     </form>`;
   }
-
   renderProgress() {
     return html`
       ${this._progress == 100
@@ -210,7 +234,7 @@ export class Upload extends LitElement {
                 ></div>
               </div>
               <div style="margin-top: 16px; opacity: 0.6; padding-bottom: 24px;">
-                uploading...
+                ${msg('uploading...')}
               </div>
             </div>
           `}
@@ -236,7 +260,7 @@ export class Upload extends LitElement {
           ></lottie-player>`}
       <div style="width: 100%; height: 3px;"></div>
       <div style="margin-top: 16px; opacity: 0.6; padding-bottom: 24px;">
-        ${this._completed ? html`done` : html`just a minute...`}
+        ${this._completed ? msg('done') : msg('just a minute...')}
       </div>
     </div>`;
   }

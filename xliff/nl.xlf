@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+<file target-language="nl" source-language="en" original="lit-localize-inputs" datatype="plaintext">
+<body>
+<trans-unit id="s7b43d4f7b98adae3">
+  <source>drop video here</source>
+  <target>plaats video hier</target>
+</trans-unit>
+<trans-unit id="sf81e3c69132c6256">
+  <source>or browse your files</source>
+  <target>of blader door bestanden</target>
+</trans-unit>
+<trans-unit id="s1a2236b3e9a624e9">
+  <source>select file</source>
+  <target>selecteer bestand</target>
+</trans-unit>
+<trans-unit id="sc5fcbf75e4030312">
+  <source>uploading...</source>
+  <target>uploaden...</target>
+</trans-unit>
+<trans-unit id="sdc51fb6761fd6e91">
+  <source>done</source>
+  <target>klaar</target>
+</trans-unit>
+<trans-unit id="s422bb6dceefc6f42">
+  <source>just a minute...</source>
+  <target>nog even geduld...</target>
+</trans-unit>
+</body>
+</file>
+</xliff>

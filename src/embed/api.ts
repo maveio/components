@@ -29,6 +29,13 @@ export type Embed = {
         '720p': string;
       };
     };
+    renditions: [
+      {
+        size: 'sd' | 'hd' | 'fhd' | 'qhd' | 'uhd';
+        codec: 'h264' | 'hevc' | 'av1';
+        container: 'webp' | 'webm' | 'jpg' | 'mp4' | 'avif' | 'hls';
+      },
+    ];
     src: string;
   };
   subtitles: Subtitle[];

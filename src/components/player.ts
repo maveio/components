@@ -132,8 +132,19 @@ export class Player extends LitElement {
         space_id: this._embed.space_id,
       };
 
-      if (this._embed.video.src.endsWith('.m3u8') && Hls.isSupported()) {
-        this.hls.loadSource(this._embed.video.src);
+      const containsHls = this._embed.video.renditions.some(
+        (rendition) => rendition.container == 'hls',
+      );
+
+      if ((containsHls || this._embed.video.src.endsWith('.m3u8')) && Hls.isSupported()) {
+        if (containsHls) {
+          this.hls.loadSource(
+            `https://space-${this.spaceId}.video-dns.com/${this.embedId}/playlist.m3u8`,
+          );
+        } else {
+          this.hls.loadSource(this._embed.video.src);
+        }
+
         this.hls.attachMedia(this._videoElement);
         this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
       } else {

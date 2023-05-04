@@ -27,6 +27,7 @@ export default defineConfig({
     '@lit-labs/react',
     '@lit-labs/observers',
     '@lit-labs/task',
+    '@lit/localize',
     'js-base64',
     'url-parse',
     'requires-port',

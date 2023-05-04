@@ -15,3 +15,6 @@ This package is part of [mave.io](https://mave.io). This library provides privac
 It lets your users **upload & share videos** using the [mave.io](https://mave.io) video infrastructure.
 
 </div>
+
+`./node_modules/.bin/lit-localize extract`
+`./node_modules/.bin/lit-localize build`

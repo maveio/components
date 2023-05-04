@@ -11,10 +11,11 @@
   ],
   "scripts": {
     "ts-types": "tsc",
-    "build": "tsup",
+    "build": "tsup && npm run localize",
     "build:watch": "tsup --watch",
-    "build:prod": "env NODE_ENV=production npm run build",
+    "build:prod": "env NODE_ENV=production npm run build && npm run localize",
     "build:prod:watch": "npm run build:watch -- --watch",
+    "localize": "./node_modules/.bin/lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",
     "test": "jest",
     "test:watch": "jest --watchAll",
@@ -27,6 +28,7 @@
     "url": "git+https://github.com/maveio/components.git"
   },
   "devDependencies": {
+    "@lit/localize-tools": "^0.6.9",
     "@types/jest": "^29.4.0",
     "@types/phoenix": "^1.5.5",
     "@types/react": "^18.0.31",
@@ -70,6 +72,7 @@
     "@lit-labs/observers": "^1.1.0",
     "@lit-labs/react": "^1.1.1",
     "@lit-labs/task": "^2.0.0",
+    "@lit/localize": "^0.11.4",
     "@lottiefiles/lottie-player": "^1.7.1",
     "hls.js": "v1.4.0-rc.1",
     "lit": "^2.6.1",
