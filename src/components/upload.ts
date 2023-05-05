@@ -2,6 +2,7 @@ import '@lottiefiles/lottie-player';
 
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import { Channel } from 'phoenix';
 import * as tus from 'tus-js-client';
 
@@ -25,6 +26,10 @@ const fileTypes = [
 export class Upload extends LitElement {
   @property() token: string;
   @property() locale: string;
+  @property() color: string;
+  @property() font: string;
+  @property() radius: string;
+
   @state() _progress: number;
   @state() _upload_id: string;
   @state() _completed = false;
@@ -41,7 +46,6 @@ export class Upload extends LitElement {
       overflow: hidden;
       position: relative;
       background: white;
-      font-family: system-ui;
       box-shadow: inset 0 0 0 1px #eee;
     }
 
@@ -164,23 +168,31 @@ export class Upload extends LitElement {
   }
 
   render() {
-    return html`${this._progress ? this.renderProgress() : this.renderUpload()}`;
+    return html` ${this._progress ? this.renderProgress() : this.renderUpload()}`;
   }
 
-  setOpacity() {
+  styleOpacity() {
     if (!this.languageController.loaded) {
-      return 'pointer-events: none; opacity: 0;';
+      return { pointerEvents: 'none', opacity: '0' };
     }
     if (!this._upload_id) {
-      return 'pointer-events: none; opacity: 0.5;';
+      return { pointerEvents: 'none', opacity: '0.5' };
     }
-    return '';
+    return {};
+  }
+
+  styleFont() {
+    if (this.font) {
+      return { fontFamily: this.font };
+    } else {
+      return { fontFamily: 'system-ui' };
+    }
   }
 
   renderUpload() {
     return html`<form
       class="state"
-      style=${this.setOpacity()}
+      style=${styleMap({ ...this.styleOpacity(), ...this.styleFont() })}
       @dragover=${(e: DragEvent) => e.preventDefault()}
       @drop=${this.handleDrop}
       onDragOver="this.style.boxShadow='inset 0 0 0 2px blue'"
@@ -193,7 +205,12 @@ export class Upload extends LitElement {
         ${msg('or browse your files')}
       </div>
       <div
-        style="position: relative; background: #1997FF; width: 150px; height: 40px; overflow: hidden; border-radius: 16px; color: white;"
+        style="position: relative; background: ${this.color
+          ? this.color
+          : '#1997FF'}; width: 150px; height: 40px; overflow: hidden; border-radius: ${this
+          .radius
+          ? this.radius
+          : '16px'}; color: white;"
         onMouseOver="this.style.opacity='0.9'"
         onMouseOut="this.style.opacity='1'"
       >
@@ -211,6 +228,7 @@ export class Upload extends LitElement {
       </div>
     </form>`;
   }
+
   renderProgress() {
     return html`
       ${this._progress == 100
