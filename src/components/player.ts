@@ -22,6 +22,31 @@ export class Player extends LitElement {
   @property() opacity?: string;
   @property() loop?: boolean;
 
+  private _poster?: string;
+  @property()
+  get poster(): string {
+    if (this._poster && this._poster == 'custom') {
+      return `https://space-${this.spaceId}.video-dns.com/${this.embedId}/thumbnail.jpg`;
+    }
+
+    if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
+      return `https://image.mave.io/${this.spaceId}${this.embedId}.jpg?time=${this._poster}`;
+    }
+
+    if (this._poster) {
+      return this._poster;
+    }
+
+    return `https://space-${this.spaceId}.video-dns.com/${this.embedId}/poster.webp`;
+  }
+  set poster(value: string | null) {
+    if (value) {
+      const oldValue = this._poster;
+      this._poster = value;
+      this.requestUpdate('poster', oldValue);
+    }
+  }
+
   @state() popped = false;
 
   static styles = css`
@@ -64,10 +89,6 @@ export class Player extends LitElement {
 
   get embedId(): string {
     return this.embed.substring(5, this.embed.length);
-  }
-
-  get poster(): string {
-    return `https://space-${this.spaceId}.video-dns.com/${this.embedId}/poster.webp`;
   }
 
   private _metrics: Metrics;
@@ -184,6 +205,10 @@ export class Player extends LitElement {
 
   updateEmbed(embed: Embed) {
     this._embed = embed;
+
+    console.log(this._embed.settings.poster);
+
+    this.poster = this._embed.settings.poster;
     this.color = this._embed.settings.color;
     this.opacity = this._embed.settings.opacity
       ? (this._embed.settings.opacity as unknown as string)

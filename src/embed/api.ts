@@ -17,6 +17,7 @@ export type Embed = {
     width: string;
     color: string;
     controls: 'big' | 'full' | 'none';
+    poster: string | null;
   };
   video: {
     id: string;
