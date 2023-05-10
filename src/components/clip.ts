@@ -9,9 +9,13 @@ import { EmbedController } from '../embed/controller';
 
 export class Clip extends LitElement {
   @property() embed: string;
+  @property() autoplay?: 'always' | 'off' | 'lazy';
+  @property() loop?: boolean;
+
   @state() _source = false;
 
   private _videoElement?: HTMLMediaElement;
+  private _queue: { (): void }[] = [];
 
   private _intersectionObserver = new IntersectionController(this, {
     callback: this.intersected.bind(this),
@@ -51,6 +55,23 @@ export class Clip extends LitElement {
     }
   }
 
+  play() {
+    if (this._videoElement) {
+      if (!this._source) this._source = true;
+      this._videoElement.play();
+    } else {
+      this._queue.push(() => this._videoElement?.play());
+    }
+  }
+
+  pause() {
+    if (this._videoElement) {
+      this._videoElement.pause();
+    } else {
+      this._queue.push(() => this._videoElement?.pause());
+    }
+  }
+
   handleVideo(videoElement?: Element) {
     if (videoElement) {
       this._intersectionObserver.observe(videoElement);
@@ -64,11 +85,16 @@ export class Clip extends LitElement {
 
       this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
     }
+
+    if (this._queue.length) {
+      this._queue.forEach((fn) => fn());
+      this._queue = [];
+    }
   }
 
   intersected(entries: IntersectionObserverEntry[]) {
     for (const { isIntersecting } of entries) {
-      if (isIntersecting) {
+      if (isIntersecting && (this.autoplay === 'lazy' || this.autoplay === undefined)) {
         if (!this._source) this._source = true;
         if (this._videoElement?.paused) this._videoElement?.play();
       } else {
@@ -92,9 +118,9 @@ export class Clip extends LitElement {
           return html`
             <video
               muted
-              autoplay
               playsinline
-              loop
+              ?autoplay=${this.autoplay === 'always' ? true : false}
+              ?loop=${this.loop || true}
               ${ref(this.handleVideo)}
               poster=${this._embed.poster.initial_frame_src}
             >

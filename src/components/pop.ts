@@ -71,7 +71,12 @@ export class Pop extends LitElement {
       transform: scale(1);
     }
 
+    dialog[open] .button-close {
+      display: block;
+    }
+
     .button-close {
+      display: none;
       position: fixed;
       top: 0.8rem;
       right: 0.6rem;
@@ -198,3 +203,47 @@ declare global {
     'mave-pop': Pop;
   }
 }
+
+const pop = new Pop();
+
+export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
+  if (!document || !document.body) return;
+  element.querySelectorAll('[x-mave-pop]').forEach((el) => {
+    if (!document.querySelector('mave-pop')) {
+      document.body.appendChild(pop);
+    }
+
+    const embed = el.getAttribute('x-mave-pop') || el.getAttribute('embed');
+    if (!embed) return;
+    (el as HTMLElement).style.cursor = 'pointer';
+
+    const player = new Player();
+    player.embed = embed;
+
+    // preload image
+    const img = new Image();
+    img.src = player.poster;
+
+    el.addEventListener('click', (e: Event) => {
+      // how does it handle touch events?
+      const event = e as MouseEvent;
+      event.preventDefault();
+
+      const players = document.querySelectorAll('mave-player');
+
+      const popped = Array.from(players).find(
+        (player) => player.popped && player.embed === embed,
+      );
+
+      if (!popped) {
+        pop.open(player).then(() => {
+          player.play();
+        });
+
+        pop.addEventListener('closed', () => {
+          player.pause();
+        });
+      }
+    });
+  });
+};

@@ -11,9 +11,9 @@
   ],
   "scripts": {
     "ts-types": "tsc",
-    "build": "tsup && npm run localize",
+    "build": "tsup",
     "build:watch": "tsup --watch",
-    "build:prod": "env NODE_ENV=production npm run build && npm run localize",
+    "build:prod": "NODE_ENV=production npm run build",
     "build:prod:watch": "npm run build:watch -- --watch",
     "localize": "./node_modules/.bin/lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",

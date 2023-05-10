@@ -205,9 +205,6 @@ export class Player extends LitElement {
 
   updateEmbed(embed: Embed) {
     this._embed = embed;
-
-    console.log(this._embed.settings.poster);
-
     this.poster = this._embed.settings.poster;
     this.color = this._embed.settings.color;
     this.opacity = this._embed.settings.opacity
