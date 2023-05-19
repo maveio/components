@@ -9,7 +9,6 @@ export class Pop extends LitElement {
   @query('.backdrop') _backdrop: HTMLElement;
 
   private _player?: Player;
-  private _originalStyle?: string | null;
 
   static styles = css`
     :host {
@@ -112,10 +111,6 @@ export class Pop extends LitElement {
         this._dialog.showModal();
       }, 25);
 
-      // Disable scroll on parent
-      this._originalStyle = document.documentElement.getAttribute('style');
-      document.documentElement.style.overflow = 'hidden';
-
       // Native dialog closing (using escape key)
       this._dialog.addEventListener(
         'cancel',
@@ -157,13 +152,6 @@ export class Pop extends LitElement {
         this._content.innerHTML = '';
 
         this.dispatchEvent(new Event('closed', { bubbles: true }));
-
-        // Enable scroll on parent
-        if (this._originalStyle) {
-          document.documentElement.setAttribute('style', this._originalStyle);
-        } else {
-          document.documentElement.removeAttribute('style');
-        }
       },
       { once: true },
     );
