@@ -17,6 +17,8 @@ export class Pop extends LitElement {
 
     dialog {
       display: block;
+      margin: 0;
+      padding: 0;
       border: 0;
       pointer-events: none;
       background: transparent;
