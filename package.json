@@ -1,7 +1,7 @@
 {
   "name": "@maveio/components",
-  "version": "0.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "privacy friendly (🇪🇺), iframe-less, video UI elements for videos hosted on mave.io",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,9 +23,13 @@
     "lint:format": "prettier  --loglevel warn --write \"./**/*.{ts,tsx,css,md,json}\" ",
     "lint": "yarn lint:format && yarn lint:fix"
   },
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maveio/components.git"
+    "url": "https://github.com/maveio/components.git"
   },
   "devDependencies": {
     "@lit/localize-tools": "^0.6.9",
@@ -48,7 +52,7 @@
     "typescript": "^4.9.5"
   },
   "author": "mave.io",
-  "license": "MIT",
+  "license": "APGL-3.0",
   "compilerOptions": {
     "types": [
       "jest"
@@ -74,6 +78,7 @@
     "@lit-labs/task": "^2.0.0",
     "@lit/localize": "^0.11.4",
     "@lottiefiles/lottie-player": "^1.7.1",
+    "@maveio/metrics": "^0.0.1",
     "hls.js": "v1.4.0-rc.1",
     "lit": "^2.6.1",
     "media-chrome": "^0.18.5",
