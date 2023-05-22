@@ -23,11 +23,11 @@ Install the package within your project
 npm install @maveio/components
 ```
 
-or use our hosted version
+or use the hosted version
 
 ```html
 <script type="module">
-  import { Player } from "//cdn.mave.io/components@0.0.1/index.js";
+  import { Player } from "//cdn.jsdelivr.net/npm/@maveio/components/+esm";
 </script>
 ```
 
