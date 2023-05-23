@@ -26,18 +26,18 @@ export class Player extends LitElement {
   @property()
   get poster(): string {
     if (this._poster && this._poster == 'custom') {
-      return `https://space-${this.spaceId}.video-dns.com/${this.embedId}/thumbnail.jpg`;
+      return `${this.embedController.cdnRoot}/thumbnail.jpg`;
     }
 
     if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
-      return `https://image.mave.io/${this.spaceId}${this.embedId}.jpg?time=${this._poster}`;
+      return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
     }
 
     if (this._poster) {
       return this._poster;
     }
 
-    return `https://space-${this.spaceId}.video-dns.com/${this.embedId}/poster.webp`;
+    return `${this.embedController.cdnRoot}/poster.webp`;
   }
   set poster(value: string | null) {
     if (value) {
@@ -83,20 +83,15 @@ export class Player extends LitElement {
   @state()
   private _embed: Embed;
 
-  get spaceId(): string {
-    return this.embed.substring(0, 5);
-  }
-
-  get embedId(): string {
-    return this.embed.substring(5, this.embed.length);
-  }
-
   private _metrics: Metrics;
   private _intersected = false;
 
   private _queue: { (): void }[] = [];
 
-  private hls: Hls = new Hls({ startLevel: 3 });
+  private hls: Hls = new Hls({
+    startLevel: 3,
+    capLevelToPlayerSize: true,
+  });
 
   pop() {
     this.popped = true;
@@ -163,9 +158,7 @@ export class Player extends LitElement {
         !this._videoElement.canPlayType('application/vnd.apple.mpegurl')
       ) {
         if (containsHls) {
-          this.hls.loadSource(
-            `https://space-${this.spaceId}.video-dns.com/${this.embedId}/playlist.m3u8`,
-          );
+          this.hls.loadSource(`${this.embedController.cdnRoot}/playlist.m3u8`);
         } else {
           this.hls.loadSource(this._embed.video.src);
         }
@@ -174,7 +167,7 @@ export class Player extends LitElement {
         this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
       } else {
         if (containsHls) {
-          this._videoElement.src = `https://space-${this.spaceId}.video-dns.com/${this.embedId}/playlist.m3u8`;
+          this._videoElement.src = `${this.embedController.cdnRoot}/playlist.m3u8`;
         } else {
           this._videoElement.src = this._embed.video.src;
         }
@@ -257,7 +250,7 @@ export class Player extends LitElement {
     });
   }
 
-  _renderTracks() {
+  get subtitles() {
     if (this._embed.subtitles.length > 0) {
       return this._embed.subtitles.map((track) => {
         return html`
@@ -265,6 +258,15 @@ export class Player extends LitElement {
         `;
       });
     }
+  }
+
+  get storyboard() {
+    return html` <track
+      label="thumbnails"
+      default
+      kind="metadata"
+      src=${`${this.embedController.cdnRoot}/storyboard.vtt`}
+    />`;
   }
 
   render() {
@@ -294,7 +296,7 @@ export class Player extends LitElement {
                   slot="media"
                   crossorigin="anonymous"
                 >
-                  ${this._renderTracks()}
+                  ${this.subtitles} ${this.storyboard}
                 </video>
               </mave-theme-main>
             `;
@@ -306,9 +308,9 @@ export class Player extends LitElement {
 
   renderPending() {
     return html`
-      <mave-theme-main style=${this.styles}
-        ><video slot="media" poster=${this.poster}></video
-      ></mave-theme-main>
+      <mave-theme-main style=${this.styles}>
+        <video slot="media" poster=${this.poster}></video>
+      </mave-theme-main>
     `;
   }
 }

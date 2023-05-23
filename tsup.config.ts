@@ -5,7 +5,7 @@ import { defineConfig } from 'tsup';
 import json from './package.json';
 dotenv.config();
 
-const env = process.env.NODE_ENV;
+const isProduction = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
   platform: 'browser',
@@ -13,11 +13,11 @@ export default defineConfig({
   entryPoints: ['src/index.ts', 'src/react.ts'],
   format: ['cjs', 'esm'],
   splitting: true,
-  minify: env === 'production',
+  minify: isProduction,
   skipNodeModulesBundle: true,
   clean: true,
   dts: true,
-  sourcemap: env !== 'production',
+  sourcemap: !isProduction,
   target: 'es2020',
   noExternal: [
     'lit',
@@ -42,11 +42,15 @@ export default defineConfig({
   esbuildPlugins: [
     replace({
       __buildVersion: json.version,
-      __MAVE_ENDPOINT__: process.env.MAVE_ENDPOINT || 'https://mave.io/api/v1',
-      __MAVE_SOCKET_ENDPOINT__:
-        process.env.MAVE_SOCKET_ENDPOINT || 'wss://app.mave.io/api/v1/socket',
-      __MAVE_UPLOAD_ENDPOINT__:
-        process.env.MAVE_UPLOAD_ENDPOINT || 'https://upload.mave.io/files',
+      __MAVE_ENDPOINT__: isProduction
+        ? 'https://mave.io/api/v1'
+        : process.env.MAVE_ENDPOINT,
+      __MAVE_SOCKET_ENDPOINT__: isProduction
+        ? 'wss://app.mave.io/api/v1/socket'
+        : process.env.MAVE_SOCKET_ENDPOINT,
+      __MAVE_UPLOAD_ENDPOINT__: isProduction
+        ? 'https://upload.mave.io/files'
+        : process.env.MAVE_UPLOAD_ENDPOINT,
     }),
   ],
 });

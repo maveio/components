@@ -73,6 +73,18 @@ export class EmbedController {
     return this._token;
   }
 
+  get spaceId(): string {
+    return this.embed.substring(0, 5);
+  }
+
+  get embedId(): string {
+    return this.embed.substring(5, this.embed.length);
+  }
+
+  get cdnRoot(): string {
+    return `https://space-${this.spaceId}.video-dns.com/${this.embedId}`;
+  }
+
   render(renderFunctions: StatusRenderer<unknown>) {
     return this.task?.render(renderFunctions);
   }
