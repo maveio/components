@@ -104,3 +104,9 @@ jobs:
           prerelease: ${{ startsWith(github.event.inputs.release-type, 'pre') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Purge cache
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: "https://purge.jsdelivr.net/npm/@maveio/components/+esm"
+          method: "GET"

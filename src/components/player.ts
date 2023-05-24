@@ -296,7 +296,7 @@ export class Player extends LitElement {
                   slot="media"
                   crossorigin="anonymous"
                 >
-                  ${this.subtitles} ${this.storyboard}
+                  ${this.subtitles}
                 </video>
               </mave-theme-main>
             `;
