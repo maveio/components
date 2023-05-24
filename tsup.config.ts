@@ -51,6 +51,9 @@ export default defineConfig({
       __MAVE_UPLOAD_ENDPOINT__: isProduction
         ? 'https://upload.mave.io/files'
         : process.env.MAVE_UPLOAD_ENDPOINT,
+      __MAVE_METRICS_SOCKET_ENDPOINT__: isProduction
+        ? 'wss://metrics.video-dns.com/socket'
+        : process.env.MAVE_METRICS_SOCKET_ENDPOINT,
     }),
   ],
 });

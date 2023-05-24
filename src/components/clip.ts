@@ -83,6 +83,7 @@ export class Clip extends LitElement {
         space_id: this._embed.space_id,
       };
 
+      Metrics.socket_path = '__MAVE_METRICS_SOCKET_ENDPOINT__';
       this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
     }
 
