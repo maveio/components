@@ -70,6 +70,9 @@ jobs:
           git commit -m "chore: release ${{ env.NEW_VERSION }}"
           git tag ${{ env.NEW_VERSION }}
 
+      - name: Install dependencies
+        run: yarn install
+
       # Publish version to public repository
       - name: Publish
         run: yarn publish --verbose --access public --tag ${{ env.RELEASE_TAG }}
