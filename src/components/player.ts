@@ -160,7 +160,9 @@ export class Player extends LitElement {
         !this._videoElement.canPlayType('application/vnd.apple.mpegurl')
       ) {
         if (containsHls) {
-          this.hls.loadSource(`${this.embedController.cdnRoot}/playlist.m3u8`);
+          this.hls.loadSource(
+            `${this.embedController.cdnRoot}/playlist.m3u8#${this.highestHlsRendition.size}`,
+          );
         } else {
           this.hls.loadSource(this._embed.video.src);
         }
@@ -169,7 +171,7 @@ export class Player extends LitElement {
         this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
       } else {
         if (containsHls) {
-          this._videoElement.src = `${this.embedController.cdnRoot}/playlist.m3u8`;
+          this._videoElement.src = `${this.embedController.cdnRoot}/playlist.m3u8#${this.highestHlsRendition.size}`;
         } else {
           this._videoElement.src = this._embed.video.src;
         }
@@ -250,6 +252,25 @@ export class Player extends LitElement {
           ? 'flex'
           : 'none',
     });
+  }
+
+  get highestHlsRendition() {
+    const renditions = this._embed.video.renditions.filter(
+      (rendition) => rendition.container == 'hls',
+    );
+
+    const sizes = ['sd', 'hd', 'fhd', 'qhd', 'uhd'];
+
+    const highestRendition = renditions.reduce((highest, rendition) => {
+      const size = sizes.indexOf(rendition.size);
+      if (size > sizes.indexOf(highest.size)) {
+        return rendition;
+      } else {
+        return highest;
+      }
+    });
+
+    return highestRendition;
   }
 
   get subtitles() {
