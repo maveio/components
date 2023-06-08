@@ -34,6 +34,9 @@ export default css`
     --media-range-thumb-transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
 
     --media-preview-time-margin: 0;
+
+    --media-listbox-selected-background: rgba(0, 0, 0, 0.2);
+    --media-listbox-hover-background: rgba(0, 0, 0, 0.3);
   }
 
   media-loading-indicator {
@@ -89,6 +92,34 @@ export default css`
     height: 28px;
   }
 
+  media-captions-listbox {
+    position: absolute;
+    width: 8rem;
+    right: 2.55rem;
+    bottom: 3.1rem;
+  }
+
+  media-captions-listbox::part(listitem) {
+    border-radius: 4px;
+    font-family: Sofia, sans-serif;
+    letter-spacing: 0.005rem;
+    opacity: 0.9;
+    font-size: 1rem;
+    text-align: center;
+    padding: 0.25rem;
+  }
+
+  /* media-captions-listbox::part(listitem):hover,
+  media-captions-listbox::part(listitem)[aria-selected='true']:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  media-captions-listbox::part(listitem)[aria-selected='true'] {
+    font-weight: 600;
+    background: transparent;
+    text-decoration: underline;
+  } */
+
   media-loading-indicator {
     flex: none;
     display: none;
@@ -100,7 +131,7 @@ export default css`
     height: 28px;
   }
 
-  media-controller[media-loading]:not([media-paused]) div[slot='centered-chrome'] {
+  media-controller[medialoading]:not([mediapaused]) div[slot='centered-chrome'] {
     background-color: transparent;
   }
 
@@ -114,11 +145,11 @@ export default css`
     height: 80px;
   }
 
-  media-loading-indicator[media-loading]:not([media-paused]) {
+  media-loading-indicator[medialoading]:not([mediapaused]) {
     display: flex;
   }
 
-  media-controller[media-loading]:not([media-paused]) media-play-button {
+  media-controller[medialoading]:not([mediapaused]) media-play-button {
     display: none;
   }
 
@@ -263,15 +294,19 @@ export default css`
     display: none;
   }
 
+  media-captions-button {
+    margin-right: -0.15rem;
+  }
+
   media-captions-button.small-button {
     display: none;
   }
 
-  media-captions-button[media-captions-list].small-button {
+  media-captions-button[mediacaptionlist].small-button {
     display: flex;
   }
 
-  media-captions-button[media-subtitles-list].small-button {
+  media-captions-button[mediasubtitleslist].small-button {
     display: flex;
   }
 `;

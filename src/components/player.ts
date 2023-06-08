@@ -15,6 +15,7 @@ export class Player extends LitElement {
   @property() embed: string;
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
   @property() width?: string;
+  @property() subtitles?: [string];
   @property() height?: string;
   @property() autoplay?: 'always' | 'lazy';
   @property() controls?: 'full' | 'big' | 'none';
@@ -273,17 +274,19 @@ export class Player extends LitElement {
     return highestRendition;
   }
 
-  get subtitles() {
+  get _subtitles() {
     if (this._embed.subtitles.length > 0) {
       return this._embed.subtitles.map((track) => {
-        return html`
-          <track label=${track.label} kind="subtitles" srclang=${track.language} src=${track.path}></track>
-        `;
+        if (this.subtitles && this.subtitles.includes(track.language)) {
+          return html`
+            <track label=${track.label} kind="subtitles" srclang=${track.language} src=${track.path}></track>
+          `;
+        }
       });
     }
   }
 
-  get storyboard() {
+  get _storyboard() {
     return html` <track
       label="thumbnails"
       default
@@ -319,7 +322,7 @@ export class Player extends LitElement {
                   slot="media"
                   crossorigin="anonymous"
                 >
-                  ${this.subtitles}
+                  ${this._subtitles}
                 </video>
               </mave-theme-main>
             `;

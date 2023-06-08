@@ -1,7 +1,13 @@
 import 'media-chrome';
+import 'media-chrome/dist/experimental/media-captions-listbox.js';
+import 'media-chrome/dist/experimental/media-chrome-listbox.js';
+import 'media-chrome/dist/experimental/media-chrome-listitem.js';
 
 import { html, LitElement } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, query } from 'lit/decorators.js';
+import { MediaUIEvents } from 'media-chrome/dist/constants.js';
+import MediaCaptionButton from 'media-chrome/dist/media-captions-button.js';
+import { areSubsOn, toggleSubsCaps } from 'media-chrome/dist/utils/captions.js';
 
 import style from './main.css';
 
@@ -9,100 +15,84 @@ type Breakpoints = { [propKey: string]: number };
 
 @customElement('mave-theme-main')
 export default class Main extends LitElement {
-  private _breakpoints: Breakpoints = { xs: 360, sm: 600, md: 760, lg: 960, xl: 1100 };
-
-  private getBreakpoints(rect: DOMRect) {
-    return Object.keys(this._breakpoints).filter((key: string) => {
-      return rect.width >= this._breakpoints[key];
-    });
-  }
+  @query('media-captions-listbox') captionList!: HTMLElement;
+  @query('media-captions-button') captionButton!: MediaCaptionButton;
+  _captionListOpen = false;
+  _currentSelectedOption: string | null = null;
 
   static styles = style;
+
+  _handleCaptions() {
+    this.captionList.style.display = this._captionListOpen ? 'none' : 'block';
+    this._captionListOpen = !this._captionListOpen;
+  }
+
+  _handleCaptionItem(e: Event) {
+    if (e.target && (e.target as HTMLInputElement).value == 'off') {
+      if (areSubsOn(this.captionButton)) {
+        toggleSubsCaps(this.captionButton);
+      }
+    } else {
+      const selectedOption = (
+        (e.target as HTMLInputElement).parentNode as HTMLInputElement
+      ).value;
+
+      if (selectedOption && this._currentSelectedOption != selectedOption) {
+        if (!areSubsOn(this.captionButton)) {
+          toggleSubsCaps(this.captionButton, false);
+        }
+
+        this._currentSelectedOption = selectedOption;
+
+        const event = new window.CustomEvent(MediaUIEvents.MEDIA_SHOW_SUBTITLES_REQUEST, {
+          composed: true,
+          bubbles: true,
+          detail: selectedOption,
+        });
+        this.captionList.dispatchEvent(event);
+      }
+    }
+    this._handleCaptions();
+  }
+
+  async firstUpdated() {
+    // Give the browser a chance to paint
+    await new Promise((r) => setTimeout(r, 0));
+
+    this.captionList.shadowRoot
+      ?.querySelectorAll('media-chrome-listitem')
+      .forEach((el) => {
+        el.addEventListener('click', this._handleCaptionItem.bind(this));
+      });
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeName === 'MEDIA-CHROME-LISTITEM') {
+            node.addEventListener('click', this._handleCaptionItem.bind(this));
+          }
+        });
+      });
+    });
+
+    const ulElement = this.captionList.shadowRoot?.querySelector('ul');
+    if (ulElement) {
+      observer.observe(ulElement, {
+        childList: true,
+        subtree: true,
+      });
+    }
+  }
 
   render() {
     return html`
       <media-controller>
+        <media-captions-listbox style="display: none;"></media-captions-listbox>
+
         <slot name="media" slot="media"></slot>
         <slot name="poster" slot="poster"></slot>
         <div class="mave-gradient-bottom"></div>
-        <!-- <div slot="top-chrome">
-          <media-cast-button class="small-button">
-            <svg
-              slot="enter"
-              width="24px"
-              height="24px"
-              stroke="#fff"
-              stroke-width="1"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              color="#fff"
-            >
-              <path
-                d="M6 17H3V4h18v13h-3"
-                stroke="#fff"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              ></path>
-              <path
-                d="M8.622 19.067L11.5 14.75a.6.6 0 01.998 0l2.88 4.318a.6.6 0 01-.5.933H9.12a.6.6 0 01-.5-.933z"
-                stroke="#fff"
-                stroke-width="1"
-              ></path>
-            </svg>
-            <svg
-              slot="exit"
-              width="24px"
-              height="24px"
-              stroke="#fff"
-              stroke-width="1"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              color="#fff"
-            >
-              <path
-                d="M6 17H3V4h18v13h-3"
-                stroke="#fff"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              ></path>
-              <path
-                d="M8.622 19.067L11.5 14.75a.6.6 0 01.998 0l2.88 4.318a.6.6 0 01-.5.933H9.12a.6.6 0 01-.5-.933z"
-                stroke="#fff"
-                stroke-width="1"
-              ></path>
-            </svg>
-          </media-cast-button>
-          <media-airplay-button class="small-button">
-            <svg
-              slot="airplay"
-              width="24px"
-              height="24px"
-              stroke="#fff"
-              stroke-width="1"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              color="#fff"
-            >
-              <path
-                d="M6 17H3V4h18v13h-3"
-                stroke="#fff"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              ></path>
-              <path
-                d="M8.622 19.067L11.5 14.75a.6.6 0 01.998 0l2.88 4.318a.6.6 0 01-.5.933H9.12a.6.6 0 01-.5-.933z"
-                stroke="#fff"
-                stroke-width="1"
-              ></path>
-            </svg>
-          </media-airplay-button>
-        </div> -->
+
         <div slot="centered-chrome">
           <media-play-button>
             <svg
@@ -183,7 +173,11 @@ export default class Main extends LitElement {
             <media-preview-thumbnail slot="preview"></media-preview-thumbnail>
             <media-preview-time-display slot="preview"></media-preview-time-display>
           </media-time-range>
-          <media-captions-button class="small-button">
+          <media-captions-button
+            disabled
+            @click=${this._handleCaptions}
+            class="small-button"
+          >
             <svg
               slot="on"
               width="24px"
@@ -343,21 +337,4 @@ export default class Main extends LitElement {
       </media-controller>
     `;
   }
-
-  // TODO: implement observer through lit
-  // connectedCallback() {
-  //   this.render();
-
-  //   const resizeObserver = new window.ResizeObserver((entries) => {
-  //     entries.forEach((entry) => {
-  //       entry.target.className = this.getBreakpoints(entry.contentRect).join(' ');
-  //     });
-  //   });
-
-  //   if (this.shadowRoot?.querySelector('media-controller')) {
-  //     resizeObserver.observe(
-  //       this.shadowRoot.querySelector('media-controller') as Element,
-  //     );
-  //   }
-  // }
 }
