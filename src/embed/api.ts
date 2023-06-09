@@ -40,6 +40,7 @@ export type Embed = {
     src: string;
   };
   subtitles: Subtitle[];
+  metrics_key: string;
 };
 
 export type Subtitle = {

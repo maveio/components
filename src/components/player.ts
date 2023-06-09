@@ -143,7 +143,10 @@ export class Player extends LitElement {
       this._intersectionObserver.observe(this._videoElement);
       this.handleAutoplay();
 
-      Metrics.socket_path = '__MAVE_METRICS_SOCKET_ENDPOINT__';
+      Metrics.config = {
+        socketPath: '__MAVE_METRICS_SOCKET_ENDPOINT__',
+        apiKey: this._embed.metrics_key,
+      };
 
       const metadata = {
         component: 'player',
