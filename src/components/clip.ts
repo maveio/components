@@ -40,7 +40,6 @@ export class Clip extends LitElement {
   private _source?: string;
   @property()
   get source(): string {
-    console.log('source');
     if (this._source) {
       return this._source;
     }
