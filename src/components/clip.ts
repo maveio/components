@@ -11,6 +11,7 @@ export class Clip extends LitElement {
   @property() embed: string;
   @property() autoplay?: 'always' | 'off' | 'lazy';
   @property() loop?: boolean;
+  @property() quality = 'fhd';
 
   private _poster?: string;
   @property()
@@ -163,16 +164,22 @@ export class Clip extends LitElement {
       (rendition) => rendition.container == 'mp4',
     );
 
-    const sizes = ['sd', 'hd', 'fhd'];
+    const sizes = ['sd', 'hd', 'fhd', 'qhd', 'uhd'];
 
-    const highestRendition = renditions.reduce((highest, rendition) => {
-      const size = sizes.indexOf(rendition.size);
-      if (size > sizes.indexOf(highest.size)) {
-        return rendition;
-      } else {
-        return highest;
-      }
-    });
+    const highestRendition = renditions
+      .filter((rendition) => {
+        const qualityIndex = sizes.indexOf(this.quality);
+        const renditionIndex = sizes.indexOf(rendition.size);
+        return renditionIndex <= qualityIndex;
+      })
+      .reduce((highest, rendition) => {
+        const size = sizes.indexOf(rendition.size);
+        if (size > sizes.indexOf(highest.size)) {
+          return rendition;
+        } else {
+          return highest;
+        }
+      });
 
     return highestRendition;
   }
