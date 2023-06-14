@@ -1,7 +1,7 @@
 import { IntersectionController } from '@lit-labs/observers/intersection_controller.js';
 import { Metrics } from '@maveio/metrics';
 import { css, html, LitElement, nothing } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 
 import { Embed } from '../embed/api';
@@ -12,7 +12,48 @@ export class Clip extends LitElement {
   @property() autoplay?: 'always' | 'off' | 'lazy';
   @property() loop?: boolean;
 
-  @state() _source = false;
+  private _poster?: string;
+  @property()
+  get poster(): string {
+    if (this._poster && this._poster == 'custom') {
+      return `${this.embedController.cdnRoot}/thumbnail.jpg`;
+    }
+
+    if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
+      return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
+    }
+
+    if (this._poster) {
+      return this._poster;
+    }
+
+    return `${this.embedController.cdnRoot}/poster.webp`;
+  }
+  set poster(value: string | null) {
+    if (value) {
+      const oldValue = this._poster;
+      this._poster = value;
+      this.requestUpdate('poster', oldValue);
+    }
+  }
+
+  private _source?: string;
+  @property()
+  get source(): string {
+    console.log('source');
+    if (this._source) {
+      return this._source;
+    }
+
+    return `${this.embedController.cdnRoot}/${this.highestMP4Rendition.codec}_${this.highestMP4Rendition.size}.${this.highestMP4Rendition.container}`;
+  }
+  set source(value: string | null) {
+    if (value) {
+      const oldValue = this._source;
+      this._source = value;
+      this.requestUpdate('source', oldValue);
+    }
+  }
 
   private _videoElement?: HTMLMediaElement;
   private _queue: { (): void }[] = [];
@@ -57,7 +98,6 @@ export class Clip extends LitElement {
 
   play() {
     if (this._videoElement) {
-      if (!this._source) this._source = true;
       this._videoElement.play();
     } else {
       this._queue.push(() => this._videoElement?.play());
@@ -99,13 +139,43 @@ export class Clip extends LitElement {
 
   intersected(entries: IntersectionObserverEntry[]) {
     for (const { isIntersecting } of entries) {
-      if (isIntersecting && (this.autoplay === 'lazy' || this.autoplay === undefined)) {
-        if (!this._source) this._source = true;
+      if (!isIntersecting || this.autoplay === 'always') return;
+
+      if (this.autoplay === 'lazy' || this.autoplay === undefined) {
         if (this._videoElement?.paused) this._videoElement?.play();
       } else {
         if (!this._videoElement?.paused) this._videoElement?.pause();
       }
     }
+  }
+
+  requestPlay() {
+    if (this.autoplay === 'off') {
+      if (this._videoElement?.paused) {
+        this._videoElement?.play();
+      } else {
+        this._videoElement?.pause();
+      }
+    }
+  }
+
+  get highestMP4Rendition() {
+    const renditions = this._embed.video.renditions.filter(
+      (rendition) => rendition.container == 'mp4',
+    );
+
+    const sizes = ['sd', 'hd', 'fhd'];
+
+    const highestRendition = renditions.reduce((highest, rendition) => {
+      const size = sizes.indexOf(rendition.size);
+      if (size > sizes.indexOf(highest.size)) {
+        return rendition;
+      } else {
+        return highest;
+      }
+    });
+
+    return highestRendition;
   }
 
   render() {
@@ -122,19 +192,19 @@ export class Clip extends LitElement {
 
           return html`
             <video
+              @click=${this.requestPlay}
+              preload="metadata"
               muted
               playsinline
-              ?autoplay=${this.autoplay === 'always' ? true : false}
+              ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.loop || true}
               ${ref(this.handleVideo)}
               poster=${this._embed.poster.initial_frame_src}
             >
-              ${this._source
-                ? html` <source
-                    src=${this._embed.video.sources.mp4['720p']}
-                    type="video/${this._embed.video.filetype || 'mp4'}"
-                  />`
-                : nothing}
+              <source
+                src=${this.source}
+                type="video/${this.highestMP4Rendition.container}"
+              />
             </video>
           `;
         },

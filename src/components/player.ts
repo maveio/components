@@ -141,7 +141,6 @@ export class Player extends LitElement {
     if (videoElement && this._embed.video.src) {
       this._videoElement = videoElement as HTMLMediaElement;
       this._intersectionObserver.observe(this._videoElement);
-      this.handleAutoplay();
 
       Metrics.config = {
         socketPath: '__MAVE_METRICS_SOCKET_ENDPOINT__',
@@ -187,6 +186,8 @@ export class Player extends LitElement {
         this._queue.forEach((fn) => fn());
         this._queue = [];
       }
+
+      this.handleAutoplay();
     }
   }
 
@@ -198,6 +199,15 @@ export class Player extends LitElement {
   }
 
   handleAutoplay() {
+    if (this._embed && this.autoplay == 'always') {
+      if (this._intersected) {
+        if (this._videoElement?.paused) {
+          this._videoElement.muted = true;
+          this._videoElement?.play();
+        }
+      }
+    }
+
     if (
       this._embed &&
       (this.autoplay == 'lazy' || this._embed.settings.autoplay == 'on_show')
@@ -210,6 +220,14 @@ export class Player extends LitElement {
       } else {
         if (!this._videoElement?.paused) this._videoElement?.pause();
       }
+    }
+  }
+
+  requestPlay() {
+    if (this._videoElement?.paused) {
+      this._videoElement?.play();
+    } else {
+      this._videoElement?.pause();
     }
   }
 
@@ -312,14 +330,9 @@ export class Player extends LitElement {
             return html`
               <mave-theme-main style=${this.styles}>
                 <video
-                  ?autoplay=${this.autoplay == 'always' ||
-                  (this._embed.settings.autoplay == 'always' && this.autoplay != 'lazy')
-                    ? true
-                    : false}
+                  @click=${this.requestPlay}
+                  playsinline
                   ?loop=${this.loop || this._embed.settings.loop}
-                  ?muted=${this.autoplay == 'always' ||
-                  this._embed.settings.autoplay == 'always' ||
-                  this.autoplay == 'lazy'}
                   poster=${this.poster}
                   ${ref(this.handleVideo)}
                   slot="media"
