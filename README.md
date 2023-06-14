@@ -30,7 +30,7 @@ or use the hosted version
 
 ```html
 <script type="module">
-  import { Player } from "//cdn.jsdelivr.net/npm/@maveio/components/+esm";
+  import { Player } from "//cdn.mave.io/npm/@maveio/components/+esm";
 </script>
 ```
 
