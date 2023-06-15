@@ -32,11 +32,12 @@ export class EmbedController {
             return;
           }
 
-          const response = await fetch(
-            `${API.baseUrl}/${
-              this.type == EmbedType.Embed ? this.embed : `collection/${this.token}`
-            }`,
-          );
+          const url =
+            this.type == EmbedType.Embed
+              ? `${this.cdnRoot}/manifest.json`
+              : `${API.baseUrl}/collection/${this.token}`;
+
+          const response = await fetch(url);
           const data = await response.json();
           if (this.type == EmbedType.Embed) {
             return data as Partial<API.Embed>;
