@@ -43,6 +43,10 @@ export class Clip extends LitElement {
     }
   }
 
+  get deterministic_source(): string {
+    return `${this.embedController.cdnRoot}/h264_fhd.mp4`;
+  }
+
   private _videoElement?: HTMLMediaElement;
   private _queue: { (): void }[] = [];
 
@@ -67,7 +71,6 @@ export class Clip extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.embedController.embed = this.embed;
   }
 
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {
@@ -101,9 +104,12 @@ export class Clip extends LitElement {
   }
 
   handleVideo(videoElement?: Element) {
-    if (videoElement) {
-      this._intersectionObserver.observe(videoElement);
+    if (!this._videoElement) {
       this._videoElement = videoElement as HTMLMediaElement;
+    }
+
+    if (this._videoElement && this._embed && !this._metrics) {
+      this._intersectionObserver.observe(this._videoElement);
 
       const metadata = {
         component: 'clip',
@@ -173,41 +179,64 @@ export class Clip extends LitElement {
   }
 
   render() {
-    return html`
-      ${this.embedController.render({
-        // TODO: add loading state with loading player UI
-        pending: this.renderPending,
-        error: (error: unknown) =>
-          // TODO: add error state with error player UI
-          html`<p>${error instanceof Error ? error.message : nothing}</p>`,
-        complete: (data) => {
-          this._embed = data as Embed;
-          if (!data) return this.renderPending();
+    if (this.quality !== 'fhd') {
+      return html`
+        ${this.embedController.render({
+          // TODO: add loading state with loading player UI
+          pending: this.renderPending,
+          error: (error: unknown) =>
+            // TODO: add error state with error player UI
+            html`<p>${error instanceof Error ? error.message : nothing}</p>`,
+          complete: (data) => {
+            this._embed = data as Embed;
+            if (!data) return this.renderPending();
 
-          return html`
-            <video
-              @click=${this.requestPlay}
-              preload="metadata"
-              muted
-              playsinline
-              ?autoplay=${this.autoplay === 'always'}
-              ?loop=${this.loop || true}
-              ${ref(this.handleVideo)}
-              poster=${this.poster}
-            >
-              <source
-                src=${this.source}
-                type="video/${this.highestMP4Rendition.container}"
-              />
-            </video>
-          `;
-        },
-      })}
-    `;
+            return html`
+              <video
+                @click=${this.requestPlay}
+                preload="metadata"
+                muted
+                playsinline
+                ?autoplay=${this.autoplay === 'always'}
+                ?loop=${this.loop || true}
+                ${ref(this.handleVideo)}
+                poster=${this.poster}
+              >
+                <source
+                  src=${this.source}
+                  type="video/${this.highestMP4Rendition.container}"
+                />
+              </video>
+            `;
+          },
+        })}
+      `;
+    } else {
+      return html`
+        ${this.embedController.render({
+          complete: (data) => {
+            this._embed = data as Embed;
+            this.handleVideo();
+          },
+        })}
+        <video
+          @click=${this.requestPlay}
+          preload="metadata"
+          muted
+          playsinline
+          ${ref(this.handleVideo)}
+          ?autoplay=${this.autoplay === 'always'}
+          ?loop=${this.loop || true}
+          poster=${this.poster}
+        >
+          <source src=${this.deterministic_source} type="video/mp4" />
+        </video>
+      `;
+    }
   }
 
   renderPending() {
-    return html`<video muted autoplay playsinline poster=${this.poster} loop></video>`;
+    return html`<video muted poster=${this.poster} src="" preload="none" loop></video>`;
   }
 }
 
