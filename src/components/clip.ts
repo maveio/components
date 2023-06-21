@@ -16,18 +16,6 @@ export class Clip extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string {
-    if (this._poster && this._poster == 'custom') {
-      return `${this.embedController.cdnRoot}/thumbnail.jpg`;
-    }
-
-    if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
-      return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
-    }
-
-    if (this._poster) {
-      return this._poster;
-    }
-
     return `${this.embedController.cdnRoot}/poster.webp`;
   }
   set poster(value: string | null) {
@@ -205,7 +193,7 @@ export class Clip extends LitElement {
               ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.loop || true}
               ${ref(this.handleVideo)}
-              poster=${this._embed.poster.initial_frame_src}
+              poster=${this.poster}
             >
               <source
                 src=${this.source}
@@ -219,7 +207,7 @@ export class Clip extends LitElement {
   }
 
   renderPending() {
-    return html`<video muted autoplay playsinline loop></video>`;
+    return html`<video muted autoplay playsinline poster=${this.poster} loop></video>`;
   }
 }
 
