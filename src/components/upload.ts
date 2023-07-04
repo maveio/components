@@ -14,12 +14,15 @@ interface ErrorMessage {
 }
 
 const fileTypes = [
-  'video/3gpp',
   'video/mpeg',
   'video/mp4',
   'video/ogg',
   'video/quicktime',
   'video/webm',
+  'video/avi',
+  'video/3gpp',
+  'video/3gpp2',
+  'video/mov',
 ];
 
 @localized()
