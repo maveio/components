@@ -78,6 +78,12 @@ export class Upload extends LitElement {
     }
   }
 
+  reset() {
+    this._progress = 0;
+    this._completed = false;
+    this.channel.push('reset', {});
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
     this.channel.leave();
@@ -85,7 +91,6 @@ export class Upload extends LitElement {
 
   handleDrop(event: DragEvent) {
     event.preventDefault();
-
     if (event.dataTransfer && event.dataTransfer.items) {
       for (const item of event.dataTransfer.items) {
         if (item.kind === 'file') {
