@@ -163,9 +163,7 @@ export class Player extends LitElement {
         !this._videoElement.canPlayType('application/vnd.apple.mpegurl')
       ) {
         if (containsHls) {
-          this.hls.loadSource(
-            `${this.embedController.cdnRoot}/playlist.m3u8#${this.highestHlsRendition.size}`,
-          );
+          this.hls.loadSource(this.fullSourcePath);
         } else {
           this.hls.loadSource(this._embed.video.src);
         }
@@ -174,7 +172,7 @@ export class Player extends LitElement {
         this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
       } else {
         if (containsHls) {
-          this._videoElement.src = `${this.embedController.cdnRoot}/playlist.m3u8#${this.highestHlsRendition.size}`;
+          this._videoElement.src = this.fullSourcePath;
         } else {
           this._videoElement.src = this._embed.video.src;
         }
@@ -274,6 +272,10 @@ export class Player extends LitElement {
           ? 'flex'
           : 'none',
     });
+  }
+
+  get fullSourcePath() {
+    return `${this.embedController.cdnRoot}/playlist.m3u8?quality=${this.highestHlsRendition.size}`;
   }
 
   get highestHlsRendition() {
