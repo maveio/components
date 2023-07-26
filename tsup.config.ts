@@ -11,7 +11,7 @@ export default defineConfig({
   platform: 'browser',
   entry: ['src/**/*.ts'],
   entryPoints: ['src/index.ts', 'src/react.ts'],
-  format: ['cjs', 'esm'],
+  format: ['cjs', 'esm', 'iife'],
   splitting: true,
   minify: isProduction,
   skipNodeModulesBundle: true,
