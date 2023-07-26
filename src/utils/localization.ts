@@ -30,7 +30,7 @@ import { ReactiveControllerHost } from 'lit';
 export class LanguageController {
   private host: ReactiveControllerHost;
   private _locale: string;
-  loaded = false;
+  loaded = true; // defaults to true for now, as it is being loaded statically, if not loading an element twice can cause bugs as it is not treated as a singleton
 
   _onLoad = (event: CustomEvent) => {
     if (event.detail.status === 'loading') {
