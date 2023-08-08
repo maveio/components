@@ -6,6 +6,7 @@ import Hls from 'hls.js';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
+import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Embed } from '../embed/api';
@@ -22,12 +23,13 @@ export class Player extends LitElement {
   @property() color?: string;
   @property() opacity?: string;
   @property() loop?: boolean;
+  @property() theme = 'mave-theme-main';
 
   private _poster?: string;
   @property()
   get poster(): string {
     if (this._poster && this._poster == 'custom') {
-      return `${this.embedController.cdnRoot}/thumbnail.jpg`;
+      return `${this.embedController.embedUrl}/thumbnail.jpg`;
     }
 
     if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
@@ -38,7 +40,7 @@ export class Player extends LitElement {
       return this._poster;
     }
 
-    return `${this.embedController.cdnRoot}/poster.webp`;
+    return `${this.embedController.embedUrl}/poster.webp`;
   }
   set poster(value: string | null) {
     if (value) {
@@ -120,6 +122,7 @@ export class Player extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    this.embedController.theme = this.theme;
     this.embedController.embed = this.embed;
   }
 
@@ -275,7 +278,7 @@ export class Player extends LitElement {
   }
 
   get fullSourcePath() {
-    return `${this.embedController.cdnRoot}/playlist.m3u8?quality=${this.highestHlsRendition.size}`;
+    return `${this.embedController.embedUrl}/playlist.m3u8?quality=${this.highestHlsRendition.size}`;
   }
 
   get highestHlsRendition() {
@@ -314,7 +317,7 @@ export class Player extends LitElement {
       label="thumbnails"
       default
       kind="metadata"
-      src=${`${this.embedController.cdnRoot}/storyboard.vtt`}
+      src=${`${this.embedController.embedUrl}/storyboard.vtt`}
     />`;
   }
 
@@ -329,8 +332,7 @@ export class Player extends LitElement {
             if (!this._embed) this._embed = data as Embed;
             if (!data) return this.renderPending();
 
-            return html`
-              <mave-theme-main style=${this.styles}>
+            return staticHtml`<${unsafeStatic(this.theme)}>
                 <video
                   @click=${this.requestPlay}
                   playsinline
@@ -342,8 +344,7 @@ export class Player extends LitElement {
                 >
                   ${this._subtitles} ${this._storyboard}
                 </video>
-              </mave-theme-main>
-            `;
+            </${unsafeStatic(this.theme)}>`;
           },
         })}
       </slot>
