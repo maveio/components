@@ -16,7 +16,7 @@ export class Clip extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string {
-    return `${this.embedController.cdnRoot}/poster.webp`;
+    return `${this.embedController.embedUrl}/poster.webp`;
   }
   set poster(value: string | null) {
     if (value) {
@@ -33,7 +33,7 @@ export class Clip extends LitElement {
       return this._source;
     }
 
-    return `${this.embedController.cdnRoot}/${this.highestMP4Rendition.codec}_${this.highestMP4Rendition.size}.${this.highestMP4Rendition.container}`;
+    return `${this.embedController.embedUrl}/${this.highestMP4Rendition.codec}_${this.highestMP4Rendition.size}.${this.highestMP4Rendition.container}`;
   }
   set source(value: string | null) {
     if (value) {
@@ -44,7 +44,7 @@ export class Clip extends LitElement {
   }
 
   get deterministic_source(): string {
-    return `${this.embedController.cdnRoot}/h264_fhd.mp4`;
+    return `${this.embedController.embedUrl}/h264_fhd.mp4`;
   }
 
   private _videoElement?: HTMLMediaElement;

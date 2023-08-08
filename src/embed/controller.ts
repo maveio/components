@@ -13,6 +13,7 @@ export class EmbedController {
   private task: Task;
   private type: EmbedType;
   private _embed: string;
+  private _theme: string;
   private _token: string;
 
   constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
@@ -34,10 +35,13 @@ export class EmbedController {
 
           const url =
             this.type == EmbedType.Embed
-              ? `${this.cdnRoot}/manifest.json`
+              ? `${this.embedUrl}/manifest.json`
               : `${API.baseUrl}/collection/${this.token}`;
 
           const response = await fetch(url);
+
+          if (this._theme) await import(`${this.cdnRoot}/themes/${this._theme}.js`);
+
           const data = await response.json();
           if (this.type == EmbedType.Embed) {
             return data as Partial<API.Embed>;
@@ -63,6 +67,16 @@ export class EmbedController {
     return this._embed;
   }
 
+  set theme(value: string) {
+    if (this._theme !== value && value != 'mave-theme-main') {
+      this._theme = value;
+    }
+  }
+
+  get theme() {
+    return this._theme;
+  }
+
   set token(value: string) {
     if (this._token != value) {
       this._token = value;
@@ -83,7 +97,11 @@ export class EmbedController {
   }
 
   get cdnRoot(): string {
-    return `https://space-${this.spaceId}.video-dns.com/${this.embedId}`;
+    return `https://space-${this.spaceId}.video-dns.com`;
+  }
+
+  get embedUrl(): string {
+    return `${this.cdnRoot}/${this.embedId}`;
   }
 
   render(renderFunctions: StatusRenderer<unknown>) {
