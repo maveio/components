@@ -1,4 +1,5 @@
-import '../themes/main';
+import 'media-chrome';
+import 'media-chrome/dist/experimental/media-captions-selectmenu.js';
 
 import { IntersectionController } from '@lit-labs/observers/intersection_controller.js';
 import { Metrics } from '@maveio/metrics';
@@ -11,6 +12,7 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
+import { ThemeLoader } from '../themes/loader';
 
 export class Player extends LitElement {
   @property() embed: string;
@@ -122,8 +124,11 @@ export class Player extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.embedController.theme = this.theme;
     this.embedController.embed = this.embed;
+    ThemeLoader.get(
+      this.theme,
+      `${this.embedController.cdnRoot}/themes/${this.constructor.name.toLowerCase()}`,
+    );
   }
 
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {
@@ -313,12 +318,11 @@ export class Player extends LitElement {
   }
 
   get _storyboard() {
-    return html` <track
+    return html`<track
       label="thumbnails"
       default
       kind="metadata"
-      src=${`${this.embedController.embedUrl}/storyboard.vtt`}
-    />`;
+      src=${`${this.embedController.embedUrl}/storyboard.vtt`}></track>`;
   }
 
   render() {
@@ -342,7 +346,8 @@ export class Player extends LitElement {
                   slot="media"
                   crossorigin="anonymous"
                 >
-                  ${this._subtitles} ${this._storyboard}
+                  ${this._storyboard}
+                  ${this._subtitles}
                 </video>
             </theme-${unsafeStatic(this.theme)}>`;
           },
