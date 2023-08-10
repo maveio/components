@@ -86,7 +86,7 @@ export class Pop extends LitElement {
       height: 2.75rem;
       transition-property: transform;
       transition-duration: 100ms;
-      transition-timing-function: ease-out:
+      transition-timing-function: ease-out;
     }
 
     .button-close:hover {

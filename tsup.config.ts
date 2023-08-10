@@ -13,6 +13,7 @@ export default defineConfig({
   entryPoints: ['src/index.ts', 'src/react.ts'],
   format: ['cjs', 'esm', 'iife'],
   splitting: true,
+  treeshake: isProduction,
   minify: isProduction,
   skipNodeModulesBundle: true,
   clean: true,
