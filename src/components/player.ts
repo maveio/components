@@ -23,7 +23,7 @@ export class Player extends LitElement {
   @property() color?: string;
   @property() opacity?: string;
   @property() loop?: boolean;
-  @property() theme = 'mave-theme-main';
+  @property() theme = 'default';
 
   private _poster?: string;
   @property()
@@ -69,7 +69,7 @@ export class Player extends LitElement {
 
     :host,
     media-controller,
-    mave-theme-main,
+    theme-default,
     video {
       width: 100%;
       max-height: 100vh;
@@ -332,7 +332,7 @@ export class Player extends LitElement {
             if (!this._embed) this._embed = data as Embed;
             if (!data) return this.renderPending();
 
-            return staticHtml`<${unsafeStatic(this.theme)}>
+            return staticHtml`<theme-${unsafeStatic(this.theme)}>
                 <video
                   @click=${this.requestPlay}
                   playsinline
@@ -344,7 +344,7 @@ export class Player extends LitElement {
                 >
                   ${this._subtitles} ${this._storyboard}
                 </video>
-            </${unsafeStatic(this.theme)}>`;
+            </theme-${unsafeStatic(this.theme)}>`;
           },
         })}
       </slot>
@@ -353,9 +353,9 @@ export class Player extends LitElement {
 
   renderPending() {
     return html`
-      <mave-theme-main style=${this.styles}>
+      <theme-default style=${this.styles}>
         <video slot="media" poster=${this.poster}></video>
-      </mave-theme-main>
+      </theme-default>
     `;
   }
 }
