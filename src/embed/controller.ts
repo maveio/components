@@ -1,5 +1,5 @@
 import { StatusRenderer, Task } from '@lit-labs/task';
-import { ReactiveControllerHost } from 'lit';
+import { css, html, LitElement, ReactiveControllerHost } from 'lit';
 
 import * as API from './api';
 
@@ -40,7 +40,14 @@ export class EmbedController {
 
           const response = await fetch(url);
 
-          if (this._theme) await import(`${this.cdnRoot}/themes/${this._theme}.js`);
+          if (this._theme) {
+            const { build } = await import(
+              `${this.cdnRoot}/themes/${host.constructor.name.toLowerCase()}/${
+                this._theme
+              }.js`
+            );
+            build(this._theme, LitElement, html, css);
+          }
 
           const data = await response.json();
           if (this.type == EmbedType.Embed) {
@@ -48,7 +55,8 @@ export class EmbedController {
           } else {
             return data as Partial<API.Collection>;
           }
-        } catch {
+        } catch (e) {
+          console.log(e);
           throw new Error(`Failed to fetch "${this.embed}"`);
         }
       },
@@ -68,7 +76,7 @@ export class EmbedController {
   }
 
   set theme(value: string) {
-    if (this._theme !== value && value != 'mave-theme-main') {
+    if (this._theme !== value && value != 'default') {
       this._theme = value;
     }
   }

@@ -13,7 +13,7 @@ import style from './main.css';
 
 type Breakpoints = { [propKey: string]: number };
 
-@customElement('mave-theme-main')
+@customElement('theme-default')
 export default class Main extends LitElement {
   @query('media-captions-listbox') captionList!: HTMLElement;
   @query('media-captions-button') captionButton!: MediaCaptionButton;
