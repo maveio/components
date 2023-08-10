@@ -5,20 +5,31 @@ export function build(name, LitElement, html, css) {
   class Theme extends LitElement {
     static styles = css`
       :host {
+        width: 100%;
+        height: 100%;
         display: flex;
-        aspect-ratio: var(--aspect-ratio, 16 / 9);
+        align-items: center;
+        overflow: hidden;
+        background: black;
       }
 
       ::slotted(video) {
+        display: flex;
         width: 100%;
-        aspect-ratio: 16/9;
-        display: block !important;
+        height: 100%;
+        object-fit: contain;
+        display: flex !important;
+        background: transparent;
+        transform-origin: center;
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1.0001)
+          scaleY(1.0001);
       }
 
       media-controller {
-        --media-font-family: 'Sofia';
+        display: flex;
+        --media-font-family: 'Sofia', system-ui, sans-serif;
         width: var(--width, 100%);
-        height: var(--height);
+        height: var(--height, 100%);
         aspect-ratio: var(--aspect-ratio, 16 / 9);
         margin: 0;
         padding: 0;
@@ -175,7 +186,6 @@ export function build(name, LitElement, html, css) {
         letter-spacing: 0.005rem;
         opacity: 0.9;
         font-size: 14px;
-        font-family: Sofia, sans-serif;
       }
 
       media-preview-time-display {
@@ -469,8 +479,8 @@ export function build(name, LitElement, html, css) {
                   stroke-linejoin="round"
                 >
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg
+                >-->
                 <svg
                   slot="medium"
                   xmlns="http://www.w3.org/2000/svg"
@@ -484,8 +494,8 @@ export function build(name, LitElement, html, css) {
                   stroke-linejoin="round"
                 >
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg
+                >-->
                 <svg
                   slot="high"
                   xmlns="http://www.w3.org/2000/svg"
@@ -549,6 +559,5 @@ export function build(name, LitElement, html, css) {
       `;
     }
   }
-
   customElements.define(`theme-${name}`, Theme);
 }

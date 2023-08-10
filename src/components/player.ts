@@ -165,11 +165,7 @@ export class Player extends LitElement {
         (rendition) => rendition.container == 'hls',
       );
 
-      if (
-        (containsHls || this._embed.video.src.endsWith('.m3u8')) &&
-        Hls.isSupported() &&
-        !this._videoElement.canPlayType('application/vnd.apple.mpegurl')
-      ) {
+      if ((containsHls || this._embed.video.src.endsWith('.m3u8')) && Hls.isSupported()) {
         if (containsHls) {
           this.hls.loadSource(this.fullSourcePath);
         } else {
@@ -336,7 +332,7 @@ export class Player extends LitElement {
             if (!this._embed) this._embed = data as Embed;
             if (!data) return this.renderPending();
 
-            return staticHtml`<theme-${unsafeStatic(this.theme)}>
+            return staticHtml`<theme-${unsafeStatic(this.theme)} style=${this.styles}>
                 <video
                   @click=${this.requestPlay}
                   playsinline
