@@ -1,5 +1,5 @@
 import { StatusRenderer, Task } from '@lit-labs/task';
-import { css, html, LitElement, ReactiveControllerHost } from 'lit';
+import { ReactiveControllerHost } from 'lit';
 
 import * as API from './api';
 
@@ -13,7 +13,6 @@ export class EmbedController {
   private task: Task;
   private type: EmbedType;
   private _embed: string;
-  private _theme: string;
   private _token: string;
 
   constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
@@ -39,16 +38,6 @@ export class EmbedController {
               : `${API.baseUrl}/collection/${this.token}`;
 
           const response = await fetch(url);
-
-          if (this._theme) {
-            const { build } = await import(
-              `${this.cdnRoot}/themes/${host.constructor.name.toLowerCase()}/${
-                this._theme
-              }.js`
-            );
-            build(this._theme, LitElement, html, css);
-          }
-
           const data = await response.json();
           if (this.type == EmbedType.Embed) {
             return data as Partial<API.Embed>;
@@ -73,16 +62,6 @@ export class EmbedController {
 
   get embed() {
     return this._embed;
-  }
-
-  set theme(value: string) {
-    if (this._theme !== value && value != 'default') {
-      this._theme = value;
-    }
-  }
-
-  get theme() {
-    return this._theme;
   }
 
   set token(value: string) {
