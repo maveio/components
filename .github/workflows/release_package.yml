@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           registry-url: https://registry.npmjs.org/
-          node-version: '14'
+          node-version: '18'
 
       # Install dependencies (required by Run tests step)
       #- name: Install dependencies
@@ -72,7 +72,7 @@ jobs:
 
       - name: Install dependencies
         run: yarn install
-        
+
       # Publish version to public repository
       - name: Publish
         run: yarn publish --verbose --access public --tag ${{ env.RELEASE_TAG }}
