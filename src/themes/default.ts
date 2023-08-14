@@ -21,8 +21,7 @@ export function build(name, LitElement, html, css) {
         display: flex !important;
         background: transparent;
         transform-origin: center;
-        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1.0001)
-          scaleY(1.0001);
+        transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1.005) scaleY(1.005);
       }
 
       media-controller {
@@ -200,12 +199,12 @@ export function build(name, LitElement, html, css) {
         display: var(--media-control-bar-display, flex);
         position: absolute;
         width: 100%;
-        height: 50px;
+        height: 50%;
         bottom: 0;
         pointer-events: none;
         background: var(
           --primary-color,
-          linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.5) 100%)
+          linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0.5) 100%)
         );
       }
 
