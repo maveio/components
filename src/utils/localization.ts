@@ -1,36 +1,17 @@
-import { configureLocalization, LocaleModule, localized, msg } from '@lit/localize';
+import { configureLocalization, localized, msg } from '@lit/localize';
+import { ReactiveControllerHost } from 'lit';
 export { localized, msg };
-
-import * as templates_de from '../generated/locales/de';
-import * as templates_en from '../generated/locales/en';
-import * as templates_fr from '../generated/locales/fr';
-import * as templates_nl from '../generated/locales/nl';
-
-const localizedTemplates = new Map([
-  ['de', templates_de as LocaleModule],
-  ['en', templates_en as LocaleModule],
-  ['fr', templates_fr as LocaleModule],
-  ['nl', templates_nl as LocaleModule],
-]);
 
 export const localization = configureLocalization({
   sourceLocale: 'default',
   targetLocales: ['en', 'nl', 'de', 'fr'],
-  loadLocale: async (locale) => {
-    const template = localizedTemplates.get(locale);
-    if (template) {
-      return template;
-    }
-    throw new Error(`Could not load locale data for "${locale}"`);
-  },
+  loadLocale: (locale) => import(`__ROOT_DIR__/generated/locales/${locale}.js`),
 });
-
-import { ReactiveControllerHost } from 'lit';
 
 export class LanguageController {
   private host: ReactiveControllerHost;
   private _locale: string;
-  loaded = true; // defaults to true for now, as it is being loaded statically, if not loading an element twice can cause bugs as it is not treated as a singleton
+  loaded = false;
 
   _onLoad = (event: CustomEvent) => {
     if (event.detail.status === 'loading') {

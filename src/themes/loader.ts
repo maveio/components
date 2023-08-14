@@ -1,7 +1,5 @@
 import { css, html, LitElement } from 'lit';
 
-import { build as defaultBuild } from './default.js';
-
 interface Theme {
   name: string;
 }
@@ -44,9 +42,8 @@ export class ThemeLoader {
         const { build } = await import(`${path}/${name}.js`);
         build(name, LitElement, html, css);
       } else {
-        // fix cdn routing first before enabling dynamic import from package
-        // const { build } = await import(`./themes/${name}.js`);
-        defaultBuild(name, LitElement, html, css);
+        const { build } = await import(`__ROOT_DIR__/themes/${name}.js`);
+        build(name, LitElement, html, css);
       }
     } catch (e) {
       console.log(e);

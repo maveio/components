@@ -125,10 +125,7 @@ export class Player extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.embedController.embed = this.embed;
-    ThemeLoader.get(
-      this.theme,
-      `${this.embedController.cdnRoot}/themes/${this.constructor.name.toLowerCase()}`,
-    );
+    ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
   }
 
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {

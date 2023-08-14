@@ -46,6 +46,7 @@ export default defineConfig({
       __MAVE_ENDPOINT__: isProduction
         ? 'https://mave.io/api/v1'
         : process.env.MAVE_ENDPOINT,
+      __ROOT_DIR__: isProduction ? './dist' : process.env.ROOT_DIR,
       __MAVE_SOCKET_ENDPOINT__: isProduction
         ? 'wss://app.mave.io/api/v1/socket'
         : process.env.MAVE_SOCKET_ENDPOINT,
