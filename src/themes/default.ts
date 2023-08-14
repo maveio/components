@@ -104,6 +104,10 @@ export function build(name, LitElement, html, css) {
         --media-icon-color: white;
       }
 
+      media-mute-button, media-fullscreen-button {
+        z-index: 20;
+      }
+
       media-mute-button.small-button svg {
         height: 28px;
       }
