@@ -4,7 +4,7 @@ interface Theme {
   name: string;
 }
 
-const defaults = ['default'];
+const defaults = ['default', 'synthwave', 'dolphin'];
 
 export class ThemeLoader {
   private static instance: ThemeLoader;
