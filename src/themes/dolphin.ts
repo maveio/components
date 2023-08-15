@@ -102,7 +102,16 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-button {
+        display: none;
         pointer-events: none;
+      }
+
+      media-captions-button[mediacaptionlist] {
+        display: flex;
+      }
+
+      media-captions-button[mediasubtitleslist] {
+        display: flex;
       }
 
       media-captions-button div {
