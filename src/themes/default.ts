@@ -53,7 +53,7 @@ export function build(name, LitElement, html, css) {
         --media-preview-thumbnail-max-width: 150px;
         --media-preview-thumbnail-max-height: 100px;
 
-        --media-option-hover-background: rgba(0, 0, 0, 0.1);
+        --media-option-hover-background: rgba(0, 0, 0, 0.15);
       }
 
       media-loading-indicator {
@@ -297,6 +297,8 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-selectmenu::part(listbox) {
+        transform: scale(0.95);
+        margin-bottom: -4px;
         margin-left: -24px;
       }
 
@@ -309,7 +311,10 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-button {
-        margin-right: -0.15rem;
+        margin-right: -2px;
+      }
+
+      media-captions-button svg {
       }
 
       media-captions-button.small-button {
@@ -322,6 +327,10 @@ export function build(name, LitElement, html, css) {
 
       media-captions-button[mediasubtitleslist].small-button {
         display: flex;
+      }
+
+      media-captions-button[mediasubtitleslist].small-button svg[slot='on'] {
+        --media-icon-color: white;
       }
 
       .mave-loader {
@@ -354,9 +363,8 @@ export function build(name, LitElement, html, css) {
           <slot name="poster" slot="poster"></slot>
           <div class="mave-gradient-bottom"></div>
           <div class="mave-loader">
-          <media-loading-indicator loading-delay="0"></media-loading-indicator>
+            <media-loading-indicator loading-delay="0"></media-loading-indicator>
           </div>
-
           <div slot="centered-chrome">
             <media-play-button>
               <svg
@@ -439,28 +447,11 @@ export function build(name, LitElement, html, css) {
             </media-time-range>
             <media-captions-selectmenu></media-captions-selectmenu>
             <media-captions-button disabled class="small-button">
-              <svg width="24px" height="24px" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="#000000"><path d="M7 12h10M7 8h6" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 20.29V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H7.961a2 2 0 00-1.561.75l-2.331 2.914A.6.6 0 013 20.29z" stroke="#000000" stroke-width="1.5"></path></svg>
-
-              <svg
-                slot="off"
-                width="24px"
-                height="24px"
-                viewBox="0 0 24 24"
-                stroke-width="0.9"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                color="#fff"
-              >
-                <path
-                  d="M1 15V9a6 6 0 016-6h10a6 6 0 016 6v6a6 6 0 01-6 6H7a6 6 0 01-6-6z"
-                  stroke="#fff"
-                  stroke-width="0.9"
-                ></path>
-                <path
-                  d="M10.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0A2.828 2.828 0 005.5 11.828v.344A2.828 2.828 0 008.328 15v0c.75 0 1.47-.298 2-.828L10.5 14M18.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0a2.828 2.828 0 00-2.828 2.828v.344A2.828 2.828 0 0016.328 15v0c.75 0 1.47-.298 2-.828L18.5 14"
-                  stroke="#fff"
-                  stroke-width="1"
-                ></path>
+              <svg slot="off" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.1" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <svg slot="on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 8.625a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM15.375 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zM7.5 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z" clip-rule="evenodd" />
               </svg>
             </media-captions-button>
             <div class="media-volume-wrapper">
@@ -474,7 +465,7 @@ export function build(name, LitElement, html, css) {
                   viewBox="0 0 24 24"
                   fill="currentColor"
                   stroke="currentColor"
-                  stroke-width="1.2"
+                  stroke-width="1.1"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
@@ -490,7 +481,7 @@ export function build(name, LitElement, html, css) {
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="1.2"
+                  stroke-width="1.1"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
@@ -505,7 +496,7 @@ export function build(name, LitElement, html, css) {
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="1.2"
+                  stroke-width="1.1"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
