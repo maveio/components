@@ -59,6 +59,12 @@ export function build(name, LitElement, html, css) {
         --media-icon-color: rgba(255, 255, 255, 1);
       }
 
+      media-control-bar media-loading-indicator {
+        position: absolute;
+        left: 5px;
+        top: 1px;
+      }
+
       media-controller[media-is-fullscreen] {
         aspect-ratio: auto;
       }
@@ -141,7 +147,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-controller[medialoading]:not([mediapaused]) media-play-button {
-        display: none;
+        opacity: 0;
       }
 
       media-fullscreen-button.small-button svg {
@@ -354,10 +360,10 @@ export function build(name, LitElement, html, css) {
                 <rect x="14" y="4" width="4" height="16"></rect>
               </svg>
             </media-play-button>
-            <media-loading-indicator loading-delay="100"></media-loading-indicator>
+            <media-loading-indicator loading-delay="0"></media-loading-indicator>
           </div>
           <media-control-bar>
-            <media-loading-indicator loading-delay="100"></media-loading-indicator>
+            <media-loading-indicator loading-delay="0"></media-loading-indicator>
             <media-play-button class="small-button">
               <svg
                 slot="play"
