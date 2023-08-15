@@ -50,7 +50,8 @@ export function build(name, LitElement, html, css) {
 
         --media-range-thumb-transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
 
-        --media-preview-time-margin: 0;
+        --media-preview-thumbnail-max-width: 150px;
+        --media-preview-thumbnail-max-height: 100px;
 
         --media-option-hover-background: rgba(0, 0, 0, 0.1);
       }
@@ -303,6 +304,10 @@ export function build(name, LitElement, html, css) {
         opacity: 0;
       }
 
+      media-captions-selectmenu::part(option) {
+        border-radius: 8px;
+      }
+
       media-captions-button {
         margin-right: -0.15rem;
       }
@@ -318,6 +323,28 @@ export function build(name, LitElement, html, css) {
       media-captions-button[mediasubtitleslist].small-button {
         display: flex;
       }
+
+      .mave-loader {
+        position: absolute;
+        display: flex;
+        opacity: 0;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 0 0 48px 0;
+        pointer-events: none;
+      }
+
+      .mave-loader media-loading-indicator {
+        width: 72px;
+        height: 72px;
+      }
+
+      .mave-loader media-loading-indicator svg {
+        width: 80px;
+        height: 80px;
+      }
     `;
 
     render() {
@@ -326,6 +353,9 @@ export function build(name, LitElement, html, css) {
           <slot name="media" slot="media"></slot>
           <slot name="poster" slot="poster"></slot>
           <div class="mave-gradient-bottom"></div>
+          <div class="mave-loader">
+          <media-loading-indicator loading-delay="0"></media-loading-indicator>
+          </div>
 
           <div slot="centered-chrome">
             <media-play-button>
@@ -409,30 +439,7 @@ export function build(name, LitElement, html, css) {
             </media-time-range>
             <media-captions-selectmenu></media-captions-selectmenu>
             <media-captions-button disabled class="small-button">
-              <svg
-                slot="on"
-                width="24px"
-                height="24px"
-                viewBox="0 0 24 24"
-                stroke-width="0.9"
-                fill="#fff"
-                xmlns="http://www.w3.org/2000/svg"
-                color="#fff"
-              >
-                <path
-                  d="M1 15V9a6 6 0 016-6h10a6 6 0 016 6v6a6 6 0 01-6 6H7a6 6 0 01-6-6z"
-                  stroke="#fff"
-                  fill="#fff"
-                  stroke-width="0.9"
-                ></path>
-                <path
-                  d="M10.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0A2.828 2.828 0 005.5 11.828v.344A2.828 2.828 0 008.328 15v0c.75 0 1.47-.298 2-.828L10.5 14M18.5 10l-.172-.172a2.828 2.828 0 00-2-.828v0a2.828 2.828 0 00-2.828 2.828v.344A2.828 2.828 0 0016.328 15v0c.75 0 1.47-.298 2-.828L18.5 14"
-                  stroke="#000"
-                  fill="#fff"
-                  stroke-width="0.9"
-                  stroke-linecap="round"
-                ></path>
-              </svg>
+              <svg width="24px" height="24px" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="#000000"><path d="M7 12h10M7 8h6" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 20.29V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H7.961a2 2 0 00-1.561.75l-2.331 2.914A.6.6 0 013 20.29z" stroke="#000000" stroke-width="1.5"></path></svg>
 
               <svg
                 slot="off"
