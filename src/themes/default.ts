@@ -21,7 +21,8 @@ export function build(name, LitElement, html, css) {
         display: flex !important;
         background: transparent;
         transform-origin: center;
-        transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1.005) scaleY(1.005);
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1.005)
+          scaleY(1.005);
       }
 
       media-controller {
@@ -110,7 +111,8 @@ export function build(name, LitElement, html, css) {
         --media-icon-color: white;
       }
 
-      media-mute-button, media-fullscreen-button {
+      media-mute-button,
+      media-fullscreen-button {
         z-index: 20;
       }
 
@@ -211,7 +213,12 @@ export function build(name, LitElement, html, css) {
         pointer-events: none;
         background: var(
           --primary-color,
-          linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0.5) 100%)
+          linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0.25) 60%,
+            rgba(0, 0, 0, 0.5) 100%
+          )
         );
       }
 
@@ -354,10 +361,43 @@ export function build(name, LitElement, html, css) {
         width: 80px;
         height: 80px;
       }
+
+      .subtitles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 100;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        pointer-events: none;
+        font-family: 'Inter', system-ui, sans-serif;
+      }
+
+      .subtitles > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 1);
+        height: 64px;
+        width: 70%;
+        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+        letter-spacing: 0.01em;
+        text-align: center;
+        margin-bottom: 34px;
+        font-weight: 500;
+        font-size: 20px;
+        opacity: 0;
+      }
     `;
 
     render() {
       return html`
+        <div class="subtitles">
+          <div id="subtitles_text">subtitles</div>
+        </div>
         <media-controller>
           <slot name="media" slot="media"></slot>
           <slot name="poster" slot="poster"></slot>
@@ -447,11 +487,31 @@ export function build(name, LitElement, html, css) {
             </media-time-range>
             <media-captions-selectmenu></media-captions-selectmenu>
             <media-captions-button disabled class="small-button">
-              <svg slot="off" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.1" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                slot="off"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.1"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              <svg slot="on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 8.625a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM15.375 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zM7.5 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z" clip-rule="evenodd" />
+              <svg
+                slot="on"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 8.625a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM15.375 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zM7.5 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </media-captions-button>
             <div class="media-volume-wrapper">
