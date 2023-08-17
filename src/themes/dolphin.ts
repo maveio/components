@@ -157,13 +157,13 @@ export function build(name, LitElement, html, css) {
 
       div[slot='centered-chrome'] media-play-button div {
         padding: 0;
-        width: 72px;
-        height: 72px;
+        width: 80px;
+        height: 80px;
       }
 
       div[slot='centered-chrome'] media-play-button svg {
-        width: 72px;
-        height: 72px;
+        width: 80px;
+        height: 80px;
       }
     `;
 
@@ -177,7 +177,7 @@ export function build(name, LitElement, html, css) {
                 <svg
                   width="24px"
                   height="24px"
-                  stroke-width="1.5"
+                  stroke-width="0"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                   xmlns="http://www.w3.org/2000/svg"
@@ -186,7 +186,7 @@ export function build(name, LitElement, html, css) {
                   <path
                     d="M6.906 4.537A.6.6 0 006 5.053v13.894a.6.6 0 00.906.516l11.723-6.947a.6.6 0 000-1.032L6.906 4.537z"
                     stroke="currentColor"
-                    stroke-width="1.5"
+                    stroke-width="0"
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   ></path>
