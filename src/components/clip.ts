@@ -12,11 +12,12 @@ export class Clip extends LitElement {
   @property() autoplay?: 'always' | 'off' | 'lazy';
   @property() loop?: boolean;
   @property() quality = 'fhd';
+  @property() token?: string;
 
   private _poster?: string;
   @property()
   get poster(): string {
-    return `${this.embedController.embedUrl}/poster.webp`;
+    return this.embedController.embedFile('poster.webp');
   }
   set poster(value: string | null) {
     if (value) {
@@ -33,7 +34,9 @@ export class Clip extends LitElement {
       return this._source;
     }
 
-    return `${this.embedController.embedUrl}/${this.highestMP4Rendition.codec}_${this.highestMP4Rendition.size}.${this.highestMP4Rendition.container}`;
+    return this.embedController.embedFile(
+      `${this.highestMP4Rendition.codec}_${this.highestMP4Rendition.size}.${this.highestMP4Rendition.container}`,
+    );
   }
   set source(value: string | null) {
     if (value) {
@@ -44,7 +47,7 @@ export class Clip extends LitElement {
   }
 
   get deterministic_source(): string {
-    return `${this.embedController.embedUrl}/h264_fhd.mp4`;
+    return this.embedController.embedFile('h264_fhd.mp4');
   }
 
   private _videoElement?: HTMLMediaElement;
@@ -71,12 +74,16 @@ export class Clip extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    if (this.token) this.embedController.token = this.token;
   }
 
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {
     super.requestUpdate(name, oldValue);
     if (name === 'embed') {
       this.embedController.embed = this.embed;
+    }
+    if (name === 'token' && this.token) {
+      this.embedController.token = this.token;
     }
   }
 

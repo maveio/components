@@ -26,12 +26,13 @@ export class Player extends LitElement {
   @property() opacity?: string;
   @property() loop?: boolean;
   @property() theme = 'default';
+  @property() token?: string;
 
   private _poster?: string;
   @property()
   get poster(): string {
     if (this._poster && this._poster == 'custom') {
-      return `${this.embedController.embedUrl}/thumbnail.jpg`;
+      return this.embedController.embedFile('thumbnail.jpg');
     }
 
     if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
@@ -42,7 +43,7 @@ export class Player extends LitElement {
       return this._poster;
     }
 
-    return `${this.embedController.embedUrl}/poster.webp`;
+    return this.embedController.embedFile('poster.webp');
   }
   set poster(value: string | null) {
     if (value) {
@@ -96,6 +97,7 @@ export class Player extends LitElement {
   private hls: Hls = new Hls({
     startLevel: 3,
     capLevelToPlayerSize: true,
+    xhrSetup: this.xhrHLSSetup.bind(this),
   });
 
   pop() {
@@ -125,6 +127,7 @@ export class Player extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.embedController.embed = this.embed;
+    if (this.token) this.embedController.token = this.token;
     ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
   }
 
@@ -133,6 +136,19 @@ export class Player extends LitElement {
     if (name === 'embed') {
       this.embedController.embed = this.embed;
     }
+    if (name === 'token' && this.token) {
+      this.embedController.token = this.token;
+    }
+  }
+
+  xhrHLSSetup(xhr: XMLHttpRequest, url: string) {
+    const newUrl = new URL(url);
+    if (this.token && !newUrl.searchParams.get('token')) {
+      const params = new URLSearchParams();
+      params.append('token', this.token);
+      newUrl.search = params.toString();
+    }
+    xhr.open('GET', newUrl.toString());
   }
 
   disconnectedCallback() {
@@ -163,21 +179,11 @@ export class Player extends LitElement {
       );
 
       if ((containsHls || this._embed.video.src.endsWith('.m3u8')) && Hls.isSupported()) {
-        if (containsHls) {
-          this.hls.loadSource(this.fullSourcePath);
-        } else {
-          this.hls.loadSource(this._embed.video.src);
-        }
-
+        this.hls.loadSource(this.hlsPath);
         this.hls.attachMedia(this._videoElement);
         this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
       } else {
-        if (containsHls) {
-          this._videoElement.src = this.fullSourcePath;
-        } else {
-          this._videoElement.src = this._embed.video.src;
-        }
-
+        this._videoElement.src = this.srcPath;
         this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
       }
 
@@ -275,8 +281,20 @@ export class Player extends LitElement {
     });
   }
 
-  get fullSourcePath() {
-    return `${this.embedController.embedUrl}/playlist.m3u8?quality=${this.highestHlsRendition.size}`;
+  get hlsPath() {
+    const params = new URLSearchParams();
+    params.append('quality', this.highestHlsRendition.size);
+    return this.embedController.embedFile('playlist.m3u8', params);
+  }
+
+  get srcPath() {
+    const url = new URL(this._embed.video.src);
+    if (this.token) {
+      const params = new URLSearchParams();
+      params.append('token', this.token);
+      url.search = params.toString();
+    }
+    return url.toString();
   }
 
   get highestHlsRendition() {
@@ -315,7 +333,7 @@ export class Player extends LitElement {
       label="thumbnails"
       default
       kind="metadata"
-      src=${`${this.embedController.embedUrl}/storyboard.vtt`}></track>`;
+      src=${this.embedController.embedFile('storyboard.vtt')}></track>`;
   }
 
   render() {

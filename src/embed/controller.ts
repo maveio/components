@@ -34,7 +34,7 @@ export class EmbedController {
 
           const url =
             this.type == EmbedType.Embed
-              ? `${this.embedUrl}/manifest.json`
+              ? this.embedFile('manifest.json')
               : `${API.baseUrl}/collection/${this.token}`;
 
           const response = await fetch(url);
@@ -87,8 +87,11 @@ export class EmbedController {
     return `https://space-${this.spaceId}.video-dns.com`;
   }
 
-  get embedUrl(): string {
-    return `${this.cdnRoot}/${this.embedId}`;
+  embedFile(file: string, params = new URLSearchParams()): string {
+    const url = new URL(`${this.cdnRoot}/${this.embedId}/${file}`);
+    if (this.token) params.append('token', this.token);
+    url.search = params.toString();
+    return url.toString();
   }
 
   render(renderFunctions: StatusRenderer<unknown>) {
