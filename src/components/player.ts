@@ -54,6 +54,8 @@ export class Player extends LitElement {
 
   @state() popped = false;
 
+  private _subtitlesText: HTMLElement;
+
   static styles = css`
     :host {
       display: block;
@@ -246,6 +248,30 @@ export class Player extends LitElement {
     this.loop = this._embed.settings.loop;
   }
 
+  cuechange(e: Event) {
+    const track = (e.target as HTMLTrackElement & { track: TextTrack }).track;
+    const cues = track.activeCues as TextTrackCueList;
+
+    if (track.mode != 'hidden') track.mode = 'hidden';
+
+    if (!this._subtitlesText) {
+      const subtitleText = this.shadowRoot
+        ?.querySelector(`theme-${this.theme}`)
+        ?.shadowRoot?.querySelector('#subtitles_text');
+      if (subtitleText) {
+        this._subtitlesText = subtitleText as HTMLElement;
+      }
+    }
+
+    if (cues.length) {
+      const cue = cues[0] as VTTCue;
+      this._subtitlesText.style.opacity = '1';
+      this._subtitlesText.innerHTML = cue.text;
+    } else {
+      this._subtitlesText.style.opacity = '0';
+    }
+  }
+
   get styles() {
     return styleMap({
       '--primary-color': `${this.color || this._embed?.settings.color}${
@@ -303,7 +329,7 @@ export class Player extends LitElement {
       return this._embed.subtitles.map((track) => {
         if (this.subtitles && this.subtitles.includes(track.language)) {
           return html`
-            <track label=${track.label} kind="subtitles" srclang=${track.language} src=${track.path}></track>
+            <track mode="hidden" @cuechange=${this.cuechange} label=${track.label} kind="subtitles" srclang=${track.language} src=${track.path}></track>
           `;
         }
       });
