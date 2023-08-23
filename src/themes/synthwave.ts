@@ -10,6 +10,7 @@ export function build(name, LitElement, html, css) {
         display: flex;
         align-items: center;
         overflow: hidden;
+        position: relative;
       }
 
       ::slotted(video) {
@@ -204,11 +205,7 @@ export function build(name, LitElement, html, css) {
         color: rgba(255,255,255,1);
         height: 64px;
         width: 70%;
-        text-shadow:
-          -1px -1px 0 #000,
-          1px -1px 0 #000,
-          -1px 1px 0 #000,
-          1px 1px 0 #000;
+        text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
         letter-spacing: 0.01em;
         text-align: center;
         margin-bottom: 34px;
