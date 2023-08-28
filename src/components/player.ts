@@ -375,7 +375,10 @@ export class Player extends LitElement {
           error: (error: unknown) =>
             html`<p>${error instanceof Error ? error.message : nothing}</p>`,
           complete: (data) => {
-            if (!this._embed) this._embed = data as Embed;
+            if (!this._embed) {
+              this._embed = data as Embed;
+              this.updateEmbed(this._embed);
+            }
             if (!data) return this.renderPending();
 
             return staticHtml`<theme-${unsafeStatic(this.theme)} style=${this.styles}>
