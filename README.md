@@ -11,6 +11,11 @@
 
 # components
 
+[![npm version](https://img.shields.io/npm/v/%40maveio%2Fcomponents?color=5850ec)](https://www.npmjs.com/package/@maveio/components) 
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/maveio/components/github-code-scanning%2Fcodeql?label=CodeQL&color=5850ec)](https://github.com/maveio/components/actions/workflows/github-code-scanning/codeql)
+[![Discord server](https://img.shields.io/badge/Discord-mave.io-5850ec)](https://discord.gg/SBCKwnwHkC)
+
+
 Components are pre-built rich UI components that help you build your own video experiences across desktop and mobile (web). There is no need to run external iframes these days. This library leverages the power of [webcomponents](https://developer.mozilla.org/en-US/docs/Web/API/Web_components), which makes it fast and has a small footprint. You can create a (free) account on [mave.io](https://mave.io).
 
 [Install](#install) •
