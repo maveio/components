@@ -184,6 +184,9 @@ export class Player extends LitElement {
         this.hls.loadSource(this.hlsPath);
         this.hls.attachMedia(this._videoElement);
         this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
+      } else if (this._videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        this._videoElement.src = this.hlsPath;
+        this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
       } else {
         this._videoElement.src = this.srcPath;
         this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
@@ -258,23 +261,25 @@ export class Player extends LitElement {
     const track = (e.target as HTMLTrackElement & { track: TextTrack }).track;
     const cues = track.activeCues as TextTrackCueList;
 
-    if (track.mode != 'hidden') track.mode = 'hidden';
+    if (!navigator.userAgent.includes('Mobi')) {
+      if (track.mode != 'hidden') track.mode = 'hidden';
 
-    if (!this._subtitlesText) {
-      const subtitleText = this.shadowRoot
-        ?.querySelector(`theme-${this.theme}`)
-        ?.shadowRoot?.querySelector('#subtitles_text');
-      if (subtitleText) {
-        this._subtitlesText = subtitleText as HTMLElement;
+      if (!this._subtitlesText) {
+        const subtitleText = this.shadowRoot
+          ?.querySelector(`theme-${this.theme}`)
+          ?.shadowRoot?.querySelector('#subtitles_text');
+        if (subtitleText) {
+          this._subtitlesText = subtitleText as HTMLElement;
+        }
       }
-    }
 
-    if (cues.length) {
-      const cue = cues[0] as VTTCue;
-      this._subtitlesText.style.opacity = '1';
-      this._subtitlesText.innerHTML = cue.text;
-    } else {
-      this._subtitlesText.style.opacity = '0';
+      if (cues.length) {
+        const cue = cues[0] as VTTCue;
+        this._subtitlesText.style.opacity = '1';
+        this._subtitlesText.innerHTML = cue.text;
+      } else {
+        this._subtitlesText.style.opacity = '0';
+      }
     }
   }
 
