@@ -209,7 +209,7 @@ export function build(name, LitElement, html, css) {
         display: var(--media-control-bar-display, flex);
         position: absolute;
         width: 100%;
-        height: 50%;
+        height: 50px;
         bottom: 0;
         pointer-events: none;
         background: var(
