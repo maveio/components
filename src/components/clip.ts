@@ -6,6 +6,7 @@ import { ref } from 'lit/directives/ref.js';
 
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
+import { videoEvents } from '../utils/video_events';
 
 export class Clip extends LitElement {
   @property() embed: string;
@@ -94,6 +95,16 @@ export class Clip extends LitElement {
     }
   }
 
+  set muted(value: boolean) {
+    if (this._videoElement) {
+      this._videoElement.muted = value;
+    }
+  }
+
+  get muted(): boolean {
+    return this._videoElement?.muted || false;
+  }
+
   play() {
     if (this._videoElement) {
       this._videoElement.play();
@@ -117,6 +128,18 @@ export class Clip extends LitElement {
 
     if (this._videoElement && this._embed && !this._metrics) {
       this._intersectionObserver.observe(this._videoElement);
+
+      videoEvents.forEach((event) => {
+        this._videoElement?.addEventListener(event, (e) => {
+          this.dispatchEvent(
+            new CustomEvent(event, {
+              detail: e,
+              bubbles: true,
+              composed: true,
+            }),
+          );
+        });
+      });
 
       const metadata = {
         component: 'clip',

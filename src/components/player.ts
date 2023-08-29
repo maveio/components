@@ -13,6 +13,7 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
+import { videoEvents } from '../utils/video_events';
 
 export class Player extends LitElement {
   @property() embed: string;
@@ -110,6 +111,16 @@ export class Player extends LitElement {
     this.popped = false;
   }
 
+  set muted(value: boolean) {
+    if (this._videoElement) {
+      this._videoElement.muted = value;
+    }
+  }
+
+  get muted(): boolean {
+    return this._videoElement?.muted || false;
+  }
+
   play() {
     if (this._videoElement) {
       this._videoElement.play();
@@ -164,6 +175,18 @@ export class Player extends LitElement {
     if (videoElement && this._embed.video.src) {
       this._videoElement = videoElement as HTMLMediaElement;
       this._intersectionObserver.observe(this._videoElement);
+
+      videoEvents.forEach((event) => {
+        this._videoElement?.addEventListener(event, (e) => {
+          this.dispatchEvent(
+            new CustomEvent(event, {
+              detail: e,
+              bubbles: true,
+              composed: true,
+            }),
+          );
+        });
+      });
 
       Metrics.config = {
         socketPath: '__MAVE_METRICS_SOCKET_ENDPOINT__',
