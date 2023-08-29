@@ -1,6 +1,6 @@
 {
   "name": "@maveio/components",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "description": "privacy friendly (🇪🇺), iframe-less, video UI elements for videos hosted on mave.io",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -11,10 +11,10 @@
   ],
   "scripts": {
     "ts-types": "tsc",
-    "build": "./node_modules/.bin/tsup",
-    "build:watch": "./node_modules/.bin/tsup --watch",
+    "build": "tsup",
+    "build:watch": "tsup --watch",
     "build:prod": "NODE_ENV=production npm run build",
-    "localize": "./node_modules/.bin/lit-localize extract && ./node_modules/.bin/lit-localize build",
+    "localize": "lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",
     "test": "jest",
     "test:watch": "jest --watchAll",
@@ -28,7 +28,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/maveio/components.git"
+    "url": "git+https://github.com/maveio/components.git"
   },
   "devDependencies": {
     "@lit/localize-tools": "^0.6.9",
@@ -51,7 +51,7 @@
     "typescript": "^4.9.5"
   },
   "author": "mave.io",
-  "license": "APGL-3.0",
+  "license": "AGPL-3.0-or-later",
   "compilerOptions": {
     "types": [
       "jest"
@@ -84,5 +84,8 @@
     "phoenix": "^1.7.1",
     "react": "^18.2.0",
     "tus-js-client": "^3.1.0"
+  },
+  "directories": {
+    "test": "tests"
   }
 }
