@@ -176,19 +176,18 @@ export class Player extends LitElement {
         space_id: this._embed.space_id,
       };
 
-      const containsHls = this._embed.video.renditions.some(
-        (rendition) => rendition.container == 'hls',
-      );
-
-      if ((containsHls || this._embed.video.src.endsWith('.m3u8')) && Hls.isSupported()) {
-        this.hls.loadSource(this.hlsPath);
+      if (Hls.isSupported() && this.#hlsPath) {
+        this.hls.loadSource(this.#hlsPath);
         this.hls.attachMedia(this._videoElement);
         this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
-      } else if (this._videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-        this._videoElement.src = this.hlsPath;
+      } else if (
+        this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
+        this.#hlsPath
+      ) {
+        this._videoElement.src = this.#hlsPath;
         this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
       } else {
-        this._videoElement.src = this.srcPath;
+        this._videoElement.src = this.#srcPath;
         this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
       }
 
@@ -283,6 +282,27 @@ export class Player extends LitElement {
     }
   }
 
+  highestRendition(type: 'hls' | 'mp4') {
+    const renditions = this._embed.video.renditions.filter(
+      (rendition) => rendition.container == type,
+    );
+
+    const sizes = ['sd', 'hd', 'fhd', 'qhd', 'uhd'];
+
+    if (!renditions || !renditions.length) return;
+
+    const rendition = renditions.reduce((highest, rendition) => {
+      const size = sizes.indexOf(rendition.size);
+      if (size > sizes.indexOf(highest.size)) {
+        return rendition;
+      } else {
+        return highest;
+      }
+    });
+
+    return rendition;
+  }
+
   get styles() {
     return styleMap({
       '--primary-color': `${this.color || this._embed?.settings.color}${
@@ -312,39 +332,22 @@ export class Player extends LitElement {
     });
   }
 
-  get hlsPath() {
-    const params = new URLSearchParams();
-    params.append('quality', this.highestHlsRendition.size);
-    return this.embedController.embedFile('playlist.m3u8', params);
-  }
-
-  get srcPath() {
-    const url = new URL(this._embed.video.src);
-    if (this.token) {
+  get #hlsPath() {
+    const highestRendition = this.highestRendition('hls');
+    if (highestRendition) {
       const params = new URLSearchParams();
-      params.append('token', this.token);
-      url.search = params.toString();
+      params.append('quality', highestRendition.size);
+      return this.embedController.embedFile('playlist.m3u8', params);
     }
-    return url.toString();
   }
 
-  get highestHlsRendition() {
-    const renditions = this._embed.video.renditions.filter(
-      (rendition) => rendition.container == 'hls',
-    );
+  get #srcPath() {
+    const highestRendition = this.highestRendition('mp4');
+    const src = highestRendition
+      ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
+      : this._embed.video.original;
 
-    const sizes = ['sd', 'hd', 'fhd', 'qhd', 'uhd'];
-
-    const highestRendition = renditions.reduce((highest, rendition) => {
-      const size = sizes.indexOf(rendition.size);
-      if (size > sizes.indexOf(highest.size)) {
-        return rendition;
-      } else {
-        return highest;
-      }
-    });
-
-    return highestRendition;
+    return src;
   }
 
   get _subtitles() {
