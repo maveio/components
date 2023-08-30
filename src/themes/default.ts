@@ -10,8 +10,7 @@ export function build(name, LitElement, html, css) {
         display: flex;
         align-items: center;
         overflow: hidden;
-        background: black;
-        position: relative;
+        background: transparent;
       }
 
       ::slotted(video) {
@@ -21,13 +20,11 @@ export function build(name, LitElement, html, css) {
         object-fit: contain;
         display: flex !important;
         background: transparent;
-        transform-origin: center;
-        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1.005)
-          scaleY(1.005);
       }
 
       media-controller {
         display: flex;
+        background: transparent;
         --media-font-family: 'Sofia', system-ui, sans-serif;
         width: var(--width, 100%);
         height: var(--height, 100%);

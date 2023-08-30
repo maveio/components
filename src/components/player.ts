@@ -5,7 +5,7 @@ import { IntersectionController } from '@lit-labs/observers/intersection_control
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html, LitElement, nothing } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
@@ -56,11 +56,14 @@ export class Player extends LitElement {
 
   @state() popped = false;
 
+  @query("slot[name='end-screen']") endScreenElement: HTMLElement;
+
   private _subtitlesText: HTMLElement;
 
   static styles = css`
     :host {
       display: block;
+      position: relative;
     }
 
     video::cue {
@@ -80,10 +83,20 @@ export class Player extends LitElement {
       width: 100%;
       max-height: 100vh;
     }
+
+    slot[name='end-screen'] {
+      display: none;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 99;
+      top: 0;
+      left: 0;
+    }
   `;
 
   private _intersectionObserver = new IntersectionController(this, {
-    callback: this.intersected.bind(this),
+    callback: this.#intersected.bind(this),
   });
 
   private embedController = new EmbedController(this);
@@ -100,7 +113,7 @@ export class Player extends LitElement {
   private hls: Hls = new Hls({
     startLevel: 3,
     capLevelToPlayerSize: true,
-    xhrSetup: this.xhrHLSSetup.bind(this),
+    xhrSetup: this.#xhrHLSSetup.bind(this),
   });
 
   pop() {
@@ -154,7 +167,7 @@ export class Player extends LitElement {
     }
   }
 
-  xhrHLSSetup(xhr: XMLHttpRequest, url: string) {
+  #xhrHLSSetup(xhr: XMLHttpRequest, url: string) {
     const newUrl = new URL(url);
     if (this.token && !newUrl.searchParams.get('token')) {
       const params = new URLSearchParams();
@@ -171,13 +184,15 @@ export class Player extends LitElement {
     }
   }
 
-  handleVideo(videoElement?: Element) {
+  #handleVideo(videoElement?: Element) {
     if (videoElement && this._embed.video.src) {
       this._videoElement = videoElement as HTMLMediaElement;
       this._intersectionObserver.observe(this._videoElement);
 
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
+          if (event == 'play') this.#videoPlayed();
+          if (event == 'ended') this.#videoEnded();
           this.dispatchEvent(
             new CustomEvent(event, {
               detail: e,
@@ -219,18 +234,34 @@ export class Player extends LitElement {
         this._queue = [];
       }
 
-      this.handleAutoplay();
+      this.#handleAutoplay();
     }
   }
 
-  intersected(entries: IntersectionObserverEntry[]) {
+  #intersected(entries: IntersectionObserverEntry[]) {
     for (const { isIntersecting } of entries) {
       this._intersected = isIntersecting;
-      this.handleAutoplay();
+      this.#handleAutoplay();
     }
   }
 
-  handleAutoplay() {
+  #videoPlayed() {
+    const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+    if (endScreen) {
+      this.endScreenElement.style.display = 'none';
+      endScreen.style.display = 'none';
+    }
+  }
+
+  #videoEnded() {
+    const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+    if (endScreen) {
+      this.endScreenElement.style.display = 'block';
+      endScreen.style.display = 'block';
+    }
+  }
+
+  #handleAutoplay() {
     if (this._embed && this.autoplay == 'always') {
       if (this._intersected) {
         if (this._videoElement?.paused) {
@@ -255,7 +286,7 @@ export class Player extends LitElement {
     }
   }
 
-  requestPlay() {
+  #requestPlay() {
     if (this._videoElement?.paused) {
       this._videoElement?.play();
     } else {
@@ -263,23 +294,28 @@ export class Player extends LitElement {
     }
   }
 
-  updateEmbed(embed: Embed) {
+  #updateEmbed(embed: Embed, shouldOverwrite = true) {
     this._embed = embed;
-    this.poster = this._embed.settings.poster;
-    this.color = this._embed.settings.color;
-    this.opacity = this._embed.settings.opacity
-      ? (this._embed.settings.opacity as unknown as string)
-      : undefined;
-    this.aspect_ratio = this._embed.settings.aspect_ratio;
-    this.width = this._embed.settings.width;
-    this.height = this._embed.settings.height;
-    this.autoplay =
-      this._embed.settings.autoplay == 'on_show' ? 'lazy' : this._embed.settings.autoplay;
-    this.controls = this._embed.settings.controls;
-    this.loop = this._embed.settings.loop;
+
+    if (shouldOverwrite) {
+      this.poster = this._embed.settings.poster;
+      this.color = this._embed.settings.color;
+      this.opacity = this._embed.settings.opacity
+        ? (this._embed.settings.opacity as unknown as string)
+        : undefined;
+      this.aspect_ratio = this._embed.settings.aspect_ratio;
+      this.width = this._embed.settings.width;
+      this.height = this._embed.settings.height;
+      this.autoplay =
+        this._embed.settings.autoplay == 'on_show'
+          ? 'lazy'
+          : this._embed.settings.autoplay;
+      this.controls = this._embed.settings.controls;
+      this.loop = this._embed.settings.loop;
+    }
   }
 
-  cuechange(e: Event) {
+  #cuechange(e: Event) {
     const track = (e.target as HTMLTrackElement & { track: TextTrack }).track;
     const cues = track.activeCues as TextTrackCueList;
 
@@ -305,7 +341,7 @@ export class Player extends LitElement {
     }
   }
 
-  highestRendition(type: 'hls' | 'mp4') {
+  #highestRendition(type: 'hls' | 'mp4') {
     const renditions = this._embed.video.renditions.filter(
       (rendition) => rendition.container == type,
     );
@@ -356,7 +392,7 @@ export class Player extends LitElement {
   }
 
   get #hlsPath() {
-    const highestRendition = this.highestRendition('hls');
+    const highestRendition = this.#highestRendition('hls');
     if (highestRendition) {
       const params = new URLSearchParams();
       params.append('quality', highestRendition.size);
@@ -365,7 +401,7 @@ export class Player extends LitElement {
   }
 
   get #srcPath() {
-    const highestRendition = this.highestRendition('mp4');
+    const highestRendition = this.#highestRendition('mp4');
     const src = highestRendition
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
       : this._embed.video.original;
@@ -373,19 +409,21 @@ export class Player extends LitElement {
     return src;
   }
 
-  get _subtitles() {
+  get #subtitles() {
     if (this._embed.subtitles.length > 0) {
       return this._embed.subtitles.map((track) => {
         if (this.subtitles && this.subtitles.includes(track.language)) {
           return html`
-            <track mode="hidden" @cuechange=${this.cuechange} label=${track.label} kind="subtitles" srclang=${track.language} src=${track.path}></track>
+            <track mode="hidden" @cuechange=${this.#cuechange} label=${
+            track.label
+          } kind="subtitles" srclang=${track.language} src=${track.path}></track>
           `;
         }
       });
     }
   }
 
-  get _storyboard() {
+  get #storyboard() {
     return html`<track
       label="thumbnails"
       default
@@ -397,41 +435,33 @@ export class Player extends LitElement {
     return html`
       <slot name="video">
         ${this.embedController.render({
-          pending: this.renderPending,
           error: (error: unknown) =>
             html`<p>${error instanceof Error ? error.message : nothing}</p>`,
           complete: (data) => {
             if (!this._embed) {
               this._embed = data as Embed;
-              this.updateEmbed(this._embed);
+              this.#updateEmbed(this._embed, false);
             }
-            if (!data) return this.renderPending();
+            if (!data) return;
 
             return staticHtml`<theme-${unsafeStatic(this.theme)} style=${this.styles}>
                 <video
-                  @click=${this.requestPlay}
+                  @click=${this.#requestPlay}
                   playsinline
                   ?loop=${this.loop || this._embed.settings.loop}
                   poster=${this.poster}
-                  ${ref(this.handleVideo)}
+                  ${ref(this.#handleVideo)}
                   slot="media"
                   crossorigin="anonymous"
                 >
-                  ${this._storyboard}
-                  ${this._subtitles}
+                  ${this.#storyboard}
+                  ${this.#subtitles}
                 </video>
             </theme-${unsafeStatic(this.theme)}>`;
           },
         })}
       </slot>
-    `;
-  }
-
-  renderPending() {
-    return html`
-      <theme-default style=${this.styles}>
-        <video slot="media" poster=${this.poster}></video>
-      </theme-default>
+      <slot name="end-screen"></slot>
     `;
   }
 }
