@@ -28,7 +28,7 @@ export function build(name, LitElement, html, css) {
         display: flex;
         width: 100%;
         height: 100%;
-        background: black;
+        background: transparent;
 
         user-select: none;
 
