@@ -116,7 +116,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       - name: Purge cache
-        uses: maveio/purge-list-cache@v1
+        uses: maveio/purge-list-cache@v1.0.0
         with:
           url: |
             https://cdn.jsdelivr.net/npm/@maveio/components/+esm
