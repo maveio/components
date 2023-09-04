@@ -126,10 +126,10 @@ jobs:
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/default.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/dolphin.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/synthwave.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/en.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/nl.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/de.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/fr.js
+            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/en.js
+            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/nl.js
+            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/de.js
+            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/fr.js
 
       - name: "Purge cache esm"
         uses: indiesdev/curl@v1.1
@@ -191,7 +191,7 @@ jobs:
         uses: indiesdev/curl@v1.1
         id: en
         with:
-          url: https://purge.mave.io/npm/@maveio/components/dist/generated/en.js
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/locales/en.js
           method: "GET"
           timeout: 10000
 
@@ -199,7 +199,7 @@ jobs:
         uses: indiesdev/curl@v1.1
         id: nl
         with:
-          url: https://purge.mave.io/npm/@maveio/components/dist/generated/nl.js
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/locales/nl.js
           method: "GET"
           timeout: 10000
 
@@ -207,7 +207,7 @@ jobs:
         uses: indiesdev/curl@v1.1
         id: de
         with:
-          url: https://purge.mave.io/npm/@maveio/components/dist/generated/de.js
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/locales/de.js
           method: "GET"
           timeout: 10000
 
@@ -215,7 +215,7 @@ jobs:
         uses: indiesdev/curl@v1.1
         id: fr
         with:
-          url: https://purge.mave.io/npm/@maveio/components/dist/generated/fr.js
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/locales/fr.js
           method: "GET"
           timeout: 10000
 
