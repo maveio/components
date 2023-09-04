@@ -134,6 +134,10 @@ export class Player extends LitElement {
     return this._videoElement?.muted || false;
   }
 
+  get paused(): boolean {
+    return this._videoElement?.paused || true;
+  }
+
   play() {
     if (this._videoElement) {
       this._videoElement.play();

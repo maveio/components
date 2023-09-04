@@ -10,7 +10,7 @@ import { videoEvents } from '../utils/video_events';
 
 export class Clip extends LitElement {
   @property() embed: string;
-  @property() autoplay?: 'always' | 'off' | 'lazy';
+  @property() autoplay?: 'always' | 'off' | 'lazy' = 'lazy';
   @property() loop?: boolean;
   @property() quality = 'fhd';
   @property() token?: string;
@@ -105,6 +105,10 @@ export class Clip extends LitElement {
     return this._videoElement?.muted || false;
   }
 
+  get paused(): boolean {
+    return this._videoElement?.paused || true;
+  }
+
   play() {
     if (this._videoElement) {
       this._videoElement.play();
@@ -165,7 +169,7 @@ export class Clip extends LitElement {
     for (const { isIntersecting } of entries) {
       if (!isIntersecting || this.autoplay === 'always') return;
 
-      if (this.autoplay === 'lazy' || this.autoplay === undefined) {
+      if (this.autoplay === 'lazy') {
         if (this._videoElement?.paused) this._videoElement?.play();
       } else {
         if (!this._videoElement?.paused) this._videoElement?.pause();
@@ -243,12 +247,6 @@ export class Clip extends LitElement {
       `;
     } else {
       return html`
-        ${this.embedController.render({
-          complete: (data) => {
-            this._embed = data as Embed;
-            this.handleVideo();
-          },
-        })}
         <video
           @click=${this.requestPlay}
           preload="metadata"
@@ -257,7 +255,6 @@ export class Clip extends LitElement {
           ${ref(this.handleVideo)}
           ?autoplay=${this.autoplay === 'always'}
           ?loop=${this.loop || true}
-          poster=${this.poster}
         >
           <source src=${this.deterministic_source} type="video/mp4" />
         </video>
