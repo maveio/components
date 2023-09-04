@@ -116,7 +116,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       - name: Purge cache
-        uses: gacts/purge-jsdelivr-cache@v1
+        uses: maveio/purge-list-cache@v1
         with:
           url: |
             https://cdn.jsdelivr.net/npm/@maveio/components/+esm
@@ -130,5 +130,16 @@ jobs:
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/nl.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/de.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/fr.js
+            https://purge.mave.io/npm/@maveio/components/+esm
+            https://purge.mave.io/npm/@maveio/components/dist/react.js
+            https://purge.mave.io/npm/@maveio/components/dist/index.global.js
+            https://purge.mave.io/npm/@maveio/components/dist/react.global.js
+            https://purge.mave.io/npm/@maveio/components/dist/themes/default.js
+            https://purge.mave.io/npm/@maveio/components/dist/themes/dolphin.js
+            https://purge.mave.io/npm/@maveio/components/dist/themes/synthwave.js
+            https://purge.mave.io/npm/@maveio/components/dist/generated/en.js
+            https://purge.mave.io/npm/@maveio/components/dist/generated/nl.js
+            https://purge.mave.io/npm/@maveio/components/dist/generated/de.js
+            https://purge.mave.io/npm/@maveio/components/dist/generated/fr.js
 
 
