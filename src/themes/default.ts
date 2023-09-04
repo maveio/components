@@ -70,6 +70,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-control-bar {
+        z-index: 20;
         display: var(--media-control-bar-display, flex);
         position: relative;
         margin: 0;
@@ -364,7 +365,7 @@ export function build(name, LitElement, html, css) {
         position: absolute;
         top: 0;
         left: 0;
-        z-index: 100;
+        z-index: 10;
         width: 100%;
         height: 100%;
         display: flex;
