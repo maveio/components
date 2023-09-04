@@ -116,7 +116,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       - name: Purge cache
-        uses: maveio/purge-list-cache@v1.0.0
+        uses: gacts/purge-jsdelivr-cache@v1
         with:
           url: |
             https://cdn.jsdelivr.net/npm/@maveio/components/+esm
@@ -130,16 +130,81 @@ jobs:
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/nl.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/de.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/fr.js
-            https://purge.mave.io/npm/@maveio/components/+esm
-            https://purge.mave.io/npm/@maveio/components/dist/react.js
-            https://purge.mave.io/npm/@maveio/components/dist/index.global.js
-            https://purge.mave.io/npm/@maveio/components/dist/react.global.js
-            https://purge.mave.io/npm/@maveio/components/dist/themes/default.js
-            https://purge.mave.io/npm/@maveio/components/dist/themes/dolphin.js
-            https://purge.mave.io/npm/@maveio/components/dist/themes/synthwave.js
-            https://purge.mave.io/npm/@maveio/components/dist/generated/en.js
-            https://purge.mave.io/npm/@maveio/components/dist/generated/nl.js
-            https://purge.mave.io/npm/@maveio/components/dist/generated/de.js
-            https://purge.mave.io/npm/@maveio/components/dist/generated/fr.js
 
+      - name: "Purge cache esm"
+        uses: indiesdev/curl@v1.1
+        id: esm
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/+esm
+          method: "GET"
+
+      - name: "Purge cache react"
+        uses: indiesdev/curl@v1.1
+        id: react
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/react.js
+          method: "GET"
+
+      - name: "Purge cache index.global"
+        uses: indiesdev/curl@v1.1
+        id: indexglobal
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/index.global.js
+          method: "GET"
+
+      - name: "Purge cache react.global"
+        uses: indiesdev/curl@v1.1
+        id: reactglobal
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/react.global.js
+          method: "GET"
+
+      - name: "Purge cache themesdefault"
+        uses: indiesdev/curl@v1.1
+        id: themesdefault
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/themes/default.js
+          method: "GET"
+
+      - name: "Purge cache themesdolphin"
+        uses: indiesdev/curl@v1.1
+        id: themesdolphin
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/themes/dolphin.js
+          method: "GET"
+
+      - name: "Purge cache themessynthwave"
+        uses: indiesdev/curl@v1.1
+        id: themessynthwave
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/themes/synthwave.js
+          method: "GET"
+
+      - name: "Purge cache en"
+        uses: indiesdev/curl@v1.1
+        id: en
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/en.js
+          method: "GET"
+
+      - name: "Purge cache nl"
+        uses: indiesdev/curl@v1.1
+        id: nl
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/nl.js
+          method: "GET"
+
+      - name: "Purge cache de"
+        uses: indiesdev/curl@v1.1
+        id: de
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/de.js
+          method: "GET"
+
+      - name: "Purge cache fr"
+        uses: indiesdev/curl@v1.1
+        id: fr
+        with:
+          url: https://purge.mave.io/npm/@maveio/components/dist/generated/fr.js
+          method: "GET"
 
