@@ -137,6 +137,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/+esm
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache react"
         uses: indiesdev/curl@v1.1
@@ -144,6 +145,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/react.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache index.global"
         uses: indiesdev/curl@v1.1
@@ -151,6 +153,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/index.global.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache react.global"
         uses: indiesdev/curl@v1.1
@@ -158,6 +161,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/react.global.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache themesdefault"
         uses: indiesdev/curl@v1.1
@@ -165,6 +169,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/themes/default.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache themesdolphin"
         uses: indiesdev/curl@v1.1
@@ -172,6 +177,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/themes/dolphin.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache themessynthwave"
         uses: indiesdev/curl@v1.1
@@ -179,6 +185,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/themes/synthwave.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache en"
         uses: indiesdev/curl@v1.1
@@ -186,6 +193,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/generated/en.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache nl"
         uses: indiesdev/curl@v1.1
@@ -193,6 +201,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/generated/nl.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache de"
         uses: indiesdev/curl@v1.1
@@ -200,6 +209,7 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/generated/de.js
           method: "GET"
+          timeout: 10000
 
       - name: "Purge cache fr"
         uses: indiesdev/curl@v1.1
@@ -207,4 +217,5 @@ jobs:
         with:
           url: https://purge.mave.io/npm/@maveio/components/dist/generated/fr.js
           method: "GET"
+          timeout: 10000
 
