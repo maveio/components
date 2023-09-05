@@ -20,6 +20,8 @@ export function build(name, LitElement, html, css) {
         object-fit: contain;
         display: flex !important;
         background: transparent;
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1.005)
+          scaleY(1.005);
       }
 
       media-controller {
@@ -49,10 +51,22 @@ export function build(name, LitElement, html, css) {
 
         --media-range-thumb-transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
 
+        --media-preview-time-margin: -2px;
+
         --media-preview-thumbnail-max-width: 150px;
         --media-preview-thumbnail-max-height: 100px;
 
         --media-option-hover-background: rgba(0, 0, 0, 0.15);
+      }
+
+      media-controller[mediapaused] media-control-bar,
+      media-controller:hover media-control-bar {
+        opacity: 1;
+      }
+
+      media-controller[mediapaused] .mave-gradient-bottom,
+      media-controller:hover .mave-gradient-bottom {
+        opacity: 1;
       }
 
       media-loading-indicator {
@@ -75,6 +89,7 @@ export function build(name, LitElement, html, css) {
         position: relative;
         margin: 0;
         padding: 0 6px 2px 4px;
+        opacity: 0;
       }
 
       .small-button {
@@ -209,6 +224,7 @@ export function build(name, LitElement, html, css) {
         width: 100%;
         height: 50px;
         bottom: 0;
+        opacity: 0;
         pointer-events: none;
         background: var(
           --primary-color,
@@ -377,27 +393,43 @@ export function build(name, LitElement, html, css) {
 
       .subtitles > div {
         display: flex;
+        text-align: center;
         align-items: center;
         justify-content: center;
-        color: rgba(255, 255, 255, 1);
-        height: 64px;
-        width: 70%;
-        text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
-        letter-spacing: 0.01em;
-        text-align: center;
-        margin-bottom: 34px;
+        min-height: 22px;
+        margin-bottom: 20px;
         font-weight: 500;
-        font-size: 20px;
+        font-size: 19px;
         opacity: 0;
+        max-width: 80%;
+        color: white;
+        line-height: 1.5rem;
+        transition: margin 200ms ease-out;
+        text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
+        letter-spacing: -0.01em;
+      }
+
+      media-controller[mediapaused] .subtitles > div,
+      media-controller:hover .subtitles > div {
+        margin-bottom: 48px;
+      }
+
+      media-controller[mediaisfullscreen] .subtitles > div {
+        min-height: 44px;
+        padding: 14px 24px 12px 24px;
+        font-size: 44px;
+        line-height: 3.5rem;
+        max-width: 40%;
+        margin-bottom: 40px;
       }
     `;
 
     render() {
       return html`
-        <div class="subtitles">
-          <div id="subtitles_text">subtitles</div>
-        </div>
-        <media-controller>
+        <media-controller autohide="-1">
+          <div class="subtitles">
+            <div id="subtitles_text">subtitles</div>
+          </div>
           <slot name="media" slot="media"></slot>
           <slot name="poster" slot="poster"></slot>
           <div class="mave-gradient-bottom"></div>
