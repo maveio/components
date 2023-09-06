@@ -57,6 +57,9 @@ export class Player extends LitElement {
   @state() popped = false;
 
   @query("slot[name='end-screen']") endScreenElement: HTMLElement;
+  @query("slot[name='start-screen']") startScreenElement: HTMLElement;
+
+  private _startedPlaying = false;
 
   private _subtitlesText: HTMLElement;
 
@@ -84,14 +87,18 @@ export class Player extends LitElement {
       max-height: 100vh;
     }
 
+    slot[name='start-screen'],
     slot[name='end-screen'] {
-      display: none;
       position: absolute;
       width: 100%;
       height: 100%;
       z-index: 99;
       top: 0;
       left: 0;
+    }
+
+    slot[name='end-screen'] {
+      display: none;
     }
   `;
 
@@ -250,10 +257,21 @@ export class Player extends LitElement {
   }
 
   #videoPlayed() {
+    this._startedPlaying = true;
+
     const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
     if (endScreen) {
       this.endScreenElement.style.display = 'none';
       endScreen.style.display = 'none';
+    }
+
+    const startScreen = this.querySelector('[slot="start-screen"]') as HTMLElement;
+    if (startScreen) {
+      (
+        this.shadowRoot?.querySelector("slot[name='video']") as HTMLElement
+      ).removeAttribute('style');
+      this.startScreenElement.style.display = 'none';
+      startScreen.style.display = 'none';
     }
   }
 
@@ -436,8 +454,14 @@ export class Player extends LitElement {
   }
 
   render() {
+    const startScreen = this.querySelector('[slot="start-screen"]') as HTMLElement;
     return html`
-      <slot name="video">
+      <slot
+        name="video"
+        style=${styleMap({
+          display: startScreen && !this._startedPlaying ? 'none' : 'block',
+        })}
+      >
         ${this.embedController.render({
           error: (error: unknown) =>
             html`<p>${error instanceof Error ? error.message : nothing}</p>`,
@@ -465,6 +489,7 @@ export class Player extends LitElement {
           },
         })}
       </slot>
+      <slot name="start-screen"></slot>
       <slot name="end-screen"></slot>
     `;
   }
