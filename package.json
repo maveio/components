@@ -5,14 +5,27 @@
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "default": "./dist/react.cjs"
+    }
+  },
   "type": "module",
   "files": [
     "dist"
   ],
   "scripts": {
     "ts-types": "tsc",
-    "build": "tsup",
-    "build:watch": "tsup --watch",
+    "start": "tsup",
+    "dev": "tsup --watch",
     "build:prod": "NODE_ENV=production npm run build",
     "localize": "lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",
@@ -72,14 +85,14 @@
   },
   "homepage": "https://github.com/maveio/components#readme",
   "dependencies": {
-    "@lit-labs/observers": "^1.1.0",
-    "@lit-labs/react": "^1.1.1",
+    "@lit-labs/observers": "^2.0.0",
+    "@lit-labs/react": "^2.0.2",
     "@lit-labs/task": "^2.0.0",
     "@lit/localize": "^0.11.4",
     "@lottiefiles/lottie-player": "^1.7.1",
     "@maveio/metrics": "^0.0.6",
     "hls.js": "v1.4.10",
-    "lit": "^2.6.1",
+    "lit": "^2.8.0",
     "media-chrome": "^1.4.1",
     "phoenix": "^1.7.1",
     "react": "^18.2.0",

@@ -9,9 +9,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
   platform: 'browser',
-  entry: ['src/**/*.ts'],
-  entryPoints: ['src/index.ts', 'src/react.ts'],
-  format: ['cjs', 'esm', 'iife'],
+  entry: ['src/index.ts', 'src/react.ts', 'src/themes/*', 'src/generated/locales/*'],
+  format: ['esm', 'cjs', 'iife'],
   splitting: true,
   treeshake: isProduction,
   minify: isProduction,
@@ -46,7 +45,6 @@ export default defineConfig({
       __MAVE_ENDPOINT__: isProduction
         ? 'https://mave.io/api/v1'
         : process.env.MAVE_ENDPOINT,
-      __ROOT_DIR__: isProduction ? './dist' : './',
       __MAVE_SOCKET_ENDPOINT__: isProduction
         ? 'wss://app.mave.io/api/v1/socket'
         : process.env.MAVE_SOCKET_ENDPOINT,

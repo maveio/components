@@ -11,7 +11,7 @@
 
 # components
 
-[![npm version](https://img.shields.io/npm/v/%40maveio%2Fcomponents?color=5850ec)](https://www.npmjs.com/package/@maveio/components) 
+[![npm version](https://img.shields.io/npm/v/%40maveio%2Fcomponents?color=5850ec)](https://www.npmjs.com/package/@maveio/components)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/maveio/components/github-code-scanning%2Fcodeql?label=CodeQL&color=5850ec)](https://github.com/maveio/components/actions/workflows/github-code-scanning/codeql)
 [![Discord server](https://img.shields.io/badge/Discord-mave.io-5850ec)](https://discord.gg/SBCKwnwHkC)
 
@@ -25,10 +25,35 @@ Components are pre-built rich UI components that help you build your own video e
 
 ## Install
 
-Install the package within your project
+To use locally within your project:
 
 ```
 npm install @maveio/components
+```
+
+And either use the regular version
+```js
+// include in your script.js
+import { Player } from '@maveio/components'
+
+// and use the component in your html
+<mave-player embed="{embed id}"></mave-player>
+```
+
+or use our React specific version:
+
+```js
+import { Player } from '@maveio/components/react'
+
+function App() {
+  return (
+    <>
+      <Player embed="{embed id}"></Player>
+    </>
+  )
+}
+
+export default App
 ```
 
 or use the hosted version
@@ -49,7 +74,7 @@ Once you have uploaded your first video you can show your videos in different fo
 
 ![player](https://github.com/maveio/components/assets/238946/bbf3a4d2-7172-4bfb-8b24-0f863492a5e5)
 
-You can either change the settings through our interface or provide it as attributes. To learn which attributes you can use to change the appereance of your player, go to [our docs](https://docs.mave.io).
+You can either change the settings through our interface or provide it as attributes. To learn which attributes you can use to change the appearance of your player, go to [our docs](https://docs.mave.io).
 
 ### Clip
 ```html
@@ -58,7 +83,7 @@ You can either change the settings through our interface or provide it as attrib
 
 ![clip](https://github.com/maveio/components/assets/238946/a3fd8d44-eb67-401a-b3f9-ecccbc0c15f3)
 
-We often find ourselves using simple `.mp4` files, because we just want to show a simple video as interface element (just like an image). We provide just that, but using the power of mave (multiple renditions, codecs and analytics) without any UI on top to control the video. Useful as header, or on an ecommerce site to show products for instance.
+We often find ourselves using simple `.mp4` files, because we just want to show a simple video as interface element (just like an image). We provide just that, but using the power of mave (multiple renditions, codecs and analytics) without any UI on top to control the video. Useful as header, or on an e-commerce site to show products for instance.
 
 ### List
  ```html
