@@ -1,7 +1,7 @@
 import 'media-chrome';
 import 'media-chrome/dist/experimental/media-captions-selectmenu.js';
 
-import { IntersectionController } from '@lit-labs/observers/intersection_controller.js';
+import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html, LitElement, nothing } from 'lit';
@@ -16,18 +16,55 @@ import { ThemeLoader } from '../themes/loader';
 import { videoEvents } from '../utils/video_events';
 
 export class Player extends LitElement {
-  @property() embed: string;
+  private _embedId: string;
+  @property()
+  get embed(): string {
+    return this._embedId;
+  }
+  set embed(value: string) {
+    if (this._embedId != value) {
+      this._embedId = value;
+      this.requestUpdate('embed');
+      this.embedController.embed = this.embed;
+    }
+  }
+
+  private _token: string;
+  @property()
+  get token(): string {
+    return this._token;
+  }
+  set token(value: string) {
+    if (this._token != value) {
+      this._token = value;
+      this.requestUpdate('token');
+      this.embedController.token = this._token;
+    }
+  }
+
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
   @property() width?: string;
-  @property() subtitles?: [string];
+  @property() subtitles?: string | [string];
   @property() height?: string;
   @property() autoplay?: 'always' | 'lazy';
   @property() controls?: 'full' | 'big' | 'none';
   @property() color?: string;
   @property() opacity?: string;
   @property() loop?: boolean;
-  @property() theme = 'default';
-  @property() token?: string;
+
+  private _theme: string;
+  @property()
+  get theme(): string {
+    const theme = this._theme || 'default';
+    ThemeLoader.get(theme, `${this.embedController.cdnRoot}/themes/player`);
+    return theme;
+  }
+  set theme(value: string) {
+    if (this._theme != value) {
+      this._theme = value;
+      this.requestUpdate('theme');
+    }
+  }
 
   private _poster?: string;
   @property()
@@ -158,23 +195,6 @@ export class Player extends LitElement {
       this._videoElement.pause();
     } else {
       this._queue.push(() => this._videoElement?.pause());
-    }
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this.embedController.embed = this.embed;
-    if (this.token) this.embedController.token = this.token;
-    ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
-  }
-
-  requestUpdate(name?: PropertyKey, oldValue?: unknown) {
-    super.requestUpdate(name, oldValue);
-    if (name === 'embed') {
-      this.embedController.embed = this.embed;
-    }
-    if (name === 'token' && this.token) {
-      this.embedController.token = this.token;
     }
   }
 

@@ -42,7 +42,7 @@ export class ThemeLoader {
         const { build } = await import(`${path}/${name}.js`);
         build(name, LitElement, html, css);
       } else {
-        const { build } = await import(`__ROOT_DIR__/themes/${name}.js`);
+        const { build } = await import(`./themes/${name}.js`);
         build(name, LitElement, html, css);
       }
     } catch (e) {

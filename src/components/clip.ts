@@ -1,4 +1,4 @@
-import { IntersectionController } from '@lit-labs/observers/intersection_controller.js';
+import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -9,11 +9,22 @@ import { EmbedController } from '../embed/controller';
 import { videoEvents } from '../utils/video_events';
 
 export class Clip extends LitElement {
-  @property() embed: string;
+  private _embedId: string;
+  @property()
+  get embed(): string {
+    return this._embedId;
+  }
+  set embed(value: string) {
+    if (this._embedId != value) {
+      this._embedId = value;
+      this.requestUpdate('embed');
+      this.embedController.embed = this.embed;
+    }
+  }
+
   @property() autoplay?: 'always' | 'off' | 'lazy' = 'lazy';
   @property() loop?: boolean;
   @property() quality = 'fhd';
-  @property() token?: string;
 
   private _poster?: string;
   @property()
@@ -25,6 +36,19 @@ export class Clip extends LitElement {
       const oldValue = this._poster;
       this._poster = value;
       this.requestUpdate('poster', oldValue);
+    }
+  }
+
+  private _token: string;
+  @property()
+  get token(): string {
+    return this._token;
+  }
+  set token(value: string) {
+    if (this._token != value) {
+      this._token = value;
+      this.requestUpdate('token');
+      this.embedController.token = this._token;
     }
   }
 
@@ -72,21 +96,6 @@ export class Clip extends LitElement {
   private embedController = new EmbedController(this);
   private _metrics: Metrics;
   private _embed: Embed;
-
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.token) this.embedController.token = this.token;
-  }
-
-  requestUpdate(name?: PropertyKey, oldValue?: unknown) {
-    super.requestUpdate(name, oldValue);
-    if (name === 'embed') {
-      this.embedController.embed = this.embed;
-    }
-    if (name === 'token' && this.token) {
-      this.embedController.token = this.token;
-    }
-  }
 
   disconnectedCallback() {
     super.disconnectedCallback();
