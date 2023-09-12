@@ -63,6 +63,11 @@ export function build(name, LitElement, html, css) {
         user-select: none;
         transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
 
+        background: var(
+          --primary-color,
+          transparent
+        );
+
         --media-control-hover-background: transparent;
       }
 
@@ -392,7 +397,7 @@ export function build(name, LitElement, html, css) {
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15 0z"
+                    d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15"
                   />
                 </svg>
               </div>
@@ -407,7 +412,7 @@ export function build(name, LitElement, html, css) {
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15 0z"
+                    d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15"
                   />
                 </svg>
               </div>
