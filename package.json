@@ -24,14 +24,14 @@
   ],
   "scripts": {
     "ts-types": "tsc",
-    "start": "tsup",
+    "build": "tsup",
     "dev": "tsup --watch",
     "build:prod": "NODE_ENV=production npm run build",
     "localize": "lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",
     "test": "jest",
     "test:watch": "jest --watchAll",
-    "lint:fix": "eslint ./src --ext .ts,.tsx --quiet --fix --ignore-path ./.gitignore",
+    "lint:fix": "eslint ./src --ext .ts,.tsx --quiet --fix --ixgnore-path ./.gitignore",
     "lint:format": "prettier  --loglevel warn --write \"./**/*.{ts,tsx,css,md,json}\" ",
     "lint": "yarn lint:format && yarn lint:fix"
   },
