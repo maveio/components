@@ -69,6 +69,11 @@ export function build(name, LitElement, html, css) {
         opacity: 1;
       }
 
+      media-controller[mediapaused] div[slot='centered-chrome'],
+      media-controller:hover div[slot='centered-chrome'] {
+        opacity: 1;
+      }
+
       media-loading-indicator {
         --media-icon-color: rgba(255, 255, 255, 1);
       }
@@ -238,6 +243,7 @@ export function build(name, LitElement, html, css) {
       }
 
       div[slot='centered-chrome'] {
+        opacity: 0;
         display: var(--big-button-display, none);
         justify-content: center;
         align-items: center;
