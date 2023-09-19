@@ -216,7 +216,7 @@ export class Player extends LitElement {
   }
 
   #handleVideo(videoElement?: Element) {
-    if (videoElement && this._embed.video.src) {
+    if (videoElement && (this.#hlsPath || this.#srcPath)) {
       this._videoElement = videoElement as HTMLMediaElement;
       this._intersectionObserver.observe(this._videoElement);
 
