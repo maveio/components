@@ -5,6 +5,7 @@ export function build(name, LitElement, html, css) {
   class Theme extends LitElement {
     static styles = css`
       :host {
+        all: initial !important;
         width: 100%;
         height: 100%;
         display: flex;
