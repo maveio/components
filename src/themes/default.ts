@@ -59,18 +59,15 @@ export function build(name, LitElement, html, css) {
         --media-option-hover-background: rgba(0, 0, 0, 0.15);
       }
 
-      media-controller[mediapaused] media-control-bar,
-      media-controller:hover media-control-bar {
+      media-controller[mediapaused] media-control-bar {
         opacity: 1;
       }
 
-      media-controller[mediapaused] .mave-gradient-bottom,
-      media-controller:hover .mave-gradient-bottom {
+      media-controller[mediapaused] .mave-gradient-bottom {
         opacity: 1;
       }
 
-      media-controller[mediapaused] div[slot='centered-chrome'],
-      media-controller:hover div[slot='centered-chrome'] {
+      media-controller[mediapaused] div[slot='centered-chrome'] {
         opacity: 1;
       }
 
@@ -415,9 +412,8 @@ export function build(name, LitElement, html, css) {
         letter-spacing: -0.01em;
       }
 
-      media-controller[mediapaused] .subtitles > div,
-      media-controller:hover .subtitles > div {
-        margin-bottom: 48px;
+      media-controller[mediapaused] ~ .subtitles > div {
+        margin-bottom: 64px;
       }
 
       media-controller[mediaisfullscreen] .subtitles > div {
@@ -432,10 +428,7 @@ export function build(name, LitElement, html, css) {
 
     render() {
       return html`
-        <media-controller autohide="-1">
-          <div class="subtitles">
-            <div id="subtitles_text">subtitles</div>
-          </div>
+        <media-controller>
           <slot name="media" slot="media"></slot>
           <slot name="poster" slot="poster"></slot>
           <div class="mave-gradient-bottom"></div>
@@ -660,6 +653,9 @@ export function build(name, LitElement, html, css) {
             </media-fullscreen-button>
           </media-control-bar>
         </media-controller>
+        <div class="subtitles">
+          <div id="subtitles_text">subtitles</div>
+        </div>
       `;
     }
   }
