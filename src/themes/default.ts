@@ -91,7 +91,6 @@ export function build(name, LitElement, html, css) {
         position: relative;
         margin: 0;
         padding: 0 6px 2px 4px;
-        opacity: 0;
       }
 
       .small-button {
@@ -226,7 +225,6 @@ export function build(name, LitElement, html, css) {
         width: 100%;
         height: 50px;
         bottom: 0;
-        opacity: 0;
         pointer-events: none;
         background: var(
           --primary-color,
@@ -240,7 +238,6 @@ export function build(name, LitElement, html, css) {
       }
 
       div[slot='centered-chrome'] {
-        opacity: 0;
         display: var(--big-button-display, none);
         justify-content: center;
         align-items: center;
@@ -412,7 +409,8 @@ export function build(name, LitElement, html, css) {
         letter-spacing: -0.01em;
       }
 
-      media-controller[mediapaused] ~ .subtitles > div {
+      media-controller[mediapaused] ~ .subtitles > div,
+      media-controller:not([userinactive]) ~ .subtitles > div {
         margin-bottom: 64px;
       }
 
