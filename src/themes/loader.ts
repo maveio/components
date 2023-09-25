@@ -1,5 +1,7 @@
 import { css, html, LitElement } from 'lit';
 
+import { potentialDistFolder } from '../utils/origin';
+
 interface Theme {
   name: string;
 }
@@ -42,9 +44,7 @@ export class ThemeLoader {
         const { build } = await import(`${path}/${name}.js`);
         build(name, LitElement, html, css);
       } else {
-        // eslint-disable-next-line
-        // @ts-ignore-next-line
-        const { build } = await import(import.meta.resolve(`./themes/${name}.js`));
+        const { build } = await import(`./${potentialDistFolder()}themes/${name}.js`);
         build(name, LitElement, html, css);
       }
     } catch (e) {
@@ -53,4 +53,6 @@ export class ThemeLoader {
 
     return Promise.resolve(ThemeLoader.instance);
   }
+
+
 }
