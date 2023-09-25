@@ -16,6 +16,26 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js",
       "default": "./dist/react.cjs"
+    },
+    "./components/player": {
+      "types": "./dist/components/player.d.ts",
+      "import": "./dist/components/player.js",
+      "default": "./dist/components/player.cjs"
+    },
+    "./components/upload": {
+      "types": "./dist/components/upload.d.ts",
+      "import": "./dist/components/upload.js",
+      "default": "./dist/components/upload.cjs"
+    },
+    "./components/clip": {
+      "types": "./dist/components/clip.d.ts",
+      "import": "./dist/components/clip.js",
+      "default": "./dist/components/clip.cjs"
+    },
+    "./components/list": {
+      "types": "./dist/components/list.d.ts",
+      "import": "./dist/components/list.js",
+      "default": "./dist/components/list.cjs"
     }
   },
   "type": "module",
@@ -45,6 +65,7 @@
   },
   "devDependencies": {
     "@lit/localize-tools": "^0.6.9",
+    "@types/hls.js": "^1.0.0",
     "@types/jest": "^29.4.0",
     "@types/phoenix": "^1.5.5",
     "@types/react": "^18.0.31",
@@ -61,7 +82,7 @@
     "prettier": "^2.8.4",
     "ts-jest": "^29.0.5",
     "tsup": "^7.2.0",
-    "typescript": "^4.9.5"
+    "typescript": "^5.2"
   },
   "author": "mave.io",
   "license": "AGPL-3.0-or-later",

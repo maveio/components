@@ -243,3 +243,5 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
     });
   });
 };
+
+if (document) checkPop(document);

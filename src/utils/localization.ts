@@ -5,7 +5,9 @@ export { localized, msg };
 export const localization = configureLocalization({
   sourceLocale: 'default',
   targetLocales: ['en', 'nl', 'de', 'fr'],
-  loadLocale: (locale) => import(`./generated/locales/${locale}.js`),
+  // eslint-disable-next-line
+  // @ts-ignore-next-line
+  loadLocale: (locale) => import(import.meta.resolve(`./generated/locales/${locale}.js`)),
 });
 
 export class LanguageController {
