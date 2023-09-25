@@ -4,6 +4,6 @@ export { List } from './components/list.js';
 export { Upload } from './components/upload.js';
 export { Player };
 
+import './components/pop.js';
+
 import { Player } from './components/player.js';
-import { checkPop } from './components/pop.js';
-checkPop(document);

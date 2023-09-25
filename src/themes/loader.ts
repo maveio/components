@@ -42,7 +42,9 @@ export class ThemeLoader {
         const { build } = await import(`${path}/${name}.js`);
         build(name, LitElement, html, css);
       } else {
-        const { build } = await import(`./themes/${name}.js`);
+        // eslint-disable-next-line
+        // @ts-ignore-next-line
+        const { build } = await import(import.meta.resolve(`./themes/${name}.js`));
         build(name, LitElement, html, css);
       }
     } catch (e) {
