@@ -53,6 +53,4 @@ export class ThemeLoader {
 
     return Promise.resolve(ThemeLoader.instance);
   }
-
-
 }

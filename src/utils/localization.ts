@@ -6,7 +6,8 @@ import { potentialDistFolder } from '../utils/origin';
 export const localization = configureLocalization({
   sourceLocale: 'default',
   targetLocales: ['en', 'nl', 'de', 'fr'],
-  loadLocale: (locale) => import(`./${potentialDistFolder()}generated/locales/${locale}.js`),
+  loadLocale: (locale) =>
+    import(`./${potentialDistFolder()}generated/locales/${locale}.js`),
 });
 
 export class LanguageController {
