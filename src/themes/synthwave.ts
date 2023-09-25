@@ -12,6 +12,7 @@ export function build(name, LitElement, html, css) {
         align-items: center;
         overflow: hidden;
         position: relative;
+        direction: ltr !important;
       }
 
       ::slotted(video) {
@@ -22,7 +23,7 @@ export function build(name, LitElement, html, css) {
         display: flex !important;
         background: transparent;
         transform-origin: center;
-        transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1.005) scaleY(1.005);
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
       }
 
       media-controller {
