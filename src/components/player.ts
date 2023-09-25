@@ -56,13 +56,15 @@ export class Player extends LitElement {
   @property()
   get theme(): string {
     const theme = this._theme || 'default';
-    ThemeLoader.get(theme, `${this.embedController.cdnRoot}/themes/player`);
     return theme;
   }
   set theme(value: string) {
     if (this._theme != value) {
       this._theme = value;
       this.requestUpdate('theme');
+      if (this.embed) {
+        ThemeLoader.get(value, `${this.embedController.cdnRoot}/themes/player`);
+      }
     }
   }
 
@@ -208,6 +210,11 @@ export class Player extends LitElement {
     xhr.open('GET', newUrl.toString());
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this._metrics) {
@@ -336,7 +343,8 @@ export class Player extends LitElement {
     }
   }
 
-  #updateEmbed(embed: Embed, shouldOverwrite = true) {
+  // Used for updating the embed settings
+  updateEmbed(embed: Embed, shouldOverwrite = true) {
     this._embed = embed;
 
     if (shouldOverwrite) {
@@ -488,7 +496,7 @@ export class Player extends LitElement {
           complete: (data) => {
             if (!this._embed) {
               this._embed = data as Embed;
-              this.#updateEmbed(this._embed, false);
+              this.updateEmbed(this._embed, false);
             }
             if (!data) return;
 
