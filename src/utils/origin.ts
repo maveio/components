@@ -1,9 +1,8 @@
 export const potentialDistFolder = () => {
-  // if (!document) return '';
-  // const currentScript = document.currentScript as HTMLScriptElement;
-  // const host = new URL(currentScript.src).host;
-  // if (currentScript && ['cdn.jsdelivr.net', 'cdn.mave.io'].includes(host)) {
-  //   return 'dist/';
-  // }
+  if (!document) return '';
+  const host = new URL(import.meta.url).host;
+  if (['cdn.jsdelivr.net', 'cdn.mave.io'].includes(host)) {
+    return 'dist/';
+  }
   return '';
 };
