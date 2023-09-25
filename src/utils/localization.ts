@@ -1,13 +1,12 @@
 import { configureLocalization, localized, msg } from '@lit/localize';
 import { ReactiveControllerHost } from 'lit';
 export { localized, msg };
+import { potentialDistFolder } from '../utils/origin';
 
 export const localization = configureLocalization({
   sourceLocale: 'default',
   targetLocales: ['en', 'nl', 'de', 'fr'],
-  // eslint-disable-next-line
-  // @ts-ignore-next-line
-  loadLocale: (locale) => import(import.meta.resolve(`./generated/locales/${locale}.js`)),
+  loadLocale: (locale) => import(`./${potentialDistFolder()}generated/locales/${locale}.js`),
 });
 
 export class LanguageController {
