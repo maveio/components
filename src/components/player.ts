@@ -159,6 +159,7 @@ export class Player extends LitElement {
   private hls: Hls = new Hls({
     startLevel: 3,
     capLevelToPlayerSize: true,
+    maxBufferLength: 3,
     xhrSetup: this.#xhrHLSSetup.bind(this),
   });
 
