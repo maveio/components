@@ -16,26 +16,6 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js",
       "default": "./dist/react.cjs"
-    },
-    "./components/player": {
-      "types": "./dist/components/player.d.ts",
-      "import": "./dist/components/player.js",
-      "default": "./dist/components/player.cjs"
-    },
-    "./components/upload": {
-      "types": "./dist/components/upload.d.ts",
-      "import": "./dist/components/upload.js",
-      "default": "./dist/components/upload.cjs"
-    },
-    "./components/clip": {
-      "types": "./dist/components/clip.d.ts",
-      "import": "./dist/components/clip.js",
-      "default": "./dist/components/clip.cjs"
-    },
-    "./components/list": {
-      "types": "./dist/components/list.d.ts",
-      "import": "./dist/components/list.js",
-      "default": "./dist/components/list.cjs"
     }
   },
   "type": "module",
