@@ -18,6 +18,9 @@
       "default": "./dist/react.cjs"
     }
   },
+  "sideEffects": [
+    "dist/*"
+  ],
   "type": "module",
   "files": [
     "dist"
