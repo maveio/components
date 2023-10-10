@@ -83,7 +83,11 @@ export class Clip extends LitElement {
   });
 
   static styles = css`
-    :host,
+    :host {
+      display: block;
+      position: relative;
+    }
+
     video {
       all: initial;
       display: block;
