@@ -139,9 +139,10 @@ export class Clip extends LitElement {
       this._videoElement = videoElement as HTMLMediaElement;
     }
 
-    if (this._videoElement && this._embed && !this._metrics) {
-      this._intersectionObserver.observe(this._videoElement);
+    this._intersectionObserver.observe(this._videoElement);
 
+    // TODO: has no this._embed, because API is not called
+    if (this._videoElement && this._embed && !this._metrics) {
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
           this.dispatchEvent(
@@ -243,7 +244,6 @@ export class Clip extends LitElement {
                 ?autoplay=${this.autoplay === 'always'}
                 ?loop=${this.loop || true}
                 ${ref(this.handleVideo)}
-                poster=${this.poster}
               >
                 <source
                   src=${this.source}
