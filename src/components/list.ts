@@ -1,4 +1,4 @@
-import './img';
+import { Image } from './img';
 
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
