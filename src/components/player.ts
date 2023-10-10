@@ -160,6 +160,7 @@ export class Player extends LitElement {
     startLevel: 3,
     capLevelToPlayerSize: true,
     xhrSetup: this.#xhrHLSSetup.bind(this),
+    autoStartLoad: this.autoplay ? true : false,
   });
 
   pop() {
@@ -284,6 +285,10 @@ export class Player extends LitElement {
   }
 
   #videoPlayed() {
+    if (!this._startedPlaying && !this.hls.config.autoStartLoad) {
+      this.hls.startLoad();
+    }
+
     this._startedPlaying = true;
 
     const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
