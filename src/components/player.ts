@@ -45,6 +45,7 @@ export class Player extends LitElement {
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
   @property() width?: string;
   @property() subtitles?: string | [string];
+  @property() subtitled?: string;
   @property() height?: string;
   @property() autoplay?: 'always' | 'lazy';
   @property() controls?: 'full' | 'big' | 'none';
@@ -287,6 +288,13 @@ export class Player extends LitElement {
   #videoPlayed() {
     if (!this._startedPlaying && !this.hls.config.autoStartLoad) {
       this.hls.startLoad();
+    }
+
+    if (this.subtitled && !this._startedPlaying) {
+      const trackElement = this._videoElement?.querySelector(`track[srclang="${this.subtitled}"]`) as HTMLTrackElement;
+      if (trackElement) {
+        trackElement.track.mode = 'showing';
+      }
     }
 
     this._startedPlaying = true;
