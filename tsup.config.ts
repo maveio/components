@@ -10,6 +10,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 export default defineConfig({
   platform: 'browser',
   entry: ['src/**/*.ts'],
+  entryPoints: ['src/index.ts'],
   format: ['esm', 'cjs'],
   splitting: true,
   treeshake: isProduction,
