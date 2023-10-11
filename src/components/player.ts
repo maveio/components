@@ -530,6 +530,7 @@ export class Player extends LitElement {
       </slot>
       <slot name="start-screen"></slot>
       <slot name="end-screen"></slot>
+      <slot name="hover-screen"></slot>
     `;
   }
 }
