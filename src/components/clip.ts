@@ -227,52 +227,33 @@ export class Clip extends LitElement {
   }
 
   render() {
-    if (this.quality !== 'fhd') {
-      return html`
-        ${this.embedController.render({
-          // TODO: add loading state with loading player UI
-          pending: this.renderPending,
-          error: (error: unknown) =>
-            // TODO: add error state with error player UI
-            html`<p>${error instanceof Error ? error.message : nothing}</p>`,
-          complete: (data) => {
-            this._embed = data as Embed;
-            if (!data) return this.renderPending();
+    return html`
+      ${this.embedController.render({
+        // TODO: add loading state with loading player UI
+        pending: this.renderPending,
+        error: (error: unknown) =>
+          // TODO: add error state with error player UI
+          html`<p>${error instanceof Error ? error.message : nothing}</p>`,
+        complete: (data) => {
+          this._embed = data as Embed;
+          if (!data) return this.renderPending();
 
-            return html`
-              <video
-                @click=${this.requestPlay}
-                preload="metadata"
-                muted
-                playsinline
-                ?autoplay=${this.autoplay === 'always'}
-                ?loop=${this.loop || true}
-                ${ref(this.handleVideo)}
-              >
-                <source
-                  src=${this.source}
-                  type="video/${this.highestMP4Rendition.container}"
-                />
-              </video>
-            `;
-          },
-        })}
-      `;
-    } else {
-      return html`
-        <video
-          @click=${this.requestPlay}
-          preload="metadata"
-          muted
-          playsinline
-          ${ref(this.handleVideo)}
-          ?autoplay=${this.autoplay === 'always'}
-          ?loop=${this.loop || true}
-        >
-          <source src=${this.deterministic_source} type="video/mp4" />
-        </video>
-      `;
-    }
+          return html`
+            <video
+              @click=${this.requestPlay}
+              preload="metadata"
+              muted
+              playsinline
+              ${ref(this.handleVideo)}
+              ?autoplay=${this.autoplay === 'always'}
+              ?loop=${this.loop || true}
+            >
+            <source src=${this.deterministic_source} type="video/mp4" />
+          </video>
+          `;
+        },
+      })}
+    `;
   }
 
   renderPending() {
