@@ -78,8 +78,8 @@ export function build(name, LitElement, html, css) {
 
       media-control-bar media-loading-indicator {
         position: absolute;
-        left: 5px;
-        top: 1px;
+        left: 6px;
+        top: 2px;
       }
 
       media-controller[media-is-fullscreen] {
@@ -144,7 +144,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-loading-indicator svg {
-        height: 28px;
+        height: 30px;
       }
 
       media-controller[medialoading]:not([mediapaused]) div[slot='centered-chrome'] {
@@ -152,13 +152,17 @@ export function build(name, LitElement, html, css) {
       }
 
       div[slot='centered-chrome'] media-loading-indicator {
-        width: 72px;
-        height: 72px;
+        position: absolute;
+        pointer-events: none;
+        top: calc(50% - 40px);
+        width: 80px;
+        height: 80px;
+        margin-top: -10px;
       }
 
       div[slot='centered-chrome'] media-loading-indicator svg {
-        width: 80px;
-        height: 80px;
+        width: 96px;
+        height: 96px;
       }
 
       media-loading-indicator[medialoading]:not([mediapaused]) {
@@ -166,6 +170,10 @@ export function build(name, LitElement, html, css) {
       }
 
       media-controller[medialoading]:not([mediapaused]) media-play-button {
+        opacity: 0;
+      }
+
+      media-controller[medialoading]:not([mediahasplayed]) media-play-button {
         opacity: 0;
       }
 
