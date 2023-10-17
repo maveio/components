@@ -1,7 +1,7 @@
 import { configureLocalization, localized, msg } from '@lit/localize';
 import { ReactiveControllerHost } from 'lit';
-export { localized, msg };
 import { potentialDistFolder } from '../utils/origin';
+export { localized, msg };
 
 export const localization = configureLocalization({
   sourceLocale: 'default',
@@ -10,19 +10,25 @@ export const localization = configureLocalization({
     import(`./${potentialDistFolder()}generated/locales/${locale}.js`),
 });
 
+let loaded = false;
+
 export class LanguageController {
   private host: ReactiveControllerHost;
   private _locale: string;
-  loaded = false;
+
+  get loaded() {
+    return loaded;
+  }
 
   _onLoad = (event: CustomEvent) => {
     if (event.detail.status === 'loading') {
-      this.loaded = false;
+      loaded = false;
     } else if (event.detail.status === 'ready') {
-      this.loaded = true;
+      loaded = true;
     }
     this.host.requestUpdate();
   };
+
 
   constructor(host: ReactiveControllerHost) {
     this.host = host;
