@@ -5,12 +5,17 @@ import { property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { Channel } from 'phoenix';
 import * as tus from 'tus-js-client';
-
 import Data from '../embed/socket';
 import { LanguageController, localized, msg } from '../utils/localization';
 
 interface ErrorMessage {
   message: string;
+}
+
+interface EmbedChannel {
+  token: string;
+  channel: Channel;
+  upload_id?: string;
 }
 
 const fileTypes = [
@@ -36,7 +41,7 @@ export class Upload extends LitElement {
   @state() _progress: number;
   @state() _upload_id: string;
   @state() _completed = false;
-  private channel: Channel;
+  private embedChannel: EmbedChannel;
 
   private languageController = new LanguageController(this);
 
@@ -65,13 +70,19 @@ export class Upload extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+
     this.languageController.locale = this.locale || 'en';
-    this.channel = Data.connect(this.token);
-    this.channel.on('initiate', ({ upload_id }) => {
+
+    this.embedChannel = Data.connect(this.token);
+    if (this.embedChannel.upload_id) {
+      this._upload_id = this.embedChannel.upload_id;
+    }
+    this.embedChannel.channel.on('initiate', ({ upload_id }) => {
       this._upload_id = upload_id;
+      this.embedChannel.upload_id = upload_id;
     });
-    this.channel.on('completed', this.completed.bind(this));
-    this.channel.on('error', this.error.bind(this));
+    this.embedChannel.channel.on('completed', this.completed.bind(this));
+    this.embedChannel.channel.on('error', this.error.bind(this));
   }
 
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {
@@ -84,12 +95,13 @@ export class Upload extends LitElement {
   reset() {
     this._progress = 0;
     this._completed = false;
-    this.channel.push('reset', {});
+    this.embedChannel.channel.push('reset', {});
   }
 
   disconnectedCallback() {
+    // TODO: implement a disconnect method
+    // Data.disconnect(this.embedChannel);
     super.disconnectedCallback();
-    this.channel.leave();
   }
 
   handleDrop(event: DragEvent) {

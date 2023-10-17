@@ -3,6 +3,7 @@ import { Channel, Socket as Phoenix } from 'phoenix';
 interface EmbedChannel {
   token: string;
   channel: Channel;
+  upload_id?: string;
 }
 
 export default class Socket {
@@ -14,7 +15,7 @@ export default class Socket {
     return;
   }
 
-  public static connect(token: string): Channel {
+  public static connect(token: string): EmbedChannel {
     if (!Socket.instance) {
       Socket.instance = new Socket();
 
@@ -33,19 +34,24 @@ export default class Socket {
         Socket.instance.socket.connect();
       }
     }
-
     const embedChannel = Socket.instance.channels.find((c) => c.token === token);
     if (embedChannel) {
-      return embedChannel.channel;
+      return embedChannel;
     } else {
       const channel = Socket.instance.socket.channel(`embed:${token}`);
       channel.join();
 
-      Socket.instance.channels.push({
+
+      const embedChannel = {
         token,
-        channel,
+        channel
+      };
+
+      channel.on('initiate', ({ upload_id }) => {
+        Socket.instance.channels.push({...embedChannel, upload_id});
       });
-      return channel;
+
+      return embedChannel;
     }
   }
 }
