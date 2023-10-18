@@ -52,25 +52,6 @@ export class Clip extends LitElement {
     }
   }
 
-  private _source?: string;
-  @property()
-  get source(): string {
-    if (this._source) {
-      return this._source;
-    }
-
-    return this.embedController.embedFile(
-      `${this.highestMP4Rendition.codec}_${this.highestMP4Rendition.size}.${this.highestMP4Rendition.container}`,
-    );
-  }
-  set source(value: string | null) {
-    if (value) {
-      const oldValue = this._source;
-      this._source = value;
-      this.requestUpdate('source', oldValue);
-    }
-  }
-
   get deterministic_source(): string {
     return this.embedController.embedFile('h264_fhd.mp4');
   }
