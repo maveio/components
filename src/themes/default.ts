@@ -169,14 +169,6 @@ export function build(name, LitElement, html, css) {
         display: flex;
       }
 
-      media-controller[medialoading]:not([mediapaused]) media-play-button {
-        opacity: 0;
-      }
-
-      media-controller[medialoading]:not([mediahasplayed]) media-play-button {
-        opacity: 0;
-      }
-
       media-fullscreen-button.small-button svg {
         height: 24px;
       }
