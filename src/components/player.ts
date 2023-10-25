@@ -5,10 +5,10 @@ import { IntersectionController } from '@lit-labs/observers/intersection-control
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html, LitElement, nothing } from 'lit';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
-import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
@@ -177,6 +177,16 @@ export class Player extends LitElement {
   set muted(value: boolean) {
     if (this._videoElement) {
       this._videoElement.muted = value;
+    } else {
+      this._queue.push(() => this._videoElement!.muted = value);
+    }
+  }
+
+  set currentTime(value: number) {
+    if (this._videoElement) {
+      this._videoElement.currentTime = value;
+    } else {
+      this._queue.push(() => this._videoElement!.currentTime = value);
     }
   }
 
