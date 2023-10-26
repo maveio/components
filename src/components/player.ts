@@ -72,6 +72,8 @@ export class Player extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string {
+    if (!this.embed) return ''
+
     if (this._poster && this._poster == 'custom') {
       return this.embedController.embedFile('thumbnail.jpg');
     }
