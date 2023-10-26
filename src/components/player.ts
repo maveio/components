@@ -190,6 +190,10 @@ export class Player extends LitElement {
     }
   }
 
+  get currentTime(): number {
+    return this._videoElement?.currentTime || 0;
+  }
+
   get muted(): boolean {
     return this._videoElement?.muted || false;
   }
