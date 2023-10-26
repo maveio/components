@@ -88,9 +88,8 @@ export class Player extends LitElement {
   }
   set poster(value: string | null) {
     if (value) {
-      const oldValue = this._poster;
       this._poster = value;
-      this.requestUpdate('poster', oldValue);
+      this.requestUpdate('poster');
     }
   }
 
