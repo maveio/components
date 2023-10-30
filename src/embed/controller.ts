@@ -14,6 +14,7 @@ export class EmbedController {
   private type: EmbedType;
   private _embed: string;
   private _token: string;
+  private _version: number;
 
   constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
     this.host = host;
@@ -40,7 +41,9 @@ export class EmbedController {
           const response = await fetch(url);
           const data = await response.json();
           if (this.type == EmbedType.Embed) {
-            return data as Partial<API.Embed>;
+            const embed = data as Partial<API.Embed>;
+            this.version = embed.video?.version || 0;
+            return embed;
           } else {
             return data as Partial<API.Collection>;
           }
@@ -83,12 +86,26 @@ export class EmbedController {
     return this.embed.substring(5, this.embed.length);
   }
 
+  get version(): string {
+    if (this._version) {
+      return `/v${this._version}/`;
+    }
+    return '/'
+  }
+
+  set version(value: number) {
+    if (this._version != value) {
+      this._version = value;
+      this.host.requestUpdate();
+    }
+  }
+
   get cdnRoot(): string {
     return `https://space-${this.spaceId}.video-dns.com`;
   }
 
   embedFile(file: string, params = new URLSearchParams()): string {
-    const url = new URL(`${this.cdnRoot}/${this.embedId}/${file}`);
+    const url = new URL(`${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`);
     if (this.token) params.append('token', this.token);
     url.search = params.toString();
     return url.toString();

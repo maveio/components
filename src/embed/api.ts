@@ -21,6 +21,7 @@ export type Embed = {
   };
   video: {
     id: string;
+    version: number;
     aspect_ratio: string;
     filetype: string;
     original: string;
