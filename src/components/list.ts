@@ -1,5 +1,3 @@
-import { Image } from './img';
-
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -70,11 +68,19 @@ export class List extends LitElement {
                 return html`${item}`;
               }
 
-              if (item.nodeName === 'TEMPLATE') {
+              if (item.nodeName === 'TEMPLATE' || item.getAttribute('name') == 'mave-list-item') {
                 const result = this._collection.embeds.map((embed) => {
-                  const template = (item as HTMLTemplateElement).content.cloneNode(
-                    true,
-                  ) as DocumentFragment;
+
+                  let template;
+                  if (item.nodeName === 'TEMPLATE') {
+                    template = (item as HTMLTemplateElement).content.cloneNode(
+                      true,
+                    ) as DocumentFragment;
+                  } else {
+                    template = item.cloneNode(true) as DocumentFragment;
+                    item.remove();
+                  }
+
                   const title = template.querySelector('[slot="item-title"]');
                   if (title) {
                     title.textContent = embed.name;
