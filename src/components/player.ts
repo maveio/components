@@ -450,6 +450,7 @@ export class Player extends LitElement {
           : this.aspect_ratio || this._embed?.settings.aspect_ratio,
       '--width': this.width || this._embed?.settings.width,
       '--height': this.height || this._embed?.settings.height,
+      '--media-volume-display': this._embed?.video.audio === false ? 'none' : 'block',
       '--media-control-bar-display':
         this.controls == 'full' ||
         (this._embed?.settings.controls == 'full' &&

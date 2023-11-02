@@ -84,6 +84,10 @@ export function build(name, LitElement, html, css) {
         margin: 0 0 0 7px;
       }
 
+      media-mute-button {
+        display: var(--media-volume-display, block);
+      }
+
       media-play-button,
       media-fullscreen-button,
       media-mute-button,
