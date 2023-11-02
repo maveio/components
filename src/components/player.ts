@@ -53,6 +53,18 @@ export class Player extends LitElement {
   @property() opacity?: string;
   @property() loop?: boolean;
 
+  private _quality: string;
+  @property()
+  get quality(): string {
+    const quality = this._quality || 'fhd';
+    return quality;
+  }
+  set quality(value: string) {
+    if (this._quality != value) {
+      this._quality = value;
+    }
+  }
+
   private _theme: string;
   @property()
   get theme(): string {
@@ -159,7 +171,7 @@ export class Player extends LitElement {
   private _queue: { (): void }[] = [];
 
   private hls: Hls = new Hls({
-    startLevel: 3,
+    startLevel: -1,
     capLevelToPlayerSize: true,
     xhrSetup: this.#xhrHLSSetup.bind(this),
     maxBufferLength: 20,
@@ -231,6 +243,7 @@ export class Player extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    this.hls.on(Hls.Events.LEVEL_LOADED, this.#handleQualityChange.bind(this));
     ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
   }
 
@@ -238,6 +251,41 @@ export class Player extends LitElement {
     super.disconnectedCallback();
     if (this._metrics) {
       this._metrics.demonitor();
+    }
+  }
+
+  #handleQualityChange() {
+    const sizes = [{
+      name: 'sd',
+      width: 640,
+    }, {
+      name: 'hd',
+      width: 1280,
+    }, {
+      name: 'fhd',
+      width: 1920,
+    }, {
+      name: 'qhd',
+      width: 2560,
+    }, {
+      name: 'uhd',
+      width: 3840,
+    }];
+
+    const size = sizes.find((size) => size.name == this.quality);
+
+    if (size) {
+      const rendition = this.hls.levels.reduce((prev, curr) => {
+        const prevDiff = Math.abs(prev.width - size.width);
+        const currDiff = Math.abs(curr.width - size.width);
+
+        return prevDiff < currDiff ? prev : curr;
+      });
+
+      const index = this.hls.levels.indexOf(rendition);
+      if (index != this.hls.currentLevel) {
+        this.hls.currentLevel = index;
+      }
     }
   }
 
@@ -472,6 +520,7 @@ export class Player extends LitElement {
     const highestRendition = this.#highestRendition('hls');
     if (highestRendition) {
       const params = new URLSearchParams();
+
       params.append('quality', highestRendition.size);
       return this.embedController.embedFile('playlist.m3u8', params);
     }
