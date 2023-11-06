@@ -98,7 +98,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-mute-button {
-        display: var(--media-volume-display, block);
+        display: var(--media-volume-display, inline-flex);
       }
 
       media-play-button,
