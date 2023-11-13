@@ -490,33 +490,53 @@ export class Player extends LitElement {
   }
 
   get styles() {
-    return styleMap({
-      '--primary-color': `${this.color || this._embed?.settings.color}${
-        this.opacity || this._embed?.settings.opacity ? this._embed?.settings.opacity : ''
-      }`,
-      '--aspect-ratio':
-        this.aspect_ratio == 'auto' ||
-        (this._embed?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)
-          ? this._embed?.video.aspect_ratio
-          : this.aspect_ratio || this._embed?.settings.aspect_ratio,
-      '--width': this.width || this._embed?.settings.width,
-      '--height': this.height || this._embed?.settings.height,
-      '--media-volume-display': this._embed?.video.audio === false ? 'none' : 'inline-flex',
-      '--media-control-bar-display':
-        this.controls == 'full' ||
+    const style: { [key: string]: string } = {};
+
+    if (this.color || this._embed?.settings.color) {
+      style['--primary-color'] = `${this.color || this._embed?.settings.color}${this.opacity || this._embed?.settings.opacity ? this._embed?.settings.opacity : ''
+        }`;
+    }
+
+    if (this.aspect_ratio == 'auto' ||
+        (this._embed?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)) {
+      style['--aspect-ratio'] = this._embed?.video.aspect_ratio;
+    } else {
+      style['--aspect-ratio'] = this.aspect_ratio || this._embed?.settings.aspect_ratio;
+    }
+
+    if (this.width || this._embed?.settings.width) {
+      style['--width'] = this.width || this._embed?.settings.width;
+    }
+
+    if (this.height || this._embed?.settings.height) {
+      style['--height'] = this.height || this._embed?.settings.height;
+    }
+
+    if (this._embed?.video.audio === false) {
+      style['--media-volume-display'] = 'none';
+    } else {
+      style['--media-volume-display'] = 'inline-flex';
+    }
+
+    if (this.controls == 'full' ||
         (this._embed?.settings.controls == 'full' &&
           this.controls != 'big' &&
-          this.controls != 'none')
-          ? 'flex'
-          : 'none',
-      '--big-button-display':
-        this.controls == 'big' ||
+          this.controls != 'none')) {
+      style['--media-control-bar-display'] = 'flex';
+    } else {
+      style['--media-control-bar-display'] = 'none';
+    }
+
+    if (this.controls == 'big' ||
         (this._embed?.settings.controls == 'big' &&
           this.controls != 'full' &&
-          this.controls != 'none')
-          ? 'flex'
-          : 'none',
-    });
+          this.controls != 'none')) {
+      style['--big-button-display'] = 'flex';
+    } else {
+      style['--big-button-display'] = 'none';
+    }
+
+    return styleMap(style);
   }
 
   get #hlsPath() {
