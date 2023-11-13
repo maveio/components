@@ -322,16 +322,16 @@ export class Player extends LitElement {
       if (Hls.isSupported() && this.#hlsPath) {
         this.hls.loadSource(this.#hlsPath);
         this.hls.attachMedia(this._videoElement);
-        this._metrics = new Metrics(this.hls, this.embed, metadata).monitor();
+        this._metrics = new Metrics(this.hls, this.embed, metadata);
       } else if (
         this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
         this.#hlsPath
       ) {
         this._videoElement.src = this.#hlsPath;
-        this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
+        this._metrics = new Metrics(this._videoElement, this.embed, metadata);
       } else {
         this._videoElement.src = this.#srcPath;
-        this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
+        this._metrics = new Metrics(this._videoElement, this.embed, metadata);
       }
 
       if (this._queue.length) {
@@ -388,6 +388,7 @@ export class Player extends LitElement {
     if (this._embed && this.autoplay == 'always') {
       if (this._intersected) {
         if (this._videoElement?.paused) {
+          this._metrics.monitor();
           this._videoElement.muted = true;
           this._videoElement?.play();
         }
@@ -400,6 +401,7 @@ export class Player extends LitElement {
     ) {
       if (this._intersected) {
         if (this._videoElement?.paused) {
+          this._metrics.monitor();
           this._videoElement.muted = true;
           this._videoElement?.play();
         }
@@ -411,6 +413,7 @@ export class Player extends LitElement {
 
   #requestPlay() {
     if (this._videoElement?.paused) {
+      this._metrics.monitor();
       this._videoElement?.play();
     } else {
       this._videoElement?.pause();
