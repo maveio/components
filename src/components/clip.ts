@@ -60,7 +60,7 @@ export class Clip extends LitElement {
   private _queue: { (): void }[] = [];
 
   private _intersectionObserver = new IntersectionController(this, {
-    callback: this.intersected.bind(this),
+    callback: this.#intersected.bind(this),
   });
 
   static styles = css`
@@ -105,9 +105,9 @@ export class Clip extends LitElement {
 
   play() {
     if (this._videoElement) {
-      this._videoElement.play();
+      this.#handlePlay();
     } else {
-      this._queue.push(() => this._videoElement?.play());
+      this._queue.push(() => this.#handlePlay());
     }
   }
 
@@ -119,7 +119,12 @@ export class Clip extends LitElement {
     }
   }
 
-  handleVideo(videoElement?: Element) {
+  #handlePlay() {
+    this._metrics.monitor();
+    this._videoElement?.play();
+  }
+
+  #handleVideo(videoElement?: Element) {
     if (!this._videoElement) {
       this._videoElement = videoElement as HTMLMediaElement;
     }
@@ -151,7 +156,7 @@ export class Clip extends LitElement {
         apiKey: this._embed.metrics_key,
       };
 
-      this._metrics = new Metrics(this._videoElement, this.embed, metadata).monitor();
+      this._metrics = new Metrics(this._videoElement, this.embed, metadata);
     }
 
     if (this._queue.length) {
@@ -160,22 +165,24 @@ export class Clip extends LitElement {
     }
   }
 
-  intersected(entries: IntersectionObserverEntry[]) {
+  #intersected(entries: IntersectionObserverEntry[]) {
     for (const { isIntersecting } of entries) {
       if (!isIntersecting || this.autoplay === 'always') return;
 
       if (this.autoplay === 'lazy') {
-        if (this._videoElement?.paused) this._videoElement?.play();
+        if (this._videoElement?.paused) {
+          this.#handlePlay();
+        }
       } else {
         if (!this._videoElement?.paused) this._videoElement?.pause();
       }
     }
   }
 
-  requestPlay() {
+  #requestPlay() {
     if (this.autoplay === 'off') {
       if (this._videoElement?.paused) {
-        this._videoElement?.play();
+        this.#handlePlay();
       } else {
         this._videoElement?.pause();
       }
@@ -221,11 +228,11 @@ export class Clip extends LitElement {
 
           return html`
             <video
-              @click=${this.requestPlay}
+              @click=${this.#requestPlay}
               preload="metadata"
               muted
               playsinline
-              ${ref(this.handleVideo)}
+              ${ref(this.#handleVideo)}
               ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.loop || true}
             >
