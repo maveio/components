@@ -1,6 +1,6 @@
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
-import { css, html, LitElement, nothing } from 'lit';
+import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 
@@ -219,9 +219,6 @@ export class Clip extends LitElement {
       ${this.embedController.render({
         // TODO: add loading state with loading player UI
         pending: this.renderPending,
-        error: (error: unknown) =>
-          // TODO: add error state with error player UI
-          html`<p>${error instanceof Error ? error.message : nothing}</p>`,
         complete: (data) => {
           this._embed = data as Embed;
           if (!data) return this.renderPending();
