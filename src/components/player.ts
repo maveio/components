@@ -4,7 +4,7 @@ import 'media-chrome/dist/experimental/media-captions-selectmenu.js';
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
-import { css, html, LitElement, nothing } from 'lit';
+import { css, html, LitElement } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
@@ -590,8 +590,6 @@ export class Player extends LitElement {
         })}
       >
         ${this.embedController.render({
-          error: (error: unknown) =>
-            html`<p>${error instanceof Error ? error.message : nothing}</p>`,
           complete: (data) => {
             if (!this._embed) {
               this._embed = data as Embed;
