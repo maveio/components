@@ -47,7 +47,7 @@ export class Player extends LitElement {
   @property() subtitles?: string | [string];
   @property({ attribute: 'active-subtitle' }) active_subtitle?: string;
   @property() height?: string;
-  @property() autoplay?: 'always' | 'lazy';
+  @property() autoplay?: 'always' | 'lazy' | 'true';
   @property() controls?: 'full' | 'big' | 'none';
   @property() color?: string;
   @property() opacity?: string;
@@ -397,7 +397,7 @@ export class Player extends LitElement {
 
     if (
       this._embed &&
-      (this.autoplay == 'lazy' || this._embed.settings.autoplay == 'on_show')
+      ((this.autoplay === 'lazy' || this.autoplay === 'true') || this._embed.settings.autoplay == 'on_show')
     ) {
       if (this._intersected) {
         if (this._videoElement?.paused) {

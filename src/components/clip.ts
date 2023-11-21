@@ -1,7 +1,8 @@
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
 import { css, html, LitElement } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import { ref } from 'lit/directives/ref.js';
 
 import { Embed } from '../embed/api';
@@ -22,14 +23,14 @@ export class Clip extends LitElement {
     }
   }
 
-  @property() autoplay?: 'always' | 'off' | 'lazy' = 'lazy';
+  @property() autoplay?: 'always' | 'off' | 'true' | 'lazy' = 'lazy';
   @property() loop?: boolean;
   @property() quality = 'fhd';
 
   private _poster?: string;
   @property()
   get poster(): string {
-    return this.embedController.embedFile('poster.webp');
+    return this.embedController.embedFile('placeholder.jpg');
   }
   set poster(value: string | null) {
     if (value) {
@@ -58,6 +59,8 @@ export class Clip extends LitElement {
 
   private _videoElement?: HTMLMediaElement;
   private _queue: { (): void }[] = [];
+
+  @state() private _failedPlay = false;
 
   private _intersectionObserver = new IntersectionController(this, {
     callback: this.#intersected.bind(this),
@@ -121,7 +124,9 @@ export class Clip extends LitElement {
 
   #handlePlay() {
     this._metrics.monitor();
-    this._videoElement?.play();
+    this._videoElement?.play().catch(e => {
+      this._failedPlay = true;
+    });
   }
 
   #handleVideo(videoElement?: Element) {
@@ -169,7 +174,7 @@ export class Clip extends LitElement {
     for (const { isIntersecting } of entries) {
       if (!isIntersecting || this.autoplay === 'always') return;
 
-      if (this.autoplay === 'lazy') {
+      if (this.autoplay === 'lazy' || this.autoplay === 'true') {
         if (this._videoElement?.paused) {
           this.#handlePlay();
         }
@@ -180,7 +185,7 @@ export class Clip extends LitElement {
   }
 
   #requestPlay() {
-    if (this.autoplay === 'off') {
+    if (this.autoplay === 'off' || this._failedPlay) {
       if (this._videoElement?.paused) {
         this.#handlePlay();
       } else {
@@ -217,18 +222,18 @@ export class Clip extends LitElement {
   render() {
     return html`
       ${this.embedController.render({
-        // TODO: add loading state with loading player UI
-        pending: this.renderPending,
         complete: (data) => {
           this._embed = data as Embed;
-          if (!data) return this.renderPending();
+          if (!data) return;
 
           return html`
             <video
               @click=${this.#requestPlay}
               preload="metadata"
+              style=${ifDefined(this._failedPlay || this.autoplay === 'off' ? "cursor: pointer" : undefined)}
               muted
               playsinline
+              poster=${ifDefined(this._failedPlay ? this.poster : undefined)}
               ${ref(this.#handleVideo)}
               ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.loop || true}
@@ -239,10 +244,6 @@ export class Clip extends LitElement {
         },
       })}
     `;
-  }
-
-  renderPending() {
-    return html`<video muted poster=${this.poster} src="" preload="none" loop></video>`;
   }
 }
 
