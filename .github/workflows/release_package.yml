@@ -129,3 +129,11 @@ jobs:
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/nl.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/de.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/fr.js
+
+      - name: 'Purge cache mave.io cdn'
+        uses: indiesdev/curl@v1.1
+        id: mave-cdn
+        with:
+          url: https://cdn.purge.mave.io/mirror
+          method: 'GET'
+          timeout: 10000
