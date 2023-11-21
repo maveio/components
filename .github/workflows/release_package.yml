@@ -98,7 +98,7 @@ jobs:
           git commit -m "release ${{ env.NEW_VERSION }}"
 
       - name: Install dependencies
-        run: yarn install
+        run: npm install
 
       - name: Push to protected branch
         uses: CasperWA/push-protected@v2
@@ -110,7 +110,7 @@ jobs:
 
       # Publish version to public repository
       - name: Publish
-        run: yarn publish --verbose --access public --tag ${{ env.RELEASE_TAG }}
+        run: npm publish --access public --tag ${{ env.RELEASE_TAG }} --verbose
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
