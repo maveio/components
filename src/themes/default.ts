@@ -169,6 +169,26 @@ export function build(name, LitElement, html, css) {
         display: flex;
       }
 
+      media-controller:not([mediabuffered]):not([mediapaused]) media-play-button {
+        opacity: 0;
+      }
+
+      media-controller:not([mediacurrenttime]) media-play-button {
+        opacity: 0;
+      }
+
+      media-controller:not([mediaseekable]) media-play-button {
+        opacity: 0;
+      }
+
+      media-controller[medialoading]:not([mediapaused]) media-play-button {
+        opacity: 0;
+      }
+
+      media-controller[medialoading]:not([mediahasplayed]) media-play-button {
+        opacity: 0;
+      }
+
       media-fullscreen-button.small-button svg {
         height: 24px;
       }
@@ -290,6 +310,7 @@ export function build(name, LitElement, html, css) {
 
       media-volume-range {
         border-radius: 9999px;
+        padding: 0 8px 0 8px;
         background: rgba(0, 0, 0, 0.5);
         --media-range-track-width: 80px;
       }
@@ -321,9 +342,11 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-selectmenu::part(listbox) {
+        background: rgba(0, 0, 0, 0.5);
         transform: scale(0.95);
-        margin-bottom: -4px;
+        margin-bottom: 2px;
         margin-left: -24px;
+        border-radius: 8px;
       }
 
       media-captions-selectmenu::part(button) {
@@ -331,7 +354,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-selectmenu::part(option) {
-        border-radius: 8px;
+        border-radius: 0;
       }
 
       media-captions-button {
