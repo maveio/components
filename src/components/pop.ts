@@ -6,6 +6,7 @@ import { Player } from './player.js';
 export class Pop extends LitElement {
   @query('dialog') _dialog: HTMLDialogElement;
   @query('.content') _content: HTMLElement;
+  @query('.frame') _frame: HTMLElement;
   @query('.backdrop') _backdrop: HTMLElement;
 
   private _player?: Player;
@@ -38,9 +39,6 @@ export class Pop extends LitElement {
       transition-property: transform, opacity;
       transition-duration: 200ms;
       transition-timing-function: ease-out;
-      background-size: contain;
-      background-position: center center;
-      background-repeat: no-repeat;
     }
 
     .backdrop {
@@ -100,14 +98,40 @@ export class Pop extends LitElement {
       height: 2.75rem;
       transform: rotate(45deg);
     }
+
+    .wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      --frame-max-height: 100vh;
+      --frame-ratio-w: 16;
+      --frame-ratio-h: 9;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: var(--frame-max-height);
+    }
+
+    .frame {
+      --ratio: calc(var(--frame-ratio-h, 1) / var(--frame-ratio-w, 1) * 100%);
+      --frame-height: min(var(--ratio), var(--frame-max-height));
+      position: relative;
+      padding-bottom: var(--frame-height);
+      width: min(calc(var(--frame-height, 0) * (var(--frame-ratio-w) / var(--frame-ratio-h))), 100%);
+      height: 0;
+      overflow: hidden;
+      background-size: contain;
+      background-position: center center;
+      background-repeat: no-repeat;
+    }
   `;
 
   open(player: Player) {
     this._player = player;
 
     const tryToOpen = (resolve: (value: unknown) => void) => {
-      this._content.style.backgroundImage = `url(${player.poster})`;
-      this._content.appendChild(player);
+      this._frame.style.backgroundImage = `url(${player.poster})`;
+      this._frame.appendChild(player);
 
       setTimeout(() => {
         this._dialog.showModal();
@@ -151,7 +175,7 @@ export class Pop extends LitElement {
     this._backdrop.addEventListener(
       'transitionend',
       () => {
-        this._content.innerHTML = '';
+        this._frame.innerHTML = '';
 
         this.dispatchEvent(new Event('closed', { bubbles: true }));
       },
@@ -163,7 +187,11 @@ export class Pop extends LitElement {
     return html`
       <dialog>
         <div class="backdrop"></div>
-        <div class="content" @click=${this.possibleClose}></div>
+        <div class="content" @click=${this.possibleClose}>
+          <div class="wrapper">
+            <div class="frame"></div>
+          </div>
+        </div>
         <div class="button-close" @click=${this.close}>
           <svg
             width="24px"
