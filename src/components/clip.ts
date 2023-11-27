@@ -124,9 +124,13 @@ export class Clip extends LitElement {
 
   #handlePlay() {
     this._metrics.monitor();
-    this._videoElement?.play().catch(e => {
-      this._failedPlay = true;
-    });
+    if (this._videoElement) {
+      this._videoElement.muted = true;
+      this._videoElement.play().catch(e => {
+        this._failedPlay = true;
+      });
+    }
+
   }
 
   #handleVideo(videoElement?: Element) {
