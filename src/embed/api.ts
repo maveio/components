@@ -57,4 +57,22 @@ export type Collection = {
   embeds: Embed[];
 };
 
+export type Word = {
+  start: number;
+  end: number;
+  word: string;
+}
+
+export type Segment = {
+  text: string;
+  start: number;
+  end: number;
+  words: Word[];
+}
+
+export type Caption = {
+  text: string;
+  segments: Segment[];
+}
+
 export const baseUrl = '__MAVE_ENDPOINT__';
