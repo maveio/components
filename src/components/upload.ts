@@ -1,9 +1,4 @@
-if (window && window.customElements) {
-  if (!window.customElements.get('lottie-player')) {
-    import('@lottiefiles/lottie-player').then().catch();
-  }
-}
-
+import '@lottiefiles/lottie-player';
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
