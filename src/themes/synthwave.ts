@@ -19,6 +19,7 @@ export function build(name, LitElement, html, css) {
         display: flex;
         width: 100%;
         height: 100%;
+        aspect-ratio: var(--aspect-ratio, 16 / 9);
         object-fit: contain;
         display: flex !important;
         background: transparent;
@@ -31,6 +32,7 @@ export function build(name, LitElement, html, css) {
         width: 100%;
         height: 100%;
         background: transparent;
+        aspect-ratio: var(--aspect-ratio, 16 / 9);
 
         user-select: none;
 
