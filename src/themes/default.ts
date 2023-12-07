@@ -28,7 +28,7 @@ export function build(name, LitElement, html, css) {
       media-controller {
         display: flex;
         background: transparent;
-        --media-font-family: 'Sofia', system-ui, sans-serif;
+        --media-font-family: system-ui, sans-serif;
         width: var(--width, 100%);
         height: var(--height, 100%);
         aspect-ratio: var(--aspect-ratio, 16 / 9);
