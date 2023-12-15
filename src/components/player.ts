@@ -187,12 +187,19 @@ export class Player extends LitElement {
     this.popped = false;
   }
 
-  set muted(value: boolean) {
+  @property()
+  set muted(value: boolean | string) {
+    const shouldBeMuted = (value === '' || value == 'true' || value == true) ?? false;
+
     if (this._videoElement) {
-      this._videoElement.muted = value;
+      this._videoElement.muted = shouldBeMuted;
     } else {
-      this._queue.push(() => this._videoElement!.muted = value);
+      this._queue.push(() => this._videoElement!.muted = shouldBeMuted);
     }
+  }
+
+  get muted(): boolean {
+    return this._videoElement?.muted || false;
   }
 
   set currentTime(value: number) {
@@ -205,10 +212,6 @@ export class Player extends LitElement {
 
   get currentTime(): number {
     return this._videoElement?.currentTime || 0;
-  }
-
-  get muted(): boolean {
-    return this._videoElement?.muted || false;
   }
 
   get paused(): boolean {
