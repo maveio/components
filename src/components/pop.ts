@@ -1,6 +1,8 @@
 import { css, html, LitElement } from 'lit';
 import { query } from 'lit/decorators/query.js';
 
+import { property } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import { Player } from './player.js';
 
 export class Pop extends LitElement {
@@ -14,6 +16,15 @@ export class Pop extends LitElement {
   static styles = css`
     :host {
       all: initial;
+    }
+
+    :root {
+      --backdrop: black;
+    }
+
+    slot {
+      all: initial;
+      position: fixed;
     }
 
     dialog {
@@ -43,7 +54,7 @@ export class Pop extends LitElement {
 
     .backdrop {
       position: fixed;
-      background: black;
+      background: var(--backdrop);
       opacity: 0;
       top: 0;
       left: 0;
@@ -126,8 +137,28 @@ export class Pop extends LitElement {
     }
   `;
 
+  private _backdropColor: string;
+  @property()
+  get backdrop(): string {
+    const backdrop = this._backdropColor || 'black';
+    return backdrop;
+  }
+  set backdrop(value: string) {
+    if (this._backdropColor != value) {
+      this._backdropColor = value;
+    }
+  }
+
+  get styles() {
+    const style = {
+      '--backdrop': this.backdrop,
+    };
+    return styleMap(style);
+  }
+
   open(player: Player) {
     this._player = player;
+    this.style.display = 'block';
 
     const tryToOpen = (resolve: (value: unknown) => void) => {
       this._frame.style.backgroundImage = `url(${player.poster})`;
@@ -137,9 +168,8 @@ export class Pop extends LitElement {
         this._dialog.showModal();
       }, 25);
 
-      // Native dialog closing (using escape key)
       this._dialog.addEventListener(
-        'cancel',
+        'close',
         (e) => {
           e.preventDefault();
           this.close();
@@ -185,10 +215,11 @@ export class Pop extends LitElement {
 
   render() {
     return html`
-      <dialog>
+      <dialog style=${this.styles}>
         <div class="backdrop"></div>
         <div class="content" @click=${this.possibleClose}>
           <div class="wrapper">
+            <slot></slot>
             <div class="frame"></div>
           </div>
         </div>
@@ -228,35 +259,60 @@ declare global {
   }
 }
 
-const pop = new Pop();
+function getAllAttributesAsObject(element?: Element): Record<string, string> {
+  const attributesObject: Record<string, string> = {};
+
+  if (!element) return attributesObject;
+
+  for (let i = 0; i < element.attributes.length; i++) {
+      const attribute = element.attributes[i];
+      attributesObject[attribute.name] = attribute.value;
+  }
+  return attributesObject;
+}
+
 
 export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
-  if (!document || !document.body) return;
-  element.querySelectorAll('[x-mave-pop]').forEach((el) => {
-    if (!document.querySelector('mave-pop')) {
-      document.body.appendChild(pop);
+  function findOrCreatePop(embed: string): { pop: Pop, attributes?: Record<string, string> } {
+
+    if (document.querySelector(`mave-pop[embed=${embed}]`)) {
+      const attributes = getAllAttributesAsObject(document.querySelector(`mave-pop[embed=${embed}] > mave-player`)!);
+
+      return { pop: document.querySelector(`mave-pop[embed=${embed}]`)!, attributes };
     }
 
+    if (document.querySelector('mave-pop')) {
+      const attributes = getAllAttributesAsObject(document.querySelector('mave-pop:not([embed]) > mave-player')!);
+
+      return { pop: document.querySelector('mave-pop:not([embed])')!, attributes };
+    }
+
+    const pop = new Pop();
+    document.body.appendChild(pop);
+    return { pop };
+  }
+
+  if (!document || !document.body) return;
+  element.querySelectorAll('[x-mave-pop]').forEach((el) => {
+    // prepare each player to load
     const embed = el.getAttribute('x-mave-pop') || el.getAttribute('embed');
     if (!embed) return;
-    (el as HTMLElement).style.cursor = 'pointer';
 
+    const { pop, attributes } = findOrCreatePop(embed);
+
+    // preload player
     const player = new Player();
+    for (const key in attributes) {
+      player.setAttribute(key, attributes[key]);
+    }
     player.embed = embed;
 
-    // preload image
-    const img = new Image();
-    img.src = player.poster;
-
     el.addEventListener('click', (e: Event) => {
-      // how does it handle touch events?
-      const event = e as MouseEvent;
-      event.preventDefault();
-
+      (e as MouseEvent).preventDefault();
       const players = document.querySelectorAll('mave-player');
 
       const popped = Array.from(players).find(
-        (player) => player.popped && player.embed === embed,
+        (player) => player.popped,
       );
 
       if (!popped) {

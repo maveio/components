@@ -25,7 +25,6 @@ export class EmbedController {
       async () => {
         try {
           if (this.type == EmbedType.Embed && !this.embed) {
-            console.warn('No embed attr provided for mave-player');
             return;
           }
           if (this.type == EmbedType.Collection && !this.token) {
