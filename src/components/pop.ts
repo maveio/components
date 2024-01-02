@@ -16,10 +16,11 @@ export class Pop extends LitElement {
   static styles = css`
     :host {
       all: initial;
-    }
-
-    :root {
       --backdrop: black;
+      --frame-max-height: 100vh;
+      --frame-ratio-w: 16;
+      --frame-ratio-h: 9;
+      --backdrop-filter: blur(0);
     }
 
     slot {
@@ -55,6 +56,7 @@ export class Pop extends LitElement {
     .backdrop {
       position: fixed;
       background: var(--backdrop);
+      backdrop-filter: var(--backdrop-filter);
       opacity: 0;
       top: 0;
       left: 0;
@@ -114,9 +116,6 @@ export class Pop extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      --frame-max-height: 100vh;
-      --frame-ratio-w: 16;
-      --frame-ratio-h: 9;
       width: 100%;
       height: 100%;
       max-width: 100vw;
@@ -149,19 +148,38 @@ export class Pop extends LitElement {
     }
   }
 
+  private _backdropFilter: string;
+  @property({ attribute: 'backdrop-filter' })
+  get backdropFilter(): string {
+    const backdrop = this._backdropFilter;
+    return backdrop;
+  }
+  set backdropFilter(value: string) {
+    if (this._backdropFilter != value) {
+      this._backdropFilter = value;
+    }
+  }
+
   get styles() {
+    console.log(this.backdropFilter)
     const style = {
       '--backdrop': this.backdrop,
+      '--backdrop-filter': this.backdropFilter,
     };
     return styleMap(style);
   }
 
   open(player: Player) {
     this._player = player;
+    if (player.aspect_ratio) {
+      const [w, h] = player.aspect_ratio.split('/');
+      this.style.setProperty('--frame-ratio-w', w);
+      this.style.setProperty('--frame-ratio-h', h);
+    }
+
     this.style.display = 'block';
 
     const tryToOpen = (resolve: (value: unknown) => void) => {
-      this._frame.style.backgroundImage = `url(${player.poster})`;
       this._frame.appendChild(player);
 
       setTimeout(() => {
@@ -281,7 +299,7 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
       return { pop: document.querySelector(`mave-pop[embed=${embed}]`)!, attributes };
     }
 
-    if (document.querySelector('mave-pop')) {
+    if (document.querySelector('mave-pop:not([embed])')) {
       const attributes = getAllAttributesAsObject(document.querySelector('mave-pop:not([embed]) > mave-player')!);
 
       return { pop: document.querySelector('mave-pop:not([embed])')!, attributes };
