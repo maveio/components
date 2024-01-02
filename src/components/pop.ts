@@ -161,7 +161,6 @@ export class Pop extends LitElement {
   }
 
   get styles() {
-    console.log(this.backdropFilter)
     const style = {
       '--backdrop': this.backdrop,
       '--backdrop-filter': this.backdropFilter,
