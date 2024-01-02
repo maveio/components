@@ -113,6 +113,7 @@ export class Player extends LitElement {
   @query("slot[name='start-screen']") startScreenElement: HTMLElement;
 
   private _startedPlaying = false;
+  private _themeLoaded = false;
 
   private _subtitlesText: HTMLElement;
 
@@ -247,13 +248,20 @@ export class Player extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.hls.on(Hls.Events.LEVEL_LOADED, this.#handleQualityChange.bind(this));
-    ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
+    this.loadTheme();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this._metrics) {
       this._metrics.demonitor();
+    }
+  }
+
+  loadTheme() {
+    if (this.embed && !this._themeLoaded) {
+      ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
+      this._themeLoaded = true;
     }
   }
 
@@ -564,7 +572,7 @@ export class Player extends LitElement {
   get #subtitles() {
     if (this._embed.subtitles.length > 0) {
       return this._embed.subtitles.map((track) => {
-        if (this.subtitles && this.subtitles.includes(track.language)) {
+        if ((this.subtitles && this.subtitles.includes(track.language)) || (this.active_subtitle && this.active_subtitle == track.language) || this.subtitles == "all") {
           return html`
             <track mode="hidden" @cuechange=${this.#cuechange} label=${
             track.label
@@ -584,6 +592,7 @@ export class Player extends LitElement {
   }
 
   render() {
+    if (!this.embed) return;
     const startScreen = this.querySelector('[slot="start-screen"]') as HTMLElement;
     return html`
       <slot
