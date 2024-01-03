@@ -6,7 +6,7 @@ import { Caption } from '../embed/api';
 import { CaptionController } from '../embed/caption';
 import { Player } from './player';
 
-export class Transcript extends LitElement {
+export class Text extends LitElement {
   private _embedId: string;
   @property()
   get embed(): string {
@@ -143,13 +143,13 @@ export class Transcript extends LitElement {
 }
 
 if (window && window.customElements) {
-  if (!window.customElements.get('mave-transcript')) {
-    window.customElements.define('mave-transcript', Transcript);
+  if (!window.customElements.get('mave-text')) {
+    window.customElements.define('mave-text', Text);
   }
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'mave-transcript': Transcript;
+    'mave-text': Text;
   }
 }

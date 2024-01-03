@@ -3,6 +3,37 @@ import { ReactiveControllerHost } from 'lit';
 
 import * as API from './api';
 
+// More compatible version of:
+// const regex = /(?<!\bwww\.\S+)(?<!@\S+)(?<!\.\d)(?<=[.!?])\s+/g;
+function splitText(text: string) {
+  // Splitting by a period, exclamation mark, or question mark followed by a space.
+  let parts = text.split(/([.!?])\s+/);
+  let sentences = [];
+  let currentSentence = '';
+
+  for (let i = 0; i < parts.length; i++) {
+    currentSentence += parts[i];
+
+    // Check if the current part ends with 'www.', '@', or is part of a decimal number.
+    if (/\bwww\.$/.test(parts[i]) || /@$/.test(parts[i]) || /\.\d$/.test(parts[i])) {
+      continue;
+    }
+
+    // If it's the end of a sentence, push it to the sentences array and reset currentSentence.
+    if (/[.!?]$/.test(parts[i])) {
+      sentences.push(currentSentence);
+      currentSentence = '';
+    }
+  }
+
+  // Add any remaining sentence part.
+  if (currentSentence) {
+    sentences.push(currentSentence);
+  }
+
+  return sentences;
+}
+
 export class CaptionController {
   host: ReactiveControllerHost;
   private task: Task;
@@ -23,13 +54,9 @@ export class CaptionController {
           const response = await fetch(url);
           const data = await response.json();
 
-          // create sentences based on ., !, ?
-
-          // Regular expression to split the text while handling common cases
-          const regex = /(?<!\bwww\.\S+)(?<!@\S+)(?<!\.\d)(?<=[.!?])\s+/g;
-
           // Split the text using the regular expression
-          const sentences = data.text.trim().split(regex);
+          const sentences = splitText(data.text.trim());
+
           const words = data.segments.flatMap((segment: API.Segment) => segment.words).map((word: API.Word) => {
             return {
               start: word.start,
