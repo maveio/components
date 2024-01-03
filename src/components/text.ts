@@ -30,7 +30,7 @@ export class Text extends LitElement {
   set clickable(value) {
     if (this._clickable != value) {
       if (typeof value === 'string') {
-        this._clickable = value === 'true';
+        this._clickable = value === 'true' || value === '';
       } else {
         this._clickable = value;
       }
@@ -38,13 +38,59 @@ export class Text extends LitElement {
     }
   }
 
+  private _autoscroll: boolean = true;
+  @property()
+  get autoscroll(): boolean {
+    return this._autoscroll;
+  }
+  set autoscroll(value) {
+    if (this._autoscroll != value) {
+      if (typeof value === 'string') {
+        this._autoscroll = value === 'true' || value === '';
+      } else {
+        this._autoscroll = value;
+      }
+      this.requestUpdate('autoscroll');
+    }
+  }
 
   private captionController: CaptionController;
   private player: Player;
   private loop: boolean;
 
+  private _wordIndex: number;
+  get wordIndex(): number {
+    return this._wordIndex;
+  }
+  set wordIndex(value: number) {
+    if (this._wordIndex != value) {
+      this._wordIndex = value;
+      if (this.autoscroll) {
+        const span = this.shadowRoot?.querySelector(`[data-segment-id="segment-${this.segmentIndex}"]`);
+        if (span && this._lastScrollTime + 2500 < Date.now()) {
+          span.scrollIntoView({block: 'start', inline: 'nearest', behavior: 'smooth' });
+        }
+      }
+    }
+  }
+
+  private _segmentIndex: number;
+  get segmentIndex(): number {
+    return this._segmentIndex;
+  }
+  set segmentIndex(value: number) {
+    if (this._segmentIndex != value) {
+      this._segmentIndex = value;
+    }
+  }
+
+  private _lastScrollTime: number = 0;
+
   @state()
   private currentTime: number = 0;
+
+  @state()
+  private captions: Caption;
 
   static styles = css`
     :host {
@@ -60,6 +106,9 @@ export class Text extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+
+    this.addEventListener('scroll', this.#scrolling.bind(this));
+
     const player = document.querySelector(`mave-player[embed="${this.embed}"]`) as Player;
     if (player) {
       this.player = player;
@@ -72,6 +121,10 @@ export class Text extends LitElement {
         this.loop = false;
       })
     }
+  }
+
+  #scrolling() {
+    this._lastScrollTime = Date.now();
   }
 
   updateTime() {
@@ -98,9 +151,11 @@ export class Text extends LitElement {
     }
   }
 
-  inRange({ start, end }: { start: number, end: number }, part?: string) {
+  inRange({ start, end }: { start: number, end: number }, part?: string, segmentIndex?: number, wordIndex?: number) {
     const withinValue = this.currentTime >= start && this.currentTime <= end;
     if (withinValue) {
+      if(wordIndex) this.wordIndex = wordIndex;
+      if(segmentIndex) this.segmentIndex = segmentIndex;
       return part ? part : true;
     } else {
       return undefined;
@@ -124,14 +179,14 @@ export class Text extends LitElement {
   render() {
     return this.captionController.render({
       complete: (data) => {
-        const caption = data as Caption;
+        this.captions = data as Caption;
 
         return html`
-          <div>
-            ${caption.segments.map((segment) => html`
-              <p style=${styleMap(this.segmentStyle())} @click=${this.clickable ? this.#jumpToSegment : nothing} part=${ifDefined(this.inRange(segment, 'segment'))} x-caption-segment-start="${segment.start}" x-caption-segment-end="${segment.end}">
-                ${segment.words.map((word) => html`
-                  <span style=${styleMap(this.wordStyle(this.inRange(word) as boolean))} part=${ifDefined(this.inRange(word, 'word'))} x-caption-word-start="${word.start}" x-caption-word-end="${word.end}">${word.word.trim()}</span>
+          <div >
+            ${this.captions.segments.map((segment, segmentIndex) => html`
+              <p data-segment-id="segment-${segmentIndex}" style=${styleMap(this.segmentStyle())} @click=${this.clickable ? this.#jumpToSegment : nothing} part=${ifDefined(this.inRange(segment, 'segment'))} x-caption-segment-start="${segment.start}" x-caption-segment-end="${segment.end}">
+                ${segment.words.map((word, wordIndex) => html`
+                  <span data-word-id="word-${segmentIndex}-${wordIndex}" style=${styleMap(this.wordStyle(this.inRange(word) as boolean))} part=${ifDefined(this.inRange(word, 'word', segmentIndex, wordIndex))} x-caption-word-start="${word.start}" x-caption-word-end="${word.end}">${word.word.trim()}</span>
                 `)}
               </p>
             `)}
