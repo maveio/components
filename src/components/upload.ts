@@ -1,4 +1,3 @@
-import '@lottiefiles/lottie-player';
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -69,6 +68,11 @@ export class Upload extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+
+    // only import when lottie-player is not defined and upload component is called
+    if (!window.customElements.get('lottie-player')) {
+      import('@lottiefiles/lottie-player');
+    }
 
     this.languageController.locale = this.locale || 'en';
 
@@ -187,7 +191,9 @@ export class Upload extends LitElement {
   }
 
   render() {
-    return html` ${this._progress ? this.renderProgress() : this.renderUpload()}`;
+    return html`
+      ${this._progress ? this.renderProgress() : this.renderUpload()}
+    `;
   }
 
   styleOpacity() {
