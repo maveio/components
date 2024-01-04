@@ -66,13 +66,51 @@ export class Text extends LitElement {
     if (this._wordIndex != value) {
       this._wordIndex = value;
       if (this.autoscroll) {
-        const span = this.shadowRoot?.querySelector(`[data-segment-id="segment-${this.segmentIndex}"]`);
+        const span = this.shadowRoot?.querySelector(`[data-word-id="word-${this.segmentIndex}-${this.wordIndex}"]`);
         if (span && this._lastScrollTime + 2500 < Date.now()) {
-          span.scrollIntoView({block: 'start', inline: 'nearest', behavior: 'smooth' });
+          const thisRect = this.getBoundingClientRect();
+          const spanRect = span.getBoundingClientRect();
+
+          const relativeTop = spanRect.top - thisRect.top;
+
+          if (relativeTop > 0) {
+            const targetScroll = this.scrollTop + relativeTop;
+            this.#smoothScroll(this, targetScroll - (spanRect.height / 2));
+          }
         }
       }
     }
   }
+
+  #smoothScroll(element: HTMLElement, target: number, duration = 500) {
+    const start = this.scrollTop;
+    const change = target - start;
+    let startTime: number | null = null;
+    let isScrolling = false;
+
+    function animateScroll(timestamp: number) {
+        if (!startTime) {
+          startTime = timestamp;
+        }
+        const timeElapsed = timestamp - startTime!;
+        const progress = Math.min(timeElapsed / duration, 1);
+
+        element.scrollTop = start + change * easeInOutQuad(progress);
+
+        if (timeElapsed < duration && isScrolling) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          isScrolling = false;
+        }
+    }
+
+    function easeInOutQuad(x: number): number {
+      return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    }
+
+    isScrolling = true;
+    requestAnimationFrame(animateScroll);
+}
 
   private _segmentIndex: number;
   get segmentIndex(): number {
