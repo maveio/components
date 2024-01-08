@@ -78,11 +78,11 @@ export class EmbedController {
   }
 
   get spaceId(): string {
-    return this.embed.substring(0, 5);
+    return this.embed?.substring(0, 5);
   }
 
   get embedId(): string {
-    return this.embed.substring(5, this.embed.length);
+    return this.embed?.substring(5, this.embed?.length);
   }
 
   get version(): string {
