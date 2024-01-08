@@ -76,9 +76,16 @@ export class CaptionController {
             const possibleWordCount = sentence.split(' ').length;
             const possibleWords = words.slice(currentWordIndex, currentWordIndex + possibleWordCount + 10);
 
-            const lastWordIndex = possibleWords.findIndex((word: API.Word) => word.word == lastWord) + 1;
+            if (!lastWord) return;
+
+            // compare last 2 characters of each
+            const lastWordIndex = possibleWords.length - possibleWords.reverse().findIndex((word: API.Word) => {
+              return lastWord.includes(word.word) && lastWord.slice(lastWord.length - 2) == word.word.slice(word.word.length - 2)
+            }) + 1;
 
             const sentenceWords = words.slice(currentWordIndex, currentWordIndex + lastWordIndex);
+
+            if(!sentenceWords.length) return
 
             currentWordIndex += lastWordIndex;
             return {
@@ -87,8 +94,7 @@ export class CaptionController {
               text: sentence,
               words: sentenceWords
             }
-          })
-
+          }).filter((segment) => !!segment)
 
           return { text: data.text, segments: segments } as Partial<API.Caption>;
         } catch (e) {
