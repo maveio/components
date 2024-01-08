@@ -223,7 +223,6 @@ export class Pop extends LitElement {
       'transitionend',
       () => {
         this._frame.innerHTML = '';
-
         this.dispatchEvent(new Event('closed', { bubbles: true }));
       },
       { once: true },
@@ -236,7 +235,7 @@ export class Pop extends LitElement {
         <div class="backdrop"></div>
         <div class="content" @click=${this.possibleClose}>
           <div class="wrapper">
-            <slot></slot>
+            <slot style="display: none;"></slot>
             <div class="frame"></div>
           </div>
         </div>
@@ -309,6 +308,15 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
     return { pop };
   }
 
+  function createPlayer(embed: string, attributes?: Record<string, string>) {
+    const player = new Player();
+    for (const key in attributes) {
+      player.setAttribute(key, attributes[key]);
+    }
+    player.embed = embed;
+    return player;
+  }
+
   if (!document || !document.body) return;
   element.querySelectorAll('[x-mave-pop]').forEach((el) => {
     // prepare each player to load
@@ -317,12 +325,8 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
 
     const { pop, attributes } = findOrCreatePop(embed);
 
-    // preload player
-    const player = new Player();
-    for (const key in attributes) {
-      player.setAttribute(key, attributes[key]);
-    }
-    player.embed = embed;
+    // preload players
+    createPlayer(embed, attributes);
 
     el.addEventListener('click', (e: Event) => {
       (e as MouseEvent).preventDefault();
@@ -333,11 +337,14 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
       );
 
       if (!popped) {
+        const player = createPlayer(embed, attributes);
+
         pop.open(player).then(() => {
           player.play();
         });
 
         pop.addEventListener('closed', () => {
+          // Player is removed from DOM, but to be sure...
           player.pause();
         });
       }
