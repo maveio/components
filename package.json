@@ -95,7 +95,7 @@
     "@lit/localize": "^0.12.0",
     "@lottiefiles/lottie-player": "^2.0.2",
     "@maveio/metrics": "^0.0.12",
-    "hls.js": "v1.4.10",
+    "hls.js": "v1.4.14",
     "lit": "^3.0.0",
     "media-chrome": "^1.4.1",
     "phoenix": "^1.7.1",
