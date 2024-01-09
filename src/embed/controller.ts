@@ -15,6 +15,7 @@ export class EmbedController {
   private _embed: string;
   private _token: string;
   private _version: number;
+  caching: boolean = true;
 
   constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
     this.host = host;
@@ -106,6 +107,7 @@ export class EmbedController {
   embedFile(file: string, params = new URLSearchParams()): string {
     const url = new URL(`${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`);
     if (this.token) params.append('token', this.token);
+    if (!this.caching) params.append('e', new Date().getTime().toString());
     url.search = params.toString();
     return url.toString();
   }

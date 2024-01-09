@@ -53,10 +53,30 @@ export class Player extends LitElement {
   @property() opacity?: string;
   @property() loop?: boolean;
 
+  private _cache: boolean;
+  @property({ attribute: 'cache' })
+  get caching(): boolean {
+    return this._cache;
+  }
+  set caching(value: boolean) {
+    if (this._cache != value) {
+      this._cache = value;
+      this.requestUpdate('caching');
+
+      if (typeof value === 'string') {
+        this._cache = value === 'true' || value === '';
+      } else {
+        this._cache = value;
+      }
+
+      this.embedController.caching = this._cache;
+    }
+  }
+
   private _quality: string;
   @property()
   get quality(): string {
-    const quality = this._quality || 'fhd';
+    const quality = this._quality;
     return quality;
   }
   set quality(value: string) {
@@ -177,7 +197,7 @@ export class Player extends LitElement {
     xhrSetup: this.#xhrHLSSetup.bind(this),
     maxBufferLength: 20,
     maxBufferSize: 20,
-    backBufferLength: 60,
+    backBufferLength: 60
   });
 
   pop() {
@@ -294,6 +314,7 @@ export class Player extends LitElement {
       });
 
       const index = this.hls.levels.indexOf(rendition);
+
       if (index != this.hls.currentLevel) {
         this.hls.currentLevel = index;
       }
