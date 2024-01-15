@@ -81,7 +81,7 @@ export class CaptionController {
             // compare last 2 characters of each
             const lastWordIndex = possibleWords.length - possibleWords.reverse().findIndex((word: API.Word) => {
               return lastWord.includes(word.word) && lastWord.slice(lastWord.length - 2) == word.word.slice(word.word.length - 2)
-            }) + 1;
+            });
 
             const sentenceWords = words.slice(currentWordIndex, currentWordIndex + lastWordIndex);
 
