@@ -23,7 +23,7 @@ export class Clip extends LitElement {
     }
   }
 
-  @property() autoplay?: 'always' | 'off' | 'true' | 'lazy' = 'lazy';
+  @property() autoplay?: 'always' | 'off' | 'true' | 'scroll' | 'lazy' = 'lazy';
   @property() loop?: boolean;
   @property() quality = 'fhd';
 
@@ -53,8 +53,14 @@ export class Clip extends LitElement {
     }
   }
 
-  get deterministic_source(): string {
-    return this.embedController.embedFile('h264_fhd.mp4');
+  get source(): string {
+    const { size } = this.highestMP4Rendition;
+
+    if (this.autoplay == 'scroll') {
+      return this.embedController.embedFile(`h264_${size}_keyframes.mp4`);
+    }
+
+    return this.embedController.embedFile(`h264_${size}.mp4`);
   }
 
   private _videoElement?: HTMLMediaElement;
@@ -242,7 +248,7 @@ export class Clip extends LitElement {
               ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.loop || true}
             >
-            <source src=${this.deterministic_source} type="video/mp4" />
+            <source src=${this.source} type="video/mp4" />
           </video>
           `;
         },
