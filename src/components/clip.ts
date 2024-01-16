@@ -54,12 +54,12 @@ export class Clip extends LitElement {
   }
 
   get source(): string {
-    const { size } = this.highestMP4Rendition;
-
     if (this.autoplay == 'scroll') {
-      return this.embedController.embedFile(`h264_${size}_keyframes.mp4`);
+      const { size } = this.#highestRendition('clip_keyframes');
+      return this.embedController.embedFile(`h264_${size}_clip_keyframes.mp4`);
     }
 
+    const { size } = this.#highestRendition();
     return this.embedController.embedFile(`h264_${size}.mp4`);
   }
 
@@ -234,9 +234,9 @@ export class Clip extends LitElement {
     }
   }
 
-  get highestMP4Rendition() {
+  #highestRendition(type = 'video', container = 'mp4') {
     const renditions = this._embed.video.renditions.filter(
-      (rendition) => rendition.container == 'mp4',
+      (rendition) => (rendition.type ?? type) === type && rendition.container === container,
     );
 
     const sizes = ['sd', 'hd', 'fhd', 'qhd', 'uhd'];

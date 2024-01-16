@@ -37,6 +37,7 @@ export type Embed = {
         size: 'sd' | 'hd' | 'fhd' | 'qhd' | 'uhd';
         codec: 'h264' | 'hevc' | 'av1';
         container: 'webp' | 'webm' | 'jpg' | 'mp4' | 'avif' | 'hls';
+        type?: 'video' | 'clip_keyframes';
       },
     ];
     src: string;
