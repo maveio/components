@@ -69,7 +69,7 @@ export class Clip extends LitElement {
   @state() private _failedPlay = false;
 
   private _intersectionObserver = new IntersectionController(this, {
-    callback: this.#intersected.bind(this),
+    callback: this.#intersected.bind(this)
   });
 
   static styles = css`
@@ -90,11 +90,35 @@ export class Clip extends LitElement {
   private embedController = new EmbedController(this);
   private _metrics: Metrics;
   private _embed: Embed;
+  private _canPlay: boolean;
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (this.autoplay === 'scroll') document.addEventListener('scroll', this.#handleScroll.bind(this));
+
+  }
 
   disconnectedCallback() {
     super.disconnectedCallback();
+
+    if (this.autoplay === 'scroll') document.removeEventListener('scroll', this.#handleScroll.bind(this));
+
     if (this._metrics) {
       this._metrics.demonitor();
+    }
+  }
+
+  #handleScroll() {
+    const { height, top, bottom } = this.getBoundingClientRect();
+
+    // in viewport
+    if (top < window.innerHeight && top + height > 0) {
+      if (this._videoElement) {
+        const time = this._videoElement.duration / (bottom + window.scrollY) * (window.innerHeight - top);
+
+        this._videoElement.currentTime = time;
+        // console.log(time)
+      }
     }
   }
 
@@ -150,6 +174,12 @@ export class Clip extends LitElement {
     if (this._videoElement && this._embed && !this._metrics) {
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
+
+          if (!this._canPlay && this.autoplay === 'scroll' && event === 'canplay') {
+            this._canPlay = true;
+            this.#handleScroll();
+          }
+
           this.dispatchEvent(
             new CustomEvent(event, {
               detail: e,
