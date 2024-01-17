@@ -562,6 +562,7 @@ export function build(name, LitElement, html, css) {
               <media-preview-thumbnail slot="preview"></media-preview-thumbnail>
               <media-preview-time-display slot="preview"></media-preview-time-display>
             </media-time-range>
+            <media-playback-rate-button></media-playback-rate-button>
             <media-captions-selectmenu></media-captions-selectmenu>
             <media-captions-button disabled class="small-button">
               <svg
@@ -662,7 +663,6 @@ export function build(name, LitElement, html, css) {
                 <media-volume-range></media-volume-range>
               </div>
             </div>
-            <media-playback-rate-button></media-playback-rate-button>
             <media-fullscreen-button class="small-button">
               <svg
                 slot="enter"
