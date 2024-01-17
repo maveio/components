@@ -238,7 +238,7 @@ export function build(name, LitElement, html, css) {
         display: var(--playbackrate-display, flex);
       }
 
-      media-captions-selectmenu, media-control-bar > media-captions-button {
+      media-captions-selectmenu, media-captions-button[mediasubtitleslist] {
         display: var(--captions-display, flex);
       }
     `;

@@ -48,21 +48,20 @@ export class Player extends LitElement {
   @property({ attribute: 'active-subtitle' }) active_subtitle?: string;
   @property() height?: string;
   @property() autoplay?: 'always' | 'lazy' | 'true';
-  @property() controls?: 'full' | 'big' | 'none';
   @property() color?: string;
   @property() opacity?: string;
   @property() loop?: boolean;
 
-  private _controlsList: string[] = ['play', 'time', 'seek', 'volume', 'fullscreen'];
-  @property({ attribute: 'controls-list' })
-  get controlsList(): string[] {
-    return this._controlsList;
+  private _controls: string[] = ['play', 'time', 'seek', 'volume', 'fullscreen', 'subtitles'];
+  @property()
+  get controls(): string[] {
+    return this._controls;
   }
-  set controlsList(value: string | string[]) {
+  set controls(value: string | string[]) {
     if (typeof value === 'string') {
-      this._controlsList = value.split(' ');
+      this._controls = value.split(' ');
     } else {
-      this._controlsList = value;
+      this._controls = value;
     }
   }
 
@@ -557,32 +556,33 @@ export class Player extends LitElement {
       style['--height'] = this.height || this._embed?.settings.height;
     }
 
-    if (this.controls == 'full' ||
+    if (!this.controls.includes('full') && !this.controls.includes('big') && !this.controls.includes('none')) {
+      style['--play-display'] = this.controls.includes('play') ? 'flex' : 'none';
+      style['--time-display'] = this.controls.includes('time') ? 'flex' : 'none';
+      style['--seek-bar-visibility'] = this.controls.includes('seek') ? 'visible' : 'hidden';
+      style['--volume-display'] = this.controls.includes('volume') ? 'flex' : 'none';
+      style['--fullscreen-display'] = this.controls.includes('fullscreen') ? 'flex' : 'none';
+      style['--playbackrate-display'] = this.controls.includes('playbackrate') ? 'flex' : 'none';
+      style['--captions-display'] = this.controls.includes('subtitles') ? 'flex' : 'none';
+    }
+
+    if (this.controls.includes('full') ||
         (this._embed?.settings.controls == 'full' &&
-          this.controls != 'big' &&
-          this.controls != 'none')) {
+          !this.controls.includes('big') &&
+          !this.controls.includes('none'))) {
       style['--media-control-bar-display'] = 'flex';
     } else {
       style['--media-control-bar-display'] = 'none';
     }
 
-    if (this.controls == 'big' ||
+    if (this.controls.includes('big') ||
         (this._embed?.settings.controls == 'big' &&
-          this.controls != 'full' &&
-          this.controls != 'none')) {
+          !this.controls.includes('full') &&
+          !this.controls.includes('none'))) {
       style['--big-button-display'] = 'flex';
     } else {
       style['--big-button-display'] = 'none';
     }
-
-    style['--play-display'] = this.controlsList.includes('play') ? 'flex' : 'none';
-    style['--time-display'] = this.controlsList.includes('time') ? 'flex' : 'none';
-    style['--seek-bar-visibility'] = this.controlsList.includes('seek') ? 'visible' : 'hidden';
-    style['--volume-display'] = this.controlsList.includes('volume') ? 'flex' : 'none';
-    style['--fullscreen-display'] = this.controlsList.includes('fullscreen') ? 'flex' : 'none';
-    style['--playbackrate-display'] = this.controlsList.includes('playbackrate') ? 'flex' : 'none';
-    style['--captions-display'] = this.controlsList.includes('subtitles') ? 'flex' : 'none';
-
 
     if (this._embed?.video.audio === false) {
       style['--media-volume-display'] = 'none';
