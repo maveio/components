@@ -454,8 +454,10 @@ export function build(name, LitElement, html, css) {
         display: flex;
         height: 48px;
         width: 48px;
-        opacity: 0.95;
+        opacity: 0.9;
         font-weight: 400 !important;
+        letter-spacing: 0.005rem;
+        font-size: 14px;
       }
 
       media-control-bar > media-play-button.small-button {
