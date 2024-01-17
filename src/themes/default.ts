@@ -472,7 +472,7 @@ export function build(name, LitElement, html, css) {
         visibility: var(--seek-bar-visibility, visible);
       }
 
-       media-mute-button {
+       media-mute-button.small-button {
         display: var(--volume-display, flex);
       }
 

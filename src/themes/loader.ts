@@ -48,7 +48,7 @@ export class ThemeLoader {
         build(name, LitElement, html, css);
       }
     } catch (e) {
-      console.log(e);
+      console.log('[mave-player]: theme not loaded', e);
     }
 
     return Promise.resolve(ThemeLoader.instance);
