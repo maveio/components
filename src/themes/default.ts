@@ -448,6 +448,16 @@ export function build(name, LitElement, html, css) {
         margin-bottom: 40px;
       }
 
+      media-playback-rate-button {
+        position: relative;
+        flex: none;
+        display: flex;
+        height: 48px;
+        width: 48px;
+        opacity: 0.95;
+        font-weight: 400 !important;
+      }
+
       media-control-bar > media-play-button.small-button {
         display: var(--play-display, flex);
       }
