@@ -447,6 +447,30 @@ export function build(name, LitElement, html, css) {
         max-width: 40%;
         margin-bottom: 40px;
       }
+
+      media-control-bar > media-play-button.small-button {
+        display: var(--play-display, flex);
+      }
+
+      media-control-bar > media-time-display {
+        display: var(--time-display, flex);
+      }
+
+      media-control-bar > media-time-range {
+        display: var(--seek-bar-display, flex);
+      }
+
+      media-control-bar > media-mute-button {
+        display: var(--volume-display, flex);
+      }
+
+      media-control-bar > media-fullscreen-button.small-button {
+        display: var(--fullscreen-display, flex);
+      }
+
+      media-control-bar > media-playback-rate-button {
+        display: var(--playbackrate-display, flex);
+      }
     `;
 
     render() {
@@ -600,7 +624,7 @@ export function build(name, LitElement, html, css) {
                 >
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg
-                >-->
+                >
                 <svg
                   slot="medium"
                   xmlns="http://www.w3.org/2000/svg"
@@ -615,7 +639,7 @@ export function build(name, LitElement, html, css) {
                 >
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg
-                >-->
+                >
                 <svg
                   slot="high"
                   xmlns="http://www.w3.org/2000/svg"
@@ -638,6 +662,7 @@ export function build(name, LitElement, html, css) {
                 <media-volume-range></media-volume-range>
               </div>
             </div>
+            <media-playback-rate-button></media-playback-rate-button>
             <media-fullscreen-button class="small-button">
               <svg
                 slot="enter"

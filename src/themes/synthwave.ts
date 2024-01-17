@@ -225,6 +225,31 @@ export function build(name, LitElement, html, css) {
         font-weight: 500;
         font-size: 20px;
         opacity: 0;
+      }
+
+      media-control-bar > media-play-button.small-button {
+        display: var(--play-display, flex);
+      }
+
+      media-control-bar > media-time-display {
+        display: var(--time-display, flex);
+      }
+
+      media-control-bar > media-time-range {
+        display: var(--seek-bar-display, flex);
+      }
+
+      media-control-bar > media-mute-button {
+        display: var(--volume-display, flex);
+      }
+
+      media-control-bar > media-fullscreen-button.small-button {
+        display: var(--fullscreen-display, flex);
+      }
+
+      media-control-bar > media-playback-rate-button {
+        display: var(--playbackrate-display, flex);
+      }
     `;
 
     render() {
@@ -393,6 +418,7 @@ export function build(name, LitElement, html, css) {
               </div>
             </media-captions-button>
             <media-captions-selectmenu></media-captions-selectmenu>
+            <media-playback-rate-button></media-playback-rate-button>
             <media-fullscreen-button>
               <div slot="enter">
                 <svg

@@ -53,6 +53,19 @@ export class Player extends LitElement {
   @property() opacity?: string;
   @property() loop?: boolean;
 
+  private _controlsList: string[] = ['play', 'time', 'seek', 'volume', 'fullscreen'];
+  @property({ attribute: 'controls-list' })
+  get controlsList(): string[] {
+    return this._controlsList;
+  }
+  set controlsList(value: string | string[]) {
+    if (typeof value === 'string') {
+      this._controlsList = value.split(' ');
+    } else {
+      this._controlsList = value;
+    }
+  }
+
   private _cache: boolean;
   @property({ attribute: 'cache' })
   get caching(): boolean {
@@ -544,12 +557,6 @@ export class Player extends LitElement {
       style['--height'] = this.height || this._embed?.settings.height;
     }
 
-    if (this._embed?.video.audio === false) {
-      style['--media-volume-display'] = 'none';
-    } else {
-      style['--media-volume-display'] = 'inline-flex';
-    }
-
     if (this.controls == 'full' ||
         (this._embed?.settings.controls == 'full' &&
           this.controls != 'big' &&
@@ -566,6 +573,20 @@ export class Player extends LitElement {
       style['--big-button-display'] = 'flex';
     } else {
       style['--big-button-display'] = 'none';
+    }
+
+    style['--play-display'] = this.controlsList.includes('play') ? 'flex' : 'none';
+    style['--time-display'] = this.controlsList.includes('time') ? 'flex' : 'none';
+    style['--seek-bar-display'] = this.controlsList.includes('seek') ? 'flex' : 'none';
+    style['--volume-display'] = this.controlsList.includes('volume') ? 'flex' : 'none';
+    style['--fullscreen-display'] = this.controlsList.includes('fullscreen') ? 'flex' : 'none';
+    style['--playbackrate-display'] = this.controlsList.includes('playbackrate') ? 'flex' : 'none';
+
+
+    if (this._embed?.video.audio === false) {
+      style['--media-volume-display'] = 'none';
+    } else {
+      style['--media-volume-display'] = 'inline-flex';
     }
 
     return styleMap(style);
