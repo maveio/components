@@ -5,7 +5,7 @@ import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { ref } from 'lit/directives/ref.js';
 
-import { Embed } from '../embed/api';
+import { Embed, Rendition, RenditionsByCodec } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { videoEvents } from '../utils/video_events';
 
@@ -53,14 +53,14 @@ export class Clip extends LitElement {
     }
   }
 
-  get source(): string {
+  get sources(): string[] {
     if (this.autoplay == 'scroll') {
-      const { size } = this.#highestRendition('clip_keyframes');
-      return this.embedController.embedFile(`h264_${size}_clip_keyframes.mp4`);
+      const renditions = this.#highestRenditions(['clip_keyframes']);
+      return renditions.map(r => this.embedController.embedFile(`${r.codec}_${r.size}_clip_keyframes.mp4`));
     }
 
-    const { size } = this.#highestRendition();
-    return this.embedController.embedFile(`h264_${size}.mp4`);
+    const renditions = this.#highestRenditions();
+    return renditions.map(r => this.embedController.embedFile(`${r.codec}_${r.size}.mp4`));
   }
 
   private _videoElement?: HTMLMediaElement;
@@ -117,7 +117,6 @@ export class Clip extends LitElement {
         const time = this._videoElement.duration / (bottom + window.scrollY) * (window.innerHeight - top);
 
         this._videoElement.currentTime = time;
-        // console.log(time)
       }
     }
   }
@@ -234,29 +233,40 @@ export class Clip extends LitElement {
     }
   }
 
-  #highestRendition(type = 'video', container = 'mp4') {
+  #highestRenditions(types = ['clip', 'video'], container = 'mp4'): Rendition[] {
     const renditions = this._embed.video.renditions.filter(
-      (rendition) => (rendition.type ?? type) === type && rendition.container === container,
+      (rendition) => (!rendition.type || types.includes(rendition.type)) && rendition.container === container,
     );
 
     const sizes = ['sd', 'hd', 'fhd', 'qhd', 'uhd'];
 
-    const highestRendition = renditions
-      .filter((rendition) => {
-        const qualityIndex = sizes.indexOf(this.quality);
-        const renditionIndex = sizes.indexOf(rendition.size);
-        return renditionIndex <= qualityIndex;
-      })
-      .reduce((highest, rendition) => {
-        const size = sizes.indexOf(rendition.size);
-        if (size > sizes.indexOf(highest.size)) {
-          return rendition;
-        } else {
-          return highest;
-        }
-      });
+    // Group renditions by codec
+    const renditionsByCodec: RenditionsByCodec = renditions.reduce((acc, rendition) => {
+      const codec = rendition.codec;
+      if (!acc[codec]) acc[codec] = [];
+      acc[codec]!.push(rendition);
+      return acc;
+    }, {} as RenditionsByCodec);
 
-    return highestRendition;
+    // Find the highest rendition for each codec
+    const highestRenditions = Object.values(renditionsByCodec).map(codecRenditions => {
+      return codecRenditions!
+        .filter((rendition) => {
+          const qualityIndex = sizes.indexOf(this.quality);
+          const renditionIndex = sizes.indexOf(rendition.size);
+          return renditionIndex <= qualityIndex;
+        })
+        .reduce((highest, rendition) => {
+          const size = sizes.indexOf(rendition.size);
+          if (size > sizes.indexOf(highest.size)) {
+            return rendition;
+          } else {
+            return highest;
+          }
+        });
+    });
+
+    return highestRenditions.filter(r => r) as Rendition[];
   }
 
   render() {
@@ -278,7 +288,9 @@ export class Clip extends LitElement {
               ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.loop || true}
             >
-            <source src=${this.source} type="video/mp4" />
+            ${this.sources.map((source) => html`
+              <source src=${source} type="video/mp4" />
+            `)}
           </video>
           `;
         },

@@ -1,3 +1,14 @@
+export type Rendition = {
+  size: 'sd' | 'hd' | 'fhd' | 'qhd' | 'uhd';
+  codec: 'h264' | 'hevc' | 'av1';
+  container: 'webp' | 'webm' | 'jpg' | 'mp4' | 'avif' | 'hls';
+  type?: 'video' | 'clip_keyframes';
+}
+
+export type RenditionsByCodec = {
+  [codec in Rendition['codec']]?: Rendition[];
+};
+
 export type Embed = {
   id: string;
   name: string;
@@ -32,14 +43,7 @@ export type Embed = {
         '720p': string;
       };
     };
-    renditions: [
-      {
-        size: 'sd' | 'hd' | 'fhd' | 'qhd' | 'uhd';
-        codec: 'h264' | 'hevc' | 'av1';
-        container: 'webp' | 'webm' | 'jpg' | 'mp4' | 'avif' | 'hls';
-        type?: 'video' | 'clip_keyframes';
-      },
-    ];
+    renditions: [Rendition];
     src: string;
   };
   subtitles: Subtitle[];
