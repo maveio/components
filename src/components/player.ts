@@ -577,7 +577,7 @@ export class Player extends LitElement {
 
     style['--play-display'] = this.controlsList.includes('play') ? 'flex' : 'none';
     style['--time-display'] = this.controlsList.includes('time') ? 'flex' : 'none';
-    style['--seek-bar-display'] = this.controlsList.includes('seek') ? 'flex' : 'none';
+    style['--seek-bar-visibility'] = this.controlsList.includes('seek') ? 'visible' : 'hidden';
     style['--volume-display'] = this.controlsList.includes('volume') ? 'flex' : 'none';
     style['--fullscreen-display'] = this.controlsList.includes('fullscreen') ? 'flex' : 'none';
     style['--playbackrate-display'] = this.controlsList.includes('playbackrate') ? 'flex' : 'none';

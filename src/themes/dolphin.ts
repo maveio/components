@@ -218,7 +218,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-control-bar > media-time-range {
-        display: var(--seek-bar-display, flex);
+        visibility: var(--seek-bar-visibility, visible);
       }
 
       media-control-bar > media-mute-button {
