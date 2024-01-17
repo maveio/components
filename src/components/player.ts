@@ -581,6 +581,7 @@ export class Player extends LitElement {
     style['--volume-display'] = this.controlsList.includes('volume') ? 'flex' : 'none';
     style['--fullscreen-display'] = this.controlsList.includes('fullscreen') ? 'flex' : 'none';
     style['--playbackrate-display'] = this.controlsList.includes('playbackrate') ? 'flex' : 'none';
+    style['--captions-display'] = this.controlsList.includes('subtitles') ? 'flex' : 'none';
 
 
     if (this._embed?.video.audio === false) {
