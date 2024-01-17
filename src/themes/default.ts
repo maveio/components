@@ -460,28 +460,32 @@ export function build(name, LitElement, html, css) {
         font-size: 14px;
       }
 
-      media-control-bar > media-play-button.small-button {
+       media-play-button.small-button {
         display: var(--play-display, flex);
       }
 
-      media-control-bar > media-time-display {
+       media-time-display {
         display: var(--time-display, flex);
       }
 
-      media-control-bar > media-time-range {
+       media-time-range {
         visibility: var(--seek-bar-visibility, visible);
       }
 
-      media-control-bar > media-mute-button {
+       media-mute-button {
         display: var(--volume-display, flex);
       }
 
-      media-control-bar > media-fullscreen-button.small-button {
+       media-fullscreen-button.small-button {
         display: var(--fullscreen-display, flex);
       }
 
-      media-control-bar > media-playback-rate-button {
+       media-playback-rate-button {
         display: var(--playbackrate-display, flex);
+      }
+
+       media-captions-selectmenu,  media-captions-button[mediasubtitleslist].small-button {
+        display: var(--captions-display, flex);
       }
     `;
 

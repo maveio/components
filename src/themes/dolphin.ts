@@ -209,28 +209,37 @@ export function build(name, LitElement, html, css) {
         opacity: 0;
       }
 
-      media-control-bar > media-play-button.small-button {
+      media-playback-rate-button {
+        font-size: 0.85rem;
+        font-weight: 400 !important;
+      }
+
+      media-play-button {
         display: var(--play-display, flex);
       }
 
-      media-control-bar > media-time-display {
+      media-time-display {
         display: var(--time-display, flex);
       }
 
-      media-control-bar > media-time-range {
+      media-time-range {
         visibility: var(--seek-bar-visibility, visible);
       }
 
-      media-control-bar > media-mute-button {
+      media-mute-button {
         display: var(--volume-display, flex);
       }
 
-      media-control-bar > media-fullscreen-button.small-button {
+      media-fullscreen-button {
         display: var(--fullscreen-display, flex);
       }
 
-      media-control-bar > media-playback-rate-button {
+      media-playback-rate-button {
         display: var(--playbackrate-display, flex);
+      }
+
+      media-captions-selectmenu, media-control-bar > media-captions-button {
+        display: var(--captions-display, flex);
       }
     `;
 
@@ -307,6 +316,7 @@ export function build(name, LitElement, html, css) {
               <media-time-range></media-time-range>
               <media-time-display showduration></media-time-display>
               <div style="flex-grow: 1;"></div>
+              <media-playback-rate-button></media-playback-rate-button>
               <media-captions-button>
                 <div slot="off">
                   <svg
@@ -400,7 +410,6 @@ export function build(name, LitElement, html, css) {
                   </svg>
                 </div>
               </media-mute-button>
-              <media-playback-rate-button></media-playback-rate-button>
               <media-fullscreen-button>
                 <div slot="enter">
                   <svg
