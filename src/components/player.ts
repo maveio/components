@@ -562,7 +562,7 @@ export class Player extends LitElement {
       style['--seek-bar-visibility'] = this.controls.includes('seek') ? 'visible' : 'hidden';
       style['--volume-display'] = this.controls.includes('volume') ? 'flex' : 'none';
       style['--fullscreen-display'] = this.controls.includes('fullscreen') ? 'flex' : 'none';
-      style['--playbackrate-display'] = this.controls.includes('playbackrate') ? 'flex' : 'none';
+      style['--playbackrate-display'] = this.controls.includes('rate') ? 'flex' : 'none';
       style['--captions-display'] = this.controls.includes('subtitles') ? 'flex' : 'none';
     }
 
