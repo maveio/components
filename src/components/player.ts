@@ -566,6 +566,11 @@ export class Player extends LitElement {
       style['--captions-display'] = this.controls.includes('subtitles') ? 'flex' : 'none';
     }
 
+
+    if (!this.subtitles && !this.active_subtitle) {
+      style['--captions-display'] = 'none';
+    }
+
     if (this.controls.includes('full') ||
         (this._embed?.settings.controls == 'full' &&
           !this.controls.includes('big') &&
