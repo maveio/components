@@ -60,24 +60,38 @@ export type Collection = {
   id: string;
   name: string;
   embeds: Embed[];
+  videos: Video[];
+  collections: Collection[];
+  video_count?: number;
+};
+
+export type Video = {
+  id: string;
+  name: string;
+  duration: number;
+  size: number;
+  poster_image: string;
+  last_uploaded: string;
+  language: string;
+  created: string;
 };
 
 export type Word = {
   start: number;
   end: number;
   word: string;
-}
+};
 
 export type Segment = {
   text: string;
   start: number;
   end: number;
   words: Word[];
-}
+};
 
 export type Caption = {
   text: string;
   segments: Segment[];
-}
+};
 
 export const baseUrl = '__MAVE_ENDPOINT__';

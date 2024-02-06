@@ -63,48 +63,81 @@ export class List extends LitElement {
 
           const templates = this._slottedChildren
             .map((item) => {
-              if (item.getAttribute('name') == 'list-title') {
-                item.textContent = this._collection.name;
-                return html`${item}`;
+              function createClone() {
+                let clone: DocumentFragment;
+                if (item.nodeName === 'TEMPLATE') {
+                  clone = (item as HTMLTemplateElement).content.cloneNode(
+                    true,
+                  ) as DocumentFragment;
+                } else {
+                  clone = item.cloneNode(true) as DocumentFragment;
+                }
+                return clone;
               }
 
-              if (item.nodeName === 'TEMPLATE' || item.getAttribute('name') == 'mave-list-item') {
-                const result = this._collection.embeds.map((embed) => {
+              if (item.getAttribute('name') == 'list-title') {
+                const template = createClone();
 
-                  let template;
-                  if (item.nodeName === 'TEMPLATE') {
-                    template = (item as HTMLTemplateElement).content.cloneNode(
-                      true,
-                    ) as DocumentFragment;
-                  } else {
-                    template = item.cloneNode(true) as DocumentFragment;
-                    item.remove();
+                template.textContent = this._collection.name;
+                return html`${template}`;
+              }
+
+              if (item.getAttribute('name') == 'mave-list-root' && this.embedController.embed) {
+                const template = createClone();
+                const link = template.querySelector('[slot="root-link"]');
+                if (link) {
+                  link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.embedController.embed = '';
+                  });
+                  link.removeAttribute('slot');
+                }
+                return html`${template}`;
+              }
+
+              if (item.getAttribute('name') == 'mave-list-folder') {
+                const result = this._collection.collections.map((collection) => {
+                  const template = createClone();
+
+                  const link = template.querySelector('[slot="folder-link"]');
+
+                  [item, link].forEach((element) => {
+                    if (element) {
+                      element.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.embedController.embed = collection.id;
+                      });
+                      element.removeAttribute('slot');
+                    }
+                  });
+
+                  this.#setTextContent(template, '[slot="folder-title"]', collection.name);
+                  if (typeof collection.video_count == 'number') {
+                    this.#setTextContent(template, '[slot="folder-count"]', collection.video_count.toString());
                   }
 
-                  const title = template.querySelector('[slot="item-title"]');
-                  if (title) {
-                    title.textContent = embed.name;
-                    title.removeAttribute('slot');
-                  }
-
-                  // when clip is provided in the template
-                  const clip = template.querySelector('mave-clip');
-                  if (clip) {
-                    clip.setAttribute('embed', embed.id);
-                    clip.removeAttribute('slot');
-                  }
-
-                  // when img is provided in the template
-                  const img = template.querySelector('mave-img');
-                  if (img) {
-                    img.setAttribute('embed', embed.id);
-                    img.removeAttribute('slot');
-                  }
                   return html`${template}`;
                 });
 
                 return html`${result}`;
               }
+
+
+              if (item.getAttribute('name') == 'mave-list-item' || (!item.hasAttribute('name') && item.nodeName == 'template')) {
+
+                const result = this._collection.videos.map((video) => {
+                  const template = createClone();
+
+                  this.#setTextContent(template, '[slot="item-title"]', video.name);
+                  this.#setEmbedAttribute(template, 'mave-clip', video.id);
+                  this.#setEmbedAttribute(template, 'mave-player', video.id);
+                  this.#setEmbedAttribute(template, 'mave-img', video.id);
+                  return html`${template}`;
+                });
+
+                return html`${result}`;
+              }
+
             })
             .filter((t) => t);
 
@@ -114,8 +147,22 @@ export class List extends LitElement {
     `;
   }
 
+  #setEmbedAttribute(template: DocumentFragment, selector: string, embed: string) {
+    const element = template.querySelector(selector);
+    if (!element) return;
+    element.setAttribute('embed', embed);
+    element.removeAttribute('slot');
+  }
+
+  #setTextContent(template: DocumentFragment, selector: string, text: string) {
+    const element = template.querySelector(selector);
+    if (!element) return;
+    element.textContent = text;
+    element.removeAttribute('slot');
+  }
+
   renderPending() {
-    return html`<slot></slot>`;
+    return html`<slot style="display: none"></slot>`;
   }
 }
 

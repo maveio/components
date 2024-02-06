@@ -33,12 +33,7 @@ export class EmbedController {
             return;
           }
 
-          const url =
-            this.type == EmbedType.Embed
-              ? this.embedFile('manifest.json')
-              : `${API.baseUrl}/collection/${this.token}`;
-
-          const response = await fetch(url);
+          const response = await fetch(this.manifest_url);
           const data = await response.json();
           if (this.type == EmbedType.Embed) {
             const embed = data as Partial<API.Embed>;
@@ -54,6 +49,16 @@ export class EmbedController {
       },
       () => [this.embed],
     );
+  }
+
+  get manifest_url(): string {
+    if (this.type == EmbedType.Embed) {
+      return this.embedFile('manifest.json');
+    } else {
+      const url = new URL(`${API.baseUrl}/collection/${this.token}`);
+      if (this.embed && this.embed?.length > 1) url.searchParams.append('embed', this.embed);
+      return url.toString();
+    }
   }
 
   set embed(value: string) {
