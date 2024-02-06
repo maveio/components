@@ -60,9 +60,9 @@ export class List extends LitElement {
         complete: (data) => {
           this._collection = data as Collection;
           if (!data) return this.renderPending();
-
           const templates = this._slottedChildren
             .map((item) => {
+
               function createClone() {
                 let clone: DocumentFragment;
                 if (item.nodeName === 'TEMPLATE') {
@@ -122,9 +122,7 @@ export class List extends LitElement {
                 return html`${result}`;
               }
 
-
-              if (item.getAttribute('name') == 'mave-list-item' || (!item.hasAttribute('name') && item.nodeName == 'template')) {
-
+              if (item.getAttribute('name') == 'mave-list-item' || (!['mave-list-folder', 'mave-list-item', 'mave-list-root', 'list-title'].includes(item.hasAttribute('name') ? item.getAttribute('name')! : '') && item.nodeName == 'TEMPLATE')) {
                 const result = this._collection.videos?.map((video) => {
                   const template = createClone();
 
