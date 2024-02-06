@@ -110,6 +110,7 @@ export class Clip extends LitElement {
     :host {
       display: block;
       position: relative;
+      overflow: hidden;
     }
 
     video {
