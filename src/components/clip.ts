@@ -60,7 +60,10 @@ export class Clip extends LitElement {
     }
 
     const renditions = this.#highestRenditions();
-    return renditions.map(r => this.embedController.embedFile(`${r.codec}_${r.size}.mp4`));
+    return renditions.map(r => {
+      if (r.codec !== 'h264') return this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`);
+      return this.embedController.embedFile(`${r.codec}_${r.size}.mp4`);
+    });
   }
 
   private _videoElement?: HTMLMediaElement;

@@ -16,11 +16,11 @@ export class Image extends LitElement {
   `;
 
   get spaceId(): string {
-    return this.embed.substring(0, 5);
+    return this.embed?.substring(0, 5);
   }
 
   get embedId(): string {
-    return this.embed.substring(5, this.embed.length);
+    return this.embed?.substring(5, this.embed?.length);
   }
 
   get poster(): string {

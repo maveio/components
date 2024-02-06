@@ -78,7 +78,7 @@ export class List extends LitElement {
               if (item.getAttribute('name') == 'list-title') {
                 const template = createClone();
 
-                template.textContent = this._collection.name;
+                template.textContent = this._collection?.name;
                 return html`${template}`;
               }
 
@@ -96,7 +96,7 @@ export class List extends LitElement {
               }
 
               if (item.getAttribute('name') == 'mave-list-folder') {
-                const result = this._collection.collections.map((collection) => {
+                const result = this._collection.collections?.map((collection) => {
                   const template = createClone();
 
                   const link = template.querySelector('[slot="folder-link"]');
@@ -125,7 +125,7 @@ export class List extends LitElement {
 
               if (item.getAttribute('name') == 'mave-list-item' || (!item.hasAttribute('name') && item.nodeName == 'template')) {
 
-                const result = this._collection.videos.map((video) => {
+                const result = this._collection.videos?.map((video) => {
                   const template = createClone();
 
                   this.#setTextContent(template, '[slot="item-title"]', video.name);
