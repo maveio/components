@@ -204,7 +204,6 @@ export class Player extends LitElement {
   private _queue: { (): void }[] = [];
 
   private hls: Hls = new Hls({
-    startLevel: -1,
     capLevelToPlayerSize: true,
     xhrSetup: this.#xhrHLSSetup.bind(this),
     maxBufferLength: 20,
