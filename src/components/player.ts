@@ -348,7 +348,6 @@ export class Player extends LitElement {
       };
 
       if (Hls.isSupported() && this.#hlsPath) {
-        console.log(this.#getStartLevel())
         this.hls = new Hls({
           startLevel: this.#getStartLevel(),
           capLevelToPlayerSize: true,
