@@ -11,7 +11,8 @@ import { videoEvents } from '../utils/video_events';
 
 
 interface Source {
-  media?: number | undefined ;
+  media?: number | undefined;
+  codec?: string;
   src: string;
 }
 
@@ -62,28 +63,41 @@ export class Clip extends LitElement {
   get sources(): Source[] {
     if (this.autoplay == 'scroll') {
       const renditions = this.#highestRenditions(this.quality, ['clip_keyframes']);
-      return renditions.map(r => ({ src: this.embedController.embedFile(`${r.codec}_${r.size}_clip_keyframes.mp4`) }));
+      return renditions.map(r => ({
+        src: this.embedController.embedFile(`${r.codec}_${r.size}_clip_keyframes.mp4`),
+        codec: this.#codecDescription[r.codec]
+      }));
     }
 
     if (this.quality == 'auto') {
-      const renditions = this._embed.video.renditions.filter(
-        (rendition) => (!rendition.type || ['video', 'clip'].includes(rendition.type)) && rendition.container === 'mp4' && rendition.size !== 'uhd'
-      ).sort((a, b) => {
+      const renditions = this._embed.video.renditions
+        .filter((rendition) => this.#codecs.includes(rendition.codec))
+        .filter(
+          (rendition) => (!rendition.type || ['video', 'clip'].includes(rendition.type)) && rendition.container === 'mp4' && rendition.size !== 'uhd')
+        .sort((a, b) =>
         // group by size and sort by codec
-        if (a.size === b.size) {
-          return this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec);
-        }
-        return this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size);
-      }).map(r => {
-        const media = this.#mediaWidth.find(m => m.size === r.size)?.media;
+          (a.size === b.size) ? this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec) : this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size))
+        .map(r => {
+          const media = this.#mediaWidth.find(m => m.size === r.size)?.media;
 
-        if (r.codec !== 'h264') return { media, src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`) };
-        return { media, src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`) };
-      });
+          if (r.codec !== 'h264') return {
+            media,
+            src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`),
+            codec: this.#codecDescription[r.codec]
+          };
+          return {
+            media,
+            src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`),
+            codec: this.#codecDescription[r.codec]
+          };
+        });
 
       const fallbackRenditions = this.#highestRenditions('hd').map(r => {
         if (r.codec !== 'h264') return { src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`) };
-        return { src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`) };
+        return {
+          src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`),
+          codec: this.#codecDescription[r.codec]
+        };
       });
 
       return [...renditions, ...fallbackRenditions];
@@ -91,8 +105,14 @@ export class Clip extends LitElement {
     } else {
       const renditions = this.#highestRenditions();
       return renditions.map(r => {
-        if (r.codec !== 'h264') return { src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`) };
-        return { src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`) };
+        if (r.codec !== 'h264') return {
+          src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`),
+          codec: this.#codecDescription[r.codec]
+        };
+        return {
+          src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`),
+          codec: this.#codecDescription[r.codec]
+        };
       });
     }
   }
@@ -191,13 +211,32 @@ export class Clip extends LitElement {
   }
 
   get #codecs() {
-    return ['av1', 'hevc', 'h264'];
+    const ua = navigator.userAgent;
+    const isEdgeOnMac = /Edg/.test(ua) && /Mac OS/.test(ua);
+    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
+    const isMacOS = /Mac OS/.test(ua);
+    const isIOS = /iPhone|iPad/.test(ua);
+
+    if ((isMacOS && (isSafari || isEdgeOnMac)) || isIOS) {
+      return ['hevc', 'h264'];
+    }
+
+    // Default to av1, h264 for all other combinations
+    return ['av1', 'h264'];
+  }
+
+  get #codecDescription() {
+    return {
+      av1: 'av01.0.08M.08.0.110.01.01.01.0,opus',
+      hevc: 'hevc.01.00.78,mp4a.40.2',
+      h264: 'avc1.64.00.28,mp4a.40.2',
+    }
   }
 
   get #mediaWidth() {
     return [
       { size: 'qhd', media: 1280 },
-      { size: 'fhd', media: 1280 },
+      { size: 'fhd', media: 1080 },
       { size: 'hd', media: 720 },
       { size: 'sd', media: 640 }
     ]
@@ -220,7 +259,6 @@ export class Clip extends LitElement {
 
     this._intersectionObserver.observe(this._videoElement);
 
-    // TODO: has no this._embed, because API is not called
     if (this._videoElement && this._embed && !this._metrics) {
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
@@ -287,7 +325,7 @@ export class Clip extends LitElement {
   #highestRenditions(quality = this.quality, types = ['clip', 'video'], container = 'mp4'): Rendition[] {
     const renditions = this._embed.video.renditions.filter(
       (rendition) => (!rendition.type || types.includes(rendition.type)) && rendition.container === container,
-    );
+    ).filter((rendition) => this.#codecs.includes(rendition.codec));
 
     // Group renditions by codec
     const renditionsByCodec: RenditionsByCodec = renditions.reduce((acc, rendition) => {
@@ -297,15 +335,16 @@ export class Clip extends LitElement {
       return acc;
     }, {} as RenditionsByCodec);
 
+    const availableQuality = this.#sizes.includes(quality) ? quality : 'fhd';
+
     // Find the highest rendition for each codec
     const highestRenditions = Object.values(renditionsByCodec).map(codecRenditions => {
-      return codecRenditions!
+      return codecRenditions
         .filter((rendition) => {
-          const qualityIndex = this.#sizes.indexOf(quality);
+          const qualityIndex = this.#sizes.indexOf(availableQuality);
           const renditionIndex = this.#sizes.indexOf(rendition.size);
           return renditionIndex <= qualityIndex;
-        })
-        .reduce((highest, rendition) => {
+        }).reduce((highest: Rendition, rendition: Rendition) => {
           const size = this.#sizes.indexOf(rendition.size);
           if (size > this.#sizes.indexOf(highest.size)) {
             return rendition;
@@ -315,9 +354,9 @@ export class Clip extends LitElement {
         });
     });
 
-    return highestRenditions.sort((a, b) => {
-      return this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec);
-    }).filter(r => r) as Rendition[];
+    return highestRenditions
+      .sort((a, b) => this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec))
+      .filter(r => r) as Rendition[];
   }
 
   render() {
@@ -340,7 +379,7 @@ export class Clip extends LitElement {
               ?loop=${this.loop || true}
             >
             ${this.sources.map((source) => html`
-              <source media=${ifDefined(source.media ? `(min-width: ${source.media}px)` : undefined)} src=${source.src} type="video/mp4" />
+              <source media=${ifDefined(source.media ? `(min-width: ${source.media}px)` : undefined)} src=${source.src} type=${`video/mp4; ${source.codec}`} />
             `)}
           </video>
           `;

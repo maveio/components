@@ -1,4 +1,4 @@
-import { StatusRenderer, Task } from '@lit-labs/task';
+import { StatusRenderer, Task } from '@lit/task';
 import { ReactiveControllerHost } from 'lit';
 
 import * as API from './api';

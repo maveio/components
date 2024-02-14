@@ -27,7 +27,7 @@ export default defineConfig({
     '@lit/reactive-element',
     '@lit-labs/react',
     '@lit-labs/observers',
-    '@lit-labs/task',
+    '@lit/task',
     '@lit/localize',
     'js-base64',
     'url-parse',

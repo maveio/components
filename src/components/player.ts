@@ -203,6 +203,8 @@ export class Player extends LitElement {
 
   private _queue: { (): void }[] = [];
 
+  private _currentTrackLanguage: string;
+
   private hls: Hls = new Hls({
     startLevel: 2,
     capLevelToPlayerSize: true,
@@ -334,7 +336,7 @@ export class Player extends LitElement {
   }
 
   #handleVideo(videoElement?: Element) {
-    if (videoElement && (this.#hlsPath || this.#srcPath)) {
+    if (videoElement && videoElement.tagName == 'VIDEO' && (this.#hlsPath || this.#srcPath)) {
       this._videoElement = videoElement as HTMLMediaElement;
       this._intersectionObserver.observe(this._videoElement);
 
@@ -389,8 +391,10 @@ export class Player extends LitElement {
 
   #intersected(entries: IntersectionObserverEntry[]) {
     for (const { isIntersecting } of entries) {
-      this._intersected = isIntersecting;
-      this.#handleAutoplay();
+      if (entries.length && entries[0].target.tagName == 'VIDEO') {
+        this._intersected = isIntersecting;
+        this.#handleAutoplay();
+      }
     }
   }
 
@@ -490,16 +494,34 @@ export class Player extends LitElement {
     const track = (e.target as HTMLTrackElement & { track: TextTrack }).track;
     const cues = track.activeCues as TextTrackCueList;
 
+
+    if (track.mode == 'showing') {
+      this._currentTrackLanguage = track.language;
+    }
+
     if (!navigator.userAgent.includes('Mobi')) {
       if (track.mode != 'hidden') track.mode = 'hidden';
 
+
       if (!this._subtitlesText) {
         const subtitleText = this.shadowRoot
-          ?.querySelector(`theme-${this.theme}`)
-          ?.shadowRoot?.querySelector('#subtitles_text');
+        ?.querySelector(`theme-${this.theme}`)
+        ?.shadowRoot?.querySelector('#subtitles_text');
         if (subtitleText) {
           this._subtitlesText = subtitleText as HTMLElement;
         }
+      }
+
+      if (this._currentTrackLanguage != track.language) return;
+
+      const option = this.shadowRoot
+          ?.querySelector(`theme-${this.theme}`)
+        ?.shadowRoot?.querySelector('media-captions-selectmenu')?.shadowRoot?.querySelector('media-captions-listbox')?.shadowRoot?.querySelector('media-chrome-option[part="option option-selected"]');
+
+      if (option && option.getAttribute('value') == 'off') {
+        this._subtitlesText.innerHTML = '';
+        this._subtitlesText.style.opacity = '0';
+        return;
       }
 
       if (cues.length) {
@@ -643,6 +665,7 @@ export class Player extends LitElement {
   render() {
     if (!this.embed) return;
     const startScreen = this.querySelector('[slot="start-screen"]') as HTMLElement;
+
     return html`
       <slot
         name="video"
