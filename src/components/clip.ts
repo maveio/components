@@ -12,7 +12,7 @@ import { videoEvents } from '../utils/video_events';
 
 interface Source {
   media?: number | undefined;
-  codec?: string;
+  codec: string;
   src: string;
 }
 
@@ -110,7 +110,10 @@ export class Clip extends LitElement {
         });
 
       const fallbackRenditions = this.#highestRenditions('hd').map(r => {
-        if (r.codec !== 'h264') return { src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`) };
+        if (r.codec !== 'h264') return {
+          src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`),
+          codec: this.#codecDescription[r.codec]
+        };
         return {
           src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`),
           codec: this.#codecDescription[r.codec]
