@@ -32,7 +32,7 @@ export class Clip extends LitElement {
 
   @property() autoplay?: 'always' | 'off' | 'true' | 'scroll' | 'lazy' = 'lazy';
   @property() loop?: boolean;
-  @property() quality = 'fhd';
+  @property() quality = 'auto';
 
   private _poster?: string;
   @property()
