@@ -205,14 +205,7 @@ export class Player extends LitElement {
 
   private _currentTrackLanguage: string;
 
-  private hls: Hls = new Hls({
-    startLevel: 2,
-    capLevelToPlayerSize: true,
-    xhrSetup: this.#xhrHLSSetup.bind(this),
-    maxBufferLength: 20,
-    maxBufferSize: 20,
-    backBufferLength: 60
-  });
+  private hls?: Hls;
 
   pop() {
     this.popped = true;
@@ -281,7 +274,6 @@ export class Player extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.hls.on(Hls.Events.LEVEL_LOADED, this.#handleQualityChange.bind(this));
     this.loadTheme();
   }
 
@@ -299,7 +291,7 @@ export class Player extends LitElement {
     }
   }
 
-  #handleQualityChange() {
+  #getStartLevel(): number {
     const sizes = [{
       name: 'sd',
       width: 640,
@@ -318,20 +310,10 @@ export class Player extends LitElement {
     }];
 
     const size = sizes.find((size) => size.name == this.quality);
-
     if (size) {
-      const rendition = this.hls.levels.reduce((prev, curr) => {
-        const prevDiff = Math.abs(prev.width - size.width);
-        const currDiff = Math.abs(curr.width - size.width);
-
-        return prevDiff < currDiff ? prev : curr;
-      });
-
-      const index = this.hls.levels.indexOf(rendition);
-
-      if (index != this.hls.currentLevel) {
-        this.hls.currentLevel = index;
-      }
+      return sizes.indexOf(size);
+    } else {
+      return 2;
     }
   }
 
@@ -366,8 +348,19 @@ export class Player extends LitElement {
       };
 
       if (Hls.isSupported() && this.#hlsPath) {
-        this.hls.loadSource(this.#hlsPath);
-        this.hls.attachMedia(this._videoElement);
+        console.log(this.#getStartLevel())
+        this.hls = new Hls({
+          startLevel: this.#getStartLevel(),
+          capLevelToPlayerSize: true,
+          xhrSetup: this.#xhrHLSSetup.bind(this),
+          maxBufferLength: 20,
+          maxBufferSize: 20,
+          backBufferLength: 60
+        });
+
+
+        this.hls?.loadSource(this.#hlsPath);
+        this.hls?.attachMedia(this._videoElement);
         this._metrics = new Metrics(this.hls, this.embed, metadata);
       } else if (
         this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
