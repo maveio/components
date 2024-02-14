@@ -50,7 +50,24 @@ export class Player extends LitElement {
   @property() autoplay?: 'always' | 'lazy' | 'true';
   @property() color?: string;
   @property() opacity?: string;
-  @property() loop?: boolean;
+
+  private _metrics: boolean = true;
+  @property()
+  set metrics(value: boolean | string) {
+    this._metrics = (value === '' || value == 'true' || value == true) ?? false;
+  }
+  get metrics(): boolean {
+    return this._metrics;
+  }
+
+  private _loop: boolean;
+  @property()
+  set loop(value: boolean | string) {
+    this._loop = (value === '' || value == 'true' || value == true) ?? false;
+  }
+  get loop(): boolean {
+    return this._loop;
+  }
 
   private _controls: string[] = ['play', 'time', 'seek', 'volume', 'fullscreen', 'subtitles'];
   @property()
@@ -66,7 +83,7 @@ export class Player extends LitElement {
   }
 
   private _cache: boolean;
-  @property({ attribute: 'cache' })
+  @property({ attribute: 'cache', type: Boolean })
   get caching(): boolean {
     return this._cache;
   }
@@ -198,7 +215,7 @@ export class Player extends LitElement {
   @state()
   private _embed: Embed;
 
-  private _metrics: Metrics;
+  private _metricsInstance?: Metrics;
   private _intersected = false;
 
   private _queue: { (): void }[] = [];
@@ -279,9 +296,7 @@ export class Player extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this._metrics) {
-      this._metrics.demonitor();
-    }
+    this._metricsInstance?.demonitor();
   }
 
   loadTheme() {
@@ -360,16 +375,16 @@ export class Player extends LitElement {
 
         this.hls?.loadSource(this.#hlsPath);
         this.hls?.attachMedia(this._videoElement);
-        this._metrics = new Metrics(this.hls, this.embed, metadata);
+        if(this.metrics) this._metricsInstance = new Metrics(this.hls, this.embed, metadata);
       } else if (
         this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
         this.#hlsPath
       ) {
         this._videoElement.src = this.#hlsPath;
-        this._metrics = new Metrics(this._videoElement, this.embed, metadata);
+        if(this.metrics) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       } else {
         this._videoElement.src = this.#srcPath;
-        this._metrics = new Metrics(this._videoElement, this.embed, metadata);
+        if(this.metrics) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       }
 
       if (this._queue.length) {
@@ -428,7 +443,7 @@ export class Player extends LitElement {
     if (this._embed && this.autoplay == 'always') {
       if (this._intersected) {
         if (this._videoElement?.paused) {
-          this._metrics.monitor();
+          this._metricsInstance?.monitor();
           this._videoElement.muted = true;
           this._videoElement?.play();
         }
@@ -441,7 +456,7 @@ export class Player extends LitElement {
     ) {
       if (this._intersected) {
         if (this._videoElement?.paused) {
-          this._metrics.monitor();
+          this._metricsInstance?.monitor();
           this._videoElement.muted = true;
           this._videoElement?.play();
         }
@@ -453,7 +468,7 @@ export class Player extends LitElement {
 
   #requestPlay() {
     if (this._videoElement?.paused) {
-      this._metrics.monitor();
+      this._metricsInstance?.monitor();
       this._videoElement?.play();
     } else {
       this._videoElement?.pause();

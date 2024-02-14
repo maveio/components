@@ -31,8 +31,25 @@ export class Clip extends LitElement {
   }
 
   @property() autoplay?: 'always' | 'off' | 'true' | 'scroll' | 'lazy' = 'lazy';
-  @property() loop?: boolean;
   @property() quality = 'auto';
+
+  private _metrics: boolean = true;
+  @property()
+  set metrics(value: boolean | string) {
+    this._metrics = (value === '' || value == 'true' || value == true) ?? false;
+  }
+  get metrics(): boolean {
+    return this._metrics;
+  }
+
+  private _loop: boolean;
+  @property()
+  set loop(value: boolean | string) {
+    this._loop = (value === '' || value == 'true' || value == true) ?? false;
+  }
+  get loop(): boolean {
+    return this._loop;
+  }
 
   private _poster?: string;
   @property()
@@ -143,7 +160,7 @@ export class Clip extends LitElement {
   `;
 
   private embedController = new EmbedController(this);
-  private _metrics: Metrics;
+  private _metricsInstance?: Metrics;
   private _embed: Embed;
   private _canPlay: boolean;
 
@@ -158,9 +175,7 @@ export class Clip extends LitElement {
 
     if (this.autoplay === 'scroll') document.removeEventListener('scroll', this.#handleScroll.bind(this));
 
-    if (this._metrics) {
-      this._metrics.demonitor();
-    }
+    this._metricsInstance?.demonitor();
   }
 
   #handleScroll() {
@@ -243,7 +258,7 @@ export class Clip extends LitElement {
   }
 
   #handlePlay() {
-    this._metrics.monitor();
+    this._metricsInstance?.monitor();
     if (this._videoElement) {
       this._videoElement.muted = true;
       this._videoElement.play().catch(e => {
@@ -259,7 +274,7 @@ export class Clip extends LitElement {
 
     this._intersectionObserver.observe(this._videoElement);
 
-    if (this._videoElement && this._embed && !this._metrics) {
+    if (this._videoElement && this._embed) {
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
 
@@ -289,7 +304,7 @@ export class Clip extends LitElement {
         apiKey: this._embed.metrics_key,
       };
 
-      this._metrics = new Metrics(this._videoElement, this.embed, metadata);
+      if(this.metrics) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
     }
 
     if (this._queue.length) {
