@@ -16,17 +16,6 @@ interface EmbedChannel {
   upload_id?: string;
 }
 
-const fileTypes = [
-  'video/mpeg',
-  'video/mp4',
-  'video/ogg',
-  'video/quicktime',
-  'video/webm',
-  'video/avi',
-  'video/3gpp',
-  'video/3gpp2',
-  'video/mov',
-];
 
 @localized()
 export class Upload extends LitElement {
@@ -113,7 +102,7 @@ export class Upload extends LitElement {
       for (const item of event.dataTransfer.items) {
         if (item.kind === 'file') {
           const file = item.getAsFile();
-          if (file && fileTypes.includes(file.type)) {
+          if (file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) {
             this._progress = 1;
             this.upload(file);
           }
@@ -122,7 +111,7 @@ export class Upload extends LitElement {
     } else {
       if (event.dataTransfer && event.dataTransfer.files) {
         for (const file of event.dataTransfer.files) {
-          if (fileTypes.includes(file.type)) {
+          if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
             this._progress = 1;
             this.upload(file);
           }
@@ -138,7 +127,7 @@ export class Upload extends LitElement {
     const target = event.target as HTMLInputElement;
     if (target.files) {
       for (const file of target.files) {
-        if (fileTypes.includes(file.type)) {
+        if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
           this.upload(file);
         }
       }
