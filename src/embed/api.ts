@@ -1,3 +1,5 @@
+import { Config } from '../config';
+
 export type Rendition = {
   size: 'sd' | 'hd' | 'fhd' | 'qhd' | 'uhd';
   codec: 'h264' | 'hevc' | 'av1';
@@ -94,4 +96,4 @@ export type Caption = {
   segments: Segment[];
 };
 
-export const baseUrl = '__MAVE_ENDPOINT__';
+export const baseUrl = Config.api.endpoint;

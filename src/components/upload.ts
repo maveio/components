@@ -6,6 +6,8 @@ import * as tus from 'tus-js-client';
 import Data from '../embed/socket';
 import { LanguageController, localized, msg } from '../utils/localization';
 
+import { Config } from '../config';
+
 interface ErrorMessage {
   message: string;
 }
@@ -136,7 +138,7 @@ export class Upload extends LitElement {
 
   upload(file: File) {
     const upload = new tus.Upload(file, {
-      endpoint: '__MAVE_UPLOAD_ENDPOINT__',
+      endpoint: Config.upload.endpoint,
       retryDelays: [0, 3000, 5000, 10000, 20000, 60000, 60000],
       metadata: {
         title: file.name,

@@ -1,5 +1,7 @@
 import { Channel, Socket as Phoenix } from 'phoenix';
 
+import { Config } from '../config';
+
 interface EmbedChannel {
   token: string;
   channel: Channel;
@@ -20,9 +22,7 @@ export default class Socket {
       Socket.instance = new Socket();
 
       if (window) {
-        const socketUrl = '__MAVE_SOCKET_ENDPOINT__';
-
-        Socket.instance.socket = new Phoenix(socketUrl, {
+        Socket.instance.socket = new Phoenix(Config.upload.socket, {
           params: {
             token,
           },
