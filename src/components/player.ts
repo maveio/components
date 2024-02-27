@@ -15,6 +15,8 @@ import { EmbedController } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
 import { videoEvents } from '../utils/video_events';
 
+import { Config } from '../config';
+
 export class Player extends LitElement {
   private _embedId: string;
   @property()
@@ -50,15 +52,6 @@ export class Player extends LitElement {
   @property() autoplay?: 'always' | 'lazy' | 'true';
   @property() color?: string;
   @property() opacity?: string;
-
-  private _metrics: boolean = true;
-  @property()
-  set metrics(value: boolean | string) {
-    this._metrics = (value === '' || value == 'true' || value == true) ?? false;
-  }
-  get metrics(): boolean {
-    return this._metrics;
-  }
 
   private _loop: boolean;
   @property()
@@ -352,7 +345,7 @@ export class Player extends LitElement {
       });
 
       Metrics.config = {
-        socketPath: '__MAVE_METRICS_SOCKET_ENDPOINT__',
+        socketPath: Config.metrics.socket,
         apiKey: this._embed.metrics_key,
       };
 
@@ -375,16 +368,16 @@ export class Player extends LitElement {
 
         this.hls?.loadSource(this.#hlsPath);
         this.hls?.attachMedia(this._videoElement);
-        if(this.metrics) this._metricsInstance = new Metrics(this.hls, this.embed, metadata);
+        if(Config.metrics.enabled) this._metricsInstance = new Metrics(this.hls, this.embed, metadata);
       } else if (
         this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
         this.#hlsPath
       ) {
         this._videoElement.src = this.#hlsPath;
-        if(this.metrics) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+        if(Config.metrics.enabled) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       } else {
         this._videoElement.src = this.#srcPath;
-        if(this.metrics) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+        if(Config.metrics.enabled) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       }
 
       if (this._queue.length) {

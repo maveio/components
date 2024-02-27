@@ -9,6 +9,8 @@ import { Embed, Rendition, RenditionsByCodec } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { videoEvents } from '../utils/video_events';
 
+import { Config } from '../config';
+
 
 interface Source {
   media?: number | undefined;
@@ -32,15 +34,6 @@ export class Clip extends LitElement {
 
   @property() autoplay?: 'always' | 'off' | 'true' | 'scroll' | 'lazy' = 'lazy';
   @property() quality = 'auto';
-
-  private _metrics: boolean = true;
-  @property()
-  set metrics(value: boolean | string) {
-    this._metrics = (value === '' || value == 'true' || value == true) ?? false;
-  }
-  get metrics(): boolean {
-    return this._metrics;
-  }
 
   private _loop: boolean;
   @property()
@@ -303,11 +296,11 @@ export class Clip extends LitElement {
       };
 
       Metrics.config = {
-        socketPath: '__MAVE_METRICS_SOCKET_ENDPOINT__',
+        socketPath: Config.metrics.socket,
         apiKey: this._embed.metrics_key,
       };
 
-      if(this.metrics) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+      if(Config.metrics.enabled) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
     }
 
     if (this._queue.length) {
