@@ -5,7 +5,7 @@ import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { ref } from 'lit/directives/ref.js';
 
-import { Embed, Rendition, RenditionsByCodec } from '../embed/api';
+import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { videoEvents } from '../utils/video_events';
 
@@ -71,63 +71,27 @@ export class Clip extends LitElement {
   }
 
   get sources(): Source[] {
-    if (this.autoplay == 'scroll') {
-      const renditions = this.#highestRenditions(this.quality, ['clip_keyframes']);
-      return renditions.map(r => ({
-        src: this.embedController.embedFile(`${r.codec}_${r.size}_clip_keyframes.mp4`),
-        codec: this.#codecDescription[r.codec]
-      }));
-    }
+    const renditionType = this.autoplay === 'scroll' ? ['clip_keyframes'] : ['video', 'clip'];
 
-    if (this.quality == 'auto') {
-      const renditions = this._embed.video.renditions
-        .filter((rendition) => this.#codecs.includes(rendition.codec))
-        .filter(
-          (rendition) => (!rendition.type || ['video', 'clip'].includes(rendition.type)) && rendition.container === 'mp4' && rendition.size !== 'uhd')
-        .sort((a, b) =>
-        // group by size and sort by codec
-          (a.size === b.size) ? this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec) : this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size))
-        .map(r => {
-          const media = this.#mediaWidth.find(m => m.size === r.size)?.media;
+    return this._embed.video.renditions
+      .filter((r) =>
+        (this.quality == 'auto' ? r.size !== 'uhd' : this.#sizes.indexOf(r.size) <= this.#sizes.indexOf(this.quality)) &&
+        r.container === 'mp4' &&
+        this.#codecs.includes(r.codec) &&
+        (!r.type || renditionType.includes(r.type))
+      )
+      .sort((a, b) =>
+        (a.size === b.size) ? this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec) : this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size))
+      .map(r => {
+        const media = this.#mediaWidth.find(m => m.size === r.size)?.media;
+        const file = `${r.codec}_${r.size}${r.type && r.type != 'video' ? `_${r.type}` : ''}.mp4`
 
-          if (r.codec !== 'h264') return {
-            media,
-            src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`),
-            codec: this.#codecDescription[r.codec]
-          };
-          return {
-            media,
-            src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`),
-            codec: this.#codecDescription[r.codec]
-          };
-        });
-
-      const fallbackRenditions = this.#highestRenditions('hd').map(r => {
-        if (r.codec !== 'h264') return {
-          src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`),
-          codec: this.#codecDescription[r.codec]
-        };
         return {
-          src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`),
+          media,
+          src: this.embedController.embedFile(file),
           codec: this.#codecDescription[r.codec]
         };
       });
-
-      return [...renditions, ...fallbackRenditions];
-
-    } else {
-      const renditions = this.#highestRenditions();
-      return renditions.map(r => {
-        if (r.codec !== 'h264') return {
-          src: this.embedController.embedFile(`${r.codec}_${r.size}_clip.mp4`),
-          codec: this.#codecDescription[r.codec]
-        };
-        return {
-          src: this.embedController.embedFile(`${r.codec}_${r.size}.mp4`),
-          codec: this.#codecDescription[r.codec]
-        };
-      });
-    }
   }
 
   private _videoElement?: HTMLMediaElement;
@@ -179,10 +143,15 @@ export class Clip extends LitElement {
 
     // in viewport
     if (top < window.innerHeight && top + height > 0) {
+      if (this._videoElement && !this._videoElement.duration) {
+        this._videoElement.load();
+      }
+
       if (this._videoElement) {
         const time = this._videoElement.duration / (bottom + window.scrollY) * (window.innerHeight - top);
-
-        this._videoElement.currentTime = time;
+        if (time > 0 && time < this._videoElement.duration) {
+          this._videoElement.currentTime = time;
+        }
       }
     }
   }
@@ -331,43 +300,6 @@ export class Clip extends LitElement {
         this._videoElement?.pause();
       }
     }
-  }
-
-  #highestRenditions(quality = this.quality, types = ['clip', 'video'], container = 'mp4'): Rendition[] {
-    const renditions = this._embed.video.renditions.filter(
-      (rendition) => (!rendition.type || types.includes(rendition.type)) && rendition.container === container,
-    ).filter((rendition) => this.#codecs.includes(rendition.codec));
-
-    // Group renditions by codec
-    const renditionsByCodec: RenditionsByCodec = renditions.reduce((acc, rendition) => {
-      const codec = rendition.codec;
-      if (!acc[codec]) acc[codec] = [];
-      acc[codec]!.push(rendition);
-      return acc;
-    }, {} as RenditionsByCodec);
-
-    const availableQuality = this.#sizes.includes(quality) ? quality : 'fhd';
-
-    // Find the highest rendition for each codec
-    const highestRenditions = Object.values(renditionsByCodec).map(codecRenditions => {
-      return codecRenditions
-        .filter((rendition) => {
-          const qualityIndex = this.#sizes.indexOf(availableQuality);
-          const renditionIndex = this.#sizes.indexOf(rendition.size);
-          return renditionIndex <= qualityIndex;
-        }).reduce((highest: Rendition, rendition: Rendition) => {
-          const size = this.#sizes.indexOf(rendition.size);
-          if (size > this.#sizes.indexOf(highest.size)) {
-            return rendition;
-          } else {
-            return highest;
-          }
-        });
-    });
-
-    return highestRenditions
-      .sort((a, b) => this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec))
-      .filter(r => r) as Rendition[];
   }
 
   render() {
