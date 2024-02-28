@@ -491,7 +491,7 @@ export function build(name, LitElement, html, css) {
 
     render() {
       return html`
-        <media-controller>
+        <media-controller novolumepref>
           <slot name="media" slot="media"></slot>
           <slot name="poster" slot="poster"></slot>
           <div class="mave-gradient-bottom"></div>
