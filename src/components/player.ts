@@ -126,10 +126,11 @@ export class Player extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string {
-    if (!this.embed) return ''
+    if (!this.embed || !this._embed) return ''
+
 
     if (this._poster && this._poster == 'custom') {
-      return this.embedController.embedFile('thumbnail.jpg');
+      return this.embedController.embedFile(this.#posterRendition('thumbnail'));
     }
 
     if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
@@ -140,7 +141,7 @@ export class Player extends LitElement {
       return this._poster;
     }
 
-    return this.embedController.embedFile('poster.webp');
+    return this.embedController.embedFile(this.#posterRendition('poster'));
   }
   set poster(value: string | null) {
     if (value) {
@@ -297,6 +298,18 @@ export class Player extends LitElement {
       ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
       this._themeLoaded = true;
     }
+  }
+
+  #posterRendition(type: 'poster' | 'thumbnail') {
+    if (this._embed.poster.renditions) {
+      // get avif first, then webp, then jpg
+      const rendition = this._embed.poster.renditions.find((rendition) => rendition.container === 'avif' && rendition.type === type);
+      return rendition ? `${type}.avif` : this._embed.poster.renditions.find((rendition) => rendition.container === 'webp' && rendition.type === type) ? `${type}.webp` : `${type}.jpg`;
+    } else {
+      // fallback to jpg
+      return `${type}.jpg`;
+    }
+
   }
 
   #getStartLevel(): number {

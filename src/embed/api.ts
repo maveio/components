@@ -3,8 +3,13 @@ import { Config } from '../config';
 export type Rendition = {
   size: 'sd' | 'hd' | 'fhd' | 'qhd' | 'uhd';
   codec: 'h264' | 'hevc' | 'av1';
-  container: 'webp' | 'webm' | 'jpg' | 'mp4' | 'avif' | 'hls';
+  container: 'webm' | 'mp4' | 'hls';
   type?: 'video' | 'clip_keyframes';
+}
+
+export type Poster = {
+  container: 'avif' | 'webp' | 'jpg';
+  type: 'thumbnail' | 'poster';
 }
 
 export type RenditionsByCodec = {
@@ -16,6 +21,7 @@ export type Embed = {
   name: string;
   space_id: string;
   poster: {
+    renditions: [Poster];
     image_src: string;
     initial_frame_src: string;
     preview_src: string;
