@@ -128,7 +128,6 @@ export class Player extends LitElement {
   get poster(): string {
     if (!this.embed || !this._embed) return ''
 
-
     if (this._poster && this._poster == 'custom') {
       return this.embedController.embedFile(this.#posterRendition('thumbnail'));
     }

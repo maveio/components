@@ -73,7 +73,7 @@ export class Clip extends LitElement {
   get sources(): Source[] {
     const renditionType = this.autoplay === 'scroll' ? ['clip_keyframes'] : ['video', 'clip'];
 
-    return this._embed.video.renditions
+    const renditions = this._embed.video.renditions
       .filter((r) =>
         (this.quality == 'auto' ? r.size !== 'uhd' : this.#sizes.indexOf(r.size) <= this.#sizes.indexOf(this.quality)) &&
         r.container === 'mp4' &&
@@ -91,7 +91,34 @@ export class Clip extends LitElement {
           src: this.embedController.embedFile(file),
           codec: this.#codecDescription[r.codec]
         };
-      });
+      })
+
+
+    const fallbackRenditions = this._embed.video.renditions
+    .filter((r) =>
+      this.#sizes.indexOf(r.size) <= this.#sizes.indexOf('fhd') &&
+      r.container === 'mp4' &&
+      this.#codecs.includes(r.codec) &&
+      (!r.type || renditionType.includes(r.type))
+    )
+    .sort((a, b) =>
+      this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size)
+    ); // Get the highest quality available up to fhd
+
+    if (fallbackRenditions.length > 0) {
+      const fallbackRendition = fallbackRenditions[0];
+      const file = `${fallbackRendition.codec}_${fallbackRendition.size}${fallbackRendition.type && fallbackRendition.type != 'video' ? `_${fallbackRendition.type}` : ''}.mp4`;
+
+      const fallbackSource = {
+        media: undefined,
+        src: this.embedController.embedFile(file),
+        codec: this.#codecDescription[fallbackRendition.codec]
+      };
+
+      renditions.push(fallbackSource);
+    }
+
+    return renditions;
   }
 
   private _videoElement?: HTMLMediaElement;
