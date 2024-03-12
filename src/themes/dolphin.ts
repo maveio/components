@@ -248,7 +248,7 @@ export function build(name, LitElement, html, css) {
         <div class="subtitles">
           <div id="subtitles_text">subtitles</div>
         </div>
-        <media-controller>
+        <media-controller novolumepref>
           <slot name="media" slot="media"></slot>
           <div slot="centered-chrome">
             <media-play-button>
