@@ -167,18 +167,25 @@ export class Clip extends LitElement {
 
   #handleScroll() {
     const { height, top, bottom } = this.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
 
-    // in viewport
-    if (top < window.innerHeight && top + height > 0) {
-      if (this._videoElement && !this._videoElement.duration) {
-        this._videoElement.load();
+    if (this._videoElement) {
+      if (!this._videoElement.duration) {
+          this._videoElement.load();
       }
 
-      if (this._videoElement) {
-        const time = this._videoElement.duration / (bottom + window.scrollY) * (window.innerHeight - top);
-        if (time > 0 && time < this._videoElement.duration) {
-          this._videoElement.currentTime = time;
-        }
+      let time = 0;
+
+      if (top < viewportHeight && bottom > 0) {
+        const totalScrollDistance = height + viewportHeight;
+        const scrolledDistance = viewportHeight - top;
+        const scrollFraction = scrolledDistance / totalScrollDistance;
+
+        time = scrollFraction * this._videoElement.duration;
+      }
+
+      if (time >= 0 && time <= this._videoElement.duration) {
+        this._videoElement.currentTime = time;
       }
     }
   }
