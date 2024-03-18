@@ -24,7 +24,6 @@ export type Embed = {
     renditions: [Poster];
     image_src: string;
     initial_frame_src: string;
-    preview_src: string;
     video_src: string;
   };
   settings: {
