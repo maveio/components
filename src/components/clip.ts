@@ -314,9 +314,9 @@ export class Clip extends LitElement {
 
   #intersected(entries: IntersectionObserverEntry[]) {
     for (const { isIntersecting } of entries) {
-      if (!isIntersecting || this.autoplay === 'always') return;
+      if (this.autoplay === 'always') return;
 
-      if (this.autoplay === 'lazy' || this.autoplay === 'true') {
+      if (isIntersecting && (this.autoplay === 'lazy' || this.autoplay === 'true')) {
         if (this._videoElement?.paused) {
           this.#handlePlay();
         }
