@@ -117,9 +117,7 @@ export class Player extends LitElement {
     if (this._theme != value) {
       this._theme = value;
       this.requestUpdate('theme');
-      if (this.embed) {
-        ThemeLoader.get(value, `${this.embedController.cdnRoot}/themes/player`);
-      }
+      this.loadTheme();
     }
   }
 
