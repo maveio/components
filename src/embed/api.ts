@@ -20,6 +20,7 @@ export type Embed = {
   id: string;
   name: string;
   space_id: string;
+  created_at: Date;
   poster: {
     renditions: [Poster];
     image_src: string;
@@ -44,6 +45,9 @@ export type Embed = {
     aspect_ratio: string;
     filetype: string;
     original: string;
+    size: number;
+    duration: number;
+    language: string;
     sources: {
       mp4: {
         '480p': string;
