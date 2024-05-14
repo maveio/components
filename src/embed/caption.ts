@@ -1,6 +1,7 @@
 import { StatusRenderer, Task } from '@lit/task';
 import { ReactiveControllerHost } from 'lit';
 
+import { Config } from '../config';
 import * as API from './api';
 
 // More compatible version of:
@@ -151,7 +152,7 @@ export class CaptionController {
   }
 
   get cdnRoot(): string {
-    return `https://space-${this.spaceId}.video-dns.com`;
+    return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
   }
 
   embedFile(file: string, params = new URLSearchParams()): string {

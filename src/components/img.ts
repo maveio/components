@@ -1,9 +1,7 @@
-import { css, html, LitElement } from 'lit';
-import { property } from 'lit/decorators.js';
+import { css, html } from 'lit';
+import { MaveElement } from '../utils/mave_element';
 
-export class Image extends LitElement {
-  @property() embed: string;
-
+export class Image extends MaveElement {
   static styles = css`
     :host {
       display: block;
@@ -15,16 +13,8 @@ export class Image extends LitElement {
     }
   `;
 
-  get spaceId(): string {
-    return this.embed?.substring(0, 5);
-  }
-
-  get embedId(): string {
-    return this.embed?.substring(5, this.embed?.length);
-  }
-
   get poster(): string {
-    return `https://space-${this.spaceId}.video-dns.com/${this.embedId}/poster.webp`;
+    return `${this.cdn_root}/${this.embedId}/poster.webp`;
   }
 
   render() {
