@@ -256,9 +256,9 @@ export class Player extends LitElement {
 
   play() {
     if (this._videoElement) {
-      this._videoElement.play();
+      this.#requestPlay();
     } else {
-      this._queue.push(() => this._videoElement?.play());
+      this._queue.push(() => this.#requestPlay());
     }
   }
 
