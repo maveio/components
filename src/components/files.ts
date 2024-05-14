@@ -79,12 +79,11 @@ export class Files extends MaveElement {
                 const size = this._data.video.size; // in bytes
                 const sizeInMb = size / 1000000;
 
-                console.log(size)
                 if (size) this.#setTextContent(template, '[slot="size"]', `${sizeInMb.toFixed(1)} MB`);
-
 
                 // download
                 const link = this.#createDownloadLink(`${this.cdn_root}/${this.embedId}/h264_hd.mp4`, `${this._data.name}.mp4`);
+                link.setAttribute('aria-label', 'Download video');
                 link.appendChild(template);
 
                 return html`${link}`;
@@ -95,8 +94,9 @@ export class Files extends MaveElement {
 
                 this.#setTextContent(template, '[slot="filetype"]', "mp3");
 
+                // download
                 const link = this.#createDownloadLink(`${this.cdn_root}/${this.embedId}/audio.mp3`, `${this._data.name}.mp3`);
-
+                link.setAttribute('aria-label', 'Download audio');
                 link.appendChild(template);
 
                 return html`${link}`;
@@ -109,8 +109,9 @@ export class Files extends MaveElement {
 
                 this.#setTextContent(template, '[slot="filetype"]', "vtt");
 
+                // download
                 const link = this.#createDownloadLink(subtitle.path, `${this._data.name}.vtt`);
-
+                link.setAttribute('aria-label', 'Download subtitles');
                 link.appendChild(template);
 
                 return html`${link}`;
