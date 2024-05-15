@@ -87,8 +87,7 @@ jobs:
           tag_name: ${{ env.NEW_VERSION }}
           body: ${{ steps.get-changelog.outputs.changelog }}
           prerelease: ${{ startsWith(github.event.inputs.release-type, 'pre') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PUSH_TO_PROTECTED_BRANCH }}
 
       # Commit changes
       - name: Commit CHANGELOG.md and package.json changes and create tag
