@@ -20,11 +20,11 @@ Components are pre-built rich UI components that help you build your own video e
 [Install](#install) •
 [Usage](#usage) •
 [Contributing](#contributing) •
-[Docs] (https://mave.io/docs/)
+[Docs](https://mave.io/docs/)
 
 ## Get started
 
-Include the following in your site:
+Include the following in your site (and [create an account](https://app.mave.io/signup)):
 
 ```html
 <script
