@@ -148,6 +148,7 @@ export class Text extends LitElement {
     this.addEventListener('scroll', this.#scrolling.bind(this));
 
     const player = document.querySelector(`mave-player[embed="${this.embed}"]`) as Player;
+
     if (player) {
       this.player = player;
 

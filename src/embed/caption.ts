@@ -56,48 +56,106 @@ export class CaptionController {
           const data = await response.json();
 
           // Split the text using the regular expression
-          const sentences = splitText(data.text.trim());
+          // const sentences = splitText(data.text.trim());
 
-          const words = data.segments.flatMap((segment: API.Segment) => segment.words).map((word: API.Word) => {
-            return {
-              start: word.start,
-              end: word.end,
-              word: word.word.trim()
+          const words = data.segments
+            .flatMap((segment: API.Segment) => segment.words)
+            .map((word: API.Word) => {
+              return {
+                start: word.start,
+                end: word.end,
+                word: word.word.trim(),
+              };
+            });
+
+          const sentences: API.Segment[] = [];
+          let currentSentence: API.Segment = {
+            start: null,
+            end: null,
+            text: '',
+            words: [],
+          };
+
+          words.forEach((wordObj: API.Word) => {
+            const { start, end, word } = wordObj;
+
+            if (currentSentence.start === null) {
+              currentSentence.start = start;
+            }
+
+            currentSentence.end = end;
+            currentSentence.words.push(wordObj);
+            currentSentence.text += (currentSentence.text ? ' ' : '') + word;
+
+            // Check if the word ends with a punctuation mark
+            if (/[.!?]$/.test(word)) {
+              sentences.push({ ...currentSentence });
+
+              currentSentence = {
+                start: null,
+                end: null,
+                text: '',
+                words: [],
+              };
             }
           });
 
-          // create segments based on sentences
-          let currentWordIndex = 0;
-          const segments = sentences.map((sentence: String) => {
+          if (currentSentence.words.length > 0) {
+            sentences.push({ ...currentSentence });
+          }
 
-            // grab last word from sentence
-            const lastWord = sentence.split(' ').pop();
+          const paragraphs: API.Segment[] = [];
+          const timeGapThreshold = 1;
+          const maxSentencesPerParagraph = 5;
 
-            // go through words from currentWordIndex and use the sentence until you have completed the sentence
-            const possibleWordCount = sentence.split(' ').length;
-            const possibleWords = words.slice(currentWordIndex, currentWordIndex + possibleWordCount + 10);
+          if (sentences.length > 0) {
+            let currentParagraph: API.Segment = {
+              start: sentences[0].start,
+              end: sentences[0].end,
+              text: sentences[0].text,
+              words: sentences[0].words,
+            };
 
-            if (!lastWord) return;
+            let sentenceCount = 1;
 
-            // compare last 2 characters of each
-            const lastWordIndex = possibleWords.length - possibleWords.reverse().findIndex((word: API.Word) => {
-              return lastWord.includes(word.word) && lastWord.slice(lastWord.length - 2) == word.word.slice(word.word.length - 2)
-            });
+            for (let i = 1; i < sentences.length; i++) {
+              const currentSentence = sentences[i];
+              const previousSentence = sentences[i - 1];
 
-            const sentenceWords = words.slice(currentWordIndex, currentWordIndex + lastWordIndex);
+              const currentStart = currentSentence.start ?? 0;
+              const previousEnd = previousSentence.end ?? 0;
 
-            if(!sentenceWords.length) return
+              if (
+                currentStart - previousEnd <= timeGapThreshold &&
+                sentenceCount < maxSentencesPerParagraph
+              ) {
+                currentParagraph.end = currentSentence.end;
+                currentParagraph.text += ' ' + currentSentence.text;
+                currentParagraph.words = [
+                  ...currentParagraph.words,
+                  ...currentSentence.words,
+                ];
+                sentenceCount++;
+              } else {
+                paragraphs.push({ ...currentParagraph });
 
-            currentWordIndex += lastWordIndex;
-            return {
-              start: sentenceWords[0].start,
-              end: sentenceWords[sentenceWords.length - 1].end,
-              text: sentence,
-              words: sentenceWords
+                currentParagraph = {
+                  start: currentSentence.start,
+                  end: currentSentence.end,
+                  text: currentSentence.text,
+                  words: currentSentence.words,
+                };
+                sentenceCount = 1;
+              }
             }
-          }).filter((segment) => !!segment)
 
-          return { text: data.text, segments: segments } as Partial<API.Caption>;
+            if (currentParagraph.words.length > 0) {
+              paragraphs.push(currentParagraph);
+            }
+          }
+
+          // Return the final structure
+          return { text: data.text, segments: paragraphs } as Partial<API.Caption>;
         } catch (e) {
           console.log(e);
           throw new Error(`Failed to fetch language file for "${this.embed}"`);
@@ -141,7 +199,7 @@ export class CaptionController {
     if (this._version) {
       return `/v${this._version}/`;
     }
-    return '/'
+    return '/';
   }
 
   set version(value: number) {
@@ -156,7 +214,9 @@ export class CaptionController {
   }
 
   embedFile(file: string, params = new URLSearchParams()): string {
-    const url = new URL(`${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`);
+    const url = new URL(
+      `${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`,
+    );
     if (this.token) params.append('token', this.token);
     url.search = params.toString();
     return url.toString();

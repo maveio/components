@@ -95,8 +95,8 @@ export type Word = {
 
 export type Segment = {
   text: string;
-  start: number;
-  end: number;
+  start: number | null;
+  end: number | null;
   words: Word[];
 };
 

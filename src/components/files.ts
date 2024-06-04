@@ -29,6 +29,19 @@ export class Files extends MaveElement {
   static styles = css`
     :host {
       display: block;
+      --link-color: #006fc6;
+      --link-decoration: underline;
+      --link-decoration-thickness: 1px;
+      --link-decoration-offset: 1px;
+      --link-cursor: pointer;
+    }
+
+    a {
+      text-decoration: var(--link-decoration);
+      text-decoration-thickness: var(--link-decoration-thickness);
+      text-underline-offset: var(--link-decoration-thickness);
+      color: var(--link-color);
+      cursor: var(--link-cursor);
     }
   `;
 

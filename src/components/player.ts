@@ -247,11 +247,13 @@ export class Player extends LitElement {
   }
 
   get currentTime(): number {
-    return this._videoElement?.currentTime || 0;
+    if (!this._videoElement) return 0;
+    return this._videoElement?.currentTime;
   }
 
   get paused(): boolean {
-    return this._videoElement?.paused || true;
+    if (!this._videoElement) return true;
+    return this._videoElement.paused;
   }
 
   play() {
