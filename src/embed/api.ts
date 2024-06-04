@@ -5,12 +5,12 @@ export type Rendition = {
   codec: 'h264' | 'hevc' | 'av1';
   container: 'webm' | 'mp4' | 'hls';
   type?: 'video' | 'clip_keyframes';
-}
+};
 
 export type Poster = {
   container: 'avif' | 'webp' | 'jpg';
   type: 'thumbnail' | 'poster';
-}
+};
 
 export type RenditionsByCodec = {
   [codec in Rendition['codec']]?: Rendition[];
@@ -95,8 +95,8 @@ export type Word = {
 
 export type Segment = {
   text: string;
-  start: number | null;
-  end: number | null;
+  start: number;
+  end: number;
   words: Word[];
 };
 

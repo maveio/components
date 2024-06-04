@@ -70,8 +70,8 @@ export class CaptionController {
 
           const sentences: API.Segment[] = [];
           let currentSentence: API.Segment = {
-            start: null,
-            end: null,
+            start: 0,
+            end: 0,
             text: '',
             words: [],
           };
@@ -79,7 +79,7 @@ export class CaptionController {
           words.forEach((wordObj: API.Word) => {
             const { start, end, word } = wordObj;
 
-            if (currentSentence.start === null) {
+            if (currentSentence.start === 0) {
               currentSentence.start = start;
             }
 
@@ -92,8 +92,8 @@ export class CaptionController {
               sentences.push({ ...currentSentence });
 
               currentSentence = {
-                start: null,
-                end: null,
+                start: 0,
+                end: 0,
                 text: '',
                 words: [],
               };
