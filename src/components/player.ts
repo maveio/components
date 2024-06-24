@@ -62,7 +62,14 @@ export class Player extends LitElement {
     return this._loop;
   }
 
-  private _controls: string[] = ['play', 'time', 'seek', 'volume', 'fullscreen', 'subtitles'];
+  private _controls: string[] = [
+    'play',
+    'time',
+    'seek',
+    'volume',
+    'fullscreen',
+    'subtitles',
+  ];
   @property()
   get controls(): string[] {
     return this._controls;
@@ -124,7 +131,7 @@ export class Player extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string {
-    if (!this.embed || !this._embed) return ''
+    if (!this.embed || !this._embed) return '';
 
     if (this._poster && this._poster == 'custom') {
       return this.embedController.embedFile(this.#posterRendition('thumbnail'));
@@ -171,6 +178,10 @@ export class Player extends LitElement {
 
     video:focus-visible {
       outline: 0;
+    }
+
+    video {
+      height: fit-content;
     }
 
     :host,
@@ -230,7 +241,7 @@ export class Player extends LitElement {
     if (this._videoElement) {
       this._videoElement.muted = shouldBeMuted;
     } else {
-      this._queue.push(() => this._videoElement!.muted = shouldBeMuted);
+      this._queue.push(() => (this._videoElement!.muted = shouldBeMuted));
     }
   }
 
@@ -242,7 +253,7 @@ export class Player extends LitElement {
     if (this._videoElement) {
       this._videoElement.currentTime = value;
     } else {
-      this._queue.push(() => this._videoElement!.currentTime = value);
+      this._queue.push(() => (this._videoElement!.currentTime = value));
     }
   }
 
@@ -302,32 +313,45 @@ export class Player extends LitElement {
   #posterRendition(type: 'poster' | 'thumbnail') {
     if (this._embed.poster.renditions) {
       // get avif first, then webp, then jpg
-      const rendition = this._embed.poster.renditions.find((rendition) => rendition.container === 'avif' && rendition.type === type);
-      return rendition ? `${type}.avif` : this._embed.poster.renditions.find((rendition) => rendition.container === 'webp' && rendition.type === type) ? `${type}.webp` : `${type}.jpg`;
+      const rendition = this._embed.poster.renditions.find(
+        (rendition) => rendition.container === 'avif' && rendition.type === type,
+      );
+      return rendition
+        ? `${type}.avif`
+        : this._embed.poster.renditions.find(
+            (rendition) => rendition.container === 'webp' && rendition.type === type,
+          )
+        ? `${type}.webp`
+        : `${type}.jpg`;
     } else {
       // fallback to jpg
       return `${type}.jpg`;
     }
-
   }
 
   #getStartLevel(): number {
-    const sizes = [{
-      name: 'sd',
-      width: 640,
-    }, {
-      name: 'hd',
-      width: 1280,
-    }, {
-      name: 'fhd',
-      width: 1920,
-    }, {
-      name: 'qhd',
-      width: 2560,
-    }, {
-      name: 'uhd',
-      width: 3840,
-    }];
+    const sizes = [
+      {
+        name: 'sd',
+        width: 640,
+      },
+      {
+        name: 'hd',
+        width: 1280,
+      },
+      {
+        name: 'fhd',
+        width: 1920,
+      },
+      {
+        name: 'qhd',
+        width: 2560,
+      },
+      {
+        name: 'uhd',
+        width: 3840,
+      },
+    ];
 
     const size = sizes.find((size) => size.name == this.quality);
     if (size) {
@@ -338,7 +362,11 @@ export class Player extends LitElement {
   }
 
   #handleVideo(videoElement?: Element) {
-    if (videoElement && videoElement.tagName == 'VIDEO' && (this.#hlsPath || this.#srcPath)) {
+    if (
+      videoElement &&
+      videoElement.tagName == 'VIDEO' &&
+      (this.#hlsPath || this.#srcPath)
+    ) {
       this._videoElement = videoElement as HTMLMediaElement;
       this._intersectionObserver.observe(this._videoElement);
 
@@ -374,22 +402,24 @@ export class Player extends LitElement {
           xhrSetup: this.#xhrHLSSetup.bind(this),
           maxBufferLength: 20,
           maxBufferSize: 20,
-          backBufferLength: 60
+          backBufferLength: 60,
         });
-
 
         this.hls?.loadSource(this.#hlsPath);
         this.hls?.attachMedia(this._videoElement);
-        if(Config.metrics.enabled) this._metricsInstance = new Metrics(this.hls, this.embed, metadata);
+        if (Config.metrics.enabled)
+          this._metricsInstance = new Metrics(this.hls, this.embed, metadata);
       } else if (
         this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
         this.#hlsPath
       ) {
         this._videoElement.src = this.#hlsPath;
-        if(Config.metrics.enabled) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+        if (Config.metrics.enabled)
+          this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       } else {
         this._videoElement.src = this.#srcPath;
-        if(Config.metrics.enabled) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+        if (Config.metrics.enabled)
+          this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       }
 
       if (this._queue.length) {
@@ -412,7 +442,9 @@ export class Player extends LitElement {
 
   #videoPlayed() {
     if (this.active_subtitle && !this._startedPlaying) {
-      const trackElement = this._videoElement?.querySelector(`track[srclang="${this.active_subtitle}"]`) as HTMLTrackElement;
+      const trackElement = this._videoElement?.querySelector(
+        `track[srclang="${this.active_subtitle}"]`,
+      ) as HTMLTrackElement;
       if (trackElement) {
         trackElement.track.mode = 'showing';
       }
@@ -457,7 +489,9 @@ export class Player extends LitElement {
 
     if (
       this._embed &&
-      ((this.autoplay === 'lazy' || this.autoplay === 'true') || this._embed.settings.autoplay == 'on_show')
+      (this.autoplay === 'lazy' ||
+        this.autoplay === 'true' ||
+        this._embed.settings.autoplay == 'on_show')
     ) {
       if (this._intersected) {
         if (this._videoElement?.paused) {
@@ -506,7 +540,6 @@ export class Player extends LitElement {
     const track = (e.target as HTMLTrackElement & { track: TextTrack }).track;
     const cues = track.activeCues as TextTrackCueList;
 
-
     if (track.mode == 'showing') {
       this._currentTrackLanguage = track.language;
     }
@@ -514,11 +547,10 @@ export class Player extends LitElement {
     if (!navigator.userAgent.includes('Mobi')) {
       if (track.mode != 'hidden') track.mode = 'hidden';
 
-
       if (!this._subtitlesText) {
         const subtitleText = this.shadowRoot
-        ?.querySelector(`theme-${this.theme}`)
-        ?.shadowRoot?.querySelector('#subtitles_text');
+          ?.querySelector(`theme-${this.theme}`)
+          ?.shadowRoot?.querySelector('#subtitles_text');
         if (subtitleText) {
           this._subtitlesText = subtitleText as HTMLElement;
         }
@@ -527,8 +559,10 @@ export class Player extends LitElement {
       if (this._currentTrackLanguage != track.language) return;
 
       const option = this.shadowRoot
-          ?.querySelector(`theme-${this.theme}`)
-        ?.shadowRoot?.querySelector('media-captions-selectmenu')?.shadowRoot?.querySelector('media-captions-listbox')?.shadowRoot?.querySelector('media-chrome-option[part="option option-selected"]');
+        ?.querySelector(`theme-${this.theme}`)
+        ?.shadowRoot?.querySelector('media-captions-selectmenu')
+        ?.shadowRoot?.querySelector('media-captions-listbox')
+        ?.shadowRoot?.querySelector('media-chrome-option[part="option option-selected"]');
 
       if (option && option.getAttribute('value') == 'off') {
         this._subtitlesText.innerHTML = '';
@@ -571,12 +605,15 @@ export class Player extends LitElement {
     const style: { [key: string]: string } = {};
 
     if (this.color || this._embed?.settings.color) {
-      style['--primary-color'] = `${this.color || this._embed?.settings.color}${this.opacity || this._embed?.settings.opacity ? this._embed?.settings.opacity : ''
-        }`;
+      style['--primary-color'] = `${this.color || this._embed?.settings.color}${
+        this.opacity || this._embed?.settings.opacity ? this._embed?.settings.opacity : ''
+      }`;
     }
 
-    if (this.aspect_ratio == 'auto' ||
-        (this._embed?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)) {
+    if (
+      this.aspect_ratio == 'auto' ||
+      (this._embed?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)
+    ) {
       style['--aspect-ratio'] = this._embed?.video.aspect_ratio;
     } else {
       style['--aspect-ratio'] = this.aspect_ratio || this._embed?.settings.aspect_ratio;
@@ -590,12 +627,20 @@ export class Player extends LitElement {
       style['--height'] = this.height || this._embed?.settings.height;
     }
 
-    if (!this.controls.includes('full') && !this.controls.includes('big') && !this.controls.includes('none')) {
+    if (
+      !this.controls.includes('full') &&
+      !this.controls.includes('big') &&
+      !this.controls.includes('none')
+    ) {
       style['--play-display'] = this.controls.includes('play') ? 'flex' : 'none';
       style['--time-display'] = this.controls.includes('time') ? 'flex' : 'none';
-      style['--seek-bar-visibility'] = this.controls.includes('seek') ? 'visible' : 'hidden';
+      style['--seek-bar-visibility'] = this.controls.includes('seek')
+        ? 'visible'
+        : 'hidden';
       style['--volume-display'] = this.controls.includes('volume') ? 'flex' : 'none';
-      style['--fullscreen-display'] = this.controls.includes('fullscreen') ? 'flex' : 'none';
+      style['--fullscreen-display'] = this.controls.includes('fullscreen')
+        ? 'flex'
+        : 'none';
       style['--captions-display'] = this.controls.includes('subtitles') ? 'flex' : 'none';
     }
 
@@ -605,20 +650,23 @@ export class Player extends LitElement {
       style['--captions-display'] = 'none';
     }
 
-
-    if (this.controls.includes('full') ||
-        (this._embed?.settings.controls == 'full' &&
-          !this.controls.includes('big') &&
-          !this.controls.includes('none'))) {
+    if (
+      this.controls.includes('full') ||
+      (this._embed?.settings.controls == 'full' &&
+        !this.controls.includes('big') &&
+        !this.controls.includes('none'))
+    ) {
       style['--media-control-bar-display'] = 'flex';
     } else {
       style['--media-control-bar-display'] = 'none';
     }
 
-    if (this.controls.includes('big') ||
-        (this._embed?.settings.controls == 'big' &&
-          !this.controls.includes('full') &&
-          !this.controls.includes('none'))) {
+    if (
+      this.controls.includes('big') ||
+      (this._embed?.settings.controls == 'big' &&
+        !this.controls.includes('full') &&
+        !this.controls.includes('none'))
+    ) {
       style['--big-button-display'] = 'flex';
     } else {
       style['--big-button-display'] = 'none';
@@ -655,7 +703,11 @@ export class Player extends LitElement {
   get #subtitles() {
     if (this._embed.subtitles.length > 0) {
       return this._embed.subtitles.map((track) => {
-        if ((this.subtitles && this.subtitles.includes(track.language)) || (this.active_subtitle && this.active_subtitle == track.language) || this.subtitles == "all") {
+        if (
+          (this.subtitles && this.subtitles.includes(track.language)) ||
+          (this.active_subtitle && this.active_subtitle == track.language) ||
+          this.subtitles == 'all'
+        ) {
           return html`
             <track mode="hidden" @cuechange=${this.#cuechange} label=${
             track.label

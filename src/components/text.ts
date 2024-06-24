@@ -66,7 +66,9 @@ export class Text extends LitElement {
     if (this._wordIndex != value) {
       this._wordIndex = value;
       if (this.autoscroll) {
-        const span = this.shadowRoot?.querySelector(`[data-word-id="word-${this.segmentIndex}-${this.wordIndex}"]`);
+        const span = this.shadowRoot?.querySelector(
+          `[data-word-id="word-${this.segmentIndex}-${this.wordIndex}"]`,
+        );
         if (span && this._lastScrollTime + 2500 < Date.now()) {
           const thisRect = this.getBoundingClientRect();
           const spanRect = span.getBoundingClientRect();
@@ -75,7 +77,7 @@ export class Text extends LitElement {
 
           if (relativeTop > 0) {
             const targetScroll = this.scrollTop + relativeTop;
-            this.#smoothScroll(this, targetScroll - (spanRect.height / 2));
+            this.#smoothScroll(this, targetScroll - spanRect.height / 2);
           }
         }
       }
@@ -89,19 +91,19 @@ export class Text extends LitElement {
     let isScrolling = false;
 
     function animateScroll(timestamp: number) {
-        if (!startTime) {
-          startTime = timestamp;
-        }
-        const timeElapsed = timestamp - startTime!;
-        const progress = Math.min(timeElapsed / duration, 1);
+      if (!startTime) {
+        startTime = timestamp;
+      }
+      const timeElapsed = timestamp - startTime!;
+      const progress = Math.min(timeElapsed / duration, 1);
 
-        element.scrollTop = start + change * easeInOutQuad(progress);
+      element.scrollTop = start + change * easeInOutQuad(progress);
 
-        if (timeElapsed < duration && isScrolling) {
-          requestAnimationFrame(animateScroll);
-        } else {
-          isScrolling = false;
-        }
+      if (timeElapsed < duration && isScrolling) {
+        requestAnimationFrame(animateScroll);
+      } else {
+        isScrolling = false;
+      }
     }
 
     function easeInOutQuad(x: number): number {
@@ -110,7 +112,7 @@ export class Text extends LitElement {
 
     isScrolling = true;
     requestAnimationFrame(animateScroll);
-}
+  }
 
   private _segmentIndex: number;
   get segmentIndex(): number {
@@ -137,7 +139,7 @@ export class Text extends LitElement {
       height: 100%;
     }
 
-    [part=word] {
+    [part='word'] {
       background-color: rgba(255, 210, 42, 0.5);
     }
   `;
@@ -155,10 +157,10 @@ export class Text extends LitElement {
       player.addEventListener('play', () => {
         this.loop = true;
         this.loopUpdateTime();
-      })
+      });
       player.addEventListener('pause', () => {
         this.loop = false;
-      })
+      });
     }
   }
 
@@ -174,7 +176,7 @@ export class Text extends LitElement {
     this.updateTime();
     setTimeout(() => {
       if (this.loop) {
-        requestAnimationFrame(this.loopUpdateTime.bind(this))
+        requestAnimationFrame(this.loopUpdateTime.bind(this));
       }
     }, 10);
   }
@@ -190,11 +192,16 @@ export class Text extends LitElement {
     }
   }
 
-  inRange({ start, end }: { start: number, end: number }, part?: string, segmentIndex?: number, wordIndex?: number) {
+  inRange(
+    { start, end }: { start: number; end: number },
+    part?: string,
+    segmentIndex?: number,
+    wordIndex?: number,
+  ) {
     const withinValue = this.currentTime >= start && this.currentTime <= end;
     if (withinValue) {
-      if(wordIndex) this.wordIndex = wordIndex;
-      if(segmentIndex) this.segmentIndex = segmentIndex;
+      if (wordIndex) this.wordIndex = wordIndex;
+      if (segmentIndex) this.segmentIndex = segmentIndex;
       return part ? part : true;
     } else {
       return undefined;
@@ -204,15 +211,15 @@ export class Text extends LitElement {
   segmentStyle() {
     if (!this.clickable) return {};
     return {
-      'cursor': 'pointer'
-    }
+      cursor: 'pointer',
+    };
   }
 
   wordStyle(inRange: boolean) {
     if (!inRange) return {};
     return {
       'background-color': this.highlight,
-    }
+    };
   }
 
   render() {
@@ -221,18 +228,38 @@ export class Text extends LitElement {
         this.captions = data as Caption;
 
         return html`
-          <div >
-            ${this.captions.segments.map((segment, segmentIndex) => html`
-              <p data-segment-id="segment-${segmentIndex}" style=${styleMap(this.segmentStyle())} @click=${this.clickable ? this.#jumpToSegment : nothing} part=${ifDefined(this.inRange(segment, 'segment'))} x-caption-segment-start="${segment.start}" x-caption-segment-end="${segment.end}">
-                ${segment.words.map((word, wordIndex) => html`
-                  <span data-word-id="word-${segmentIndex}-${wordIndex}" style=${styleMap(this.wordStyle(this.inRange(word) as boolean))} part=${ifDefined(this.inRange(word, 'word', segmentIndex, wordIndex))} x-caption-word-start="${word.start}" x-caption-word-end="${word.end}">${word.word.trim()}</span>
-                `)}
-              </p>
-            `)}
+          <div>
+            ${this.captions.segments.map(
+              (segment, segmentIndex) => html`
+                <p
+                  data-segment-id="segment-${segmentIndex}"
+                  style=${styleMap(this.segmentStyle())}
+                  @click=${this.clickable ? this.#jumpToSegment : nothing}
+                  part=${ifDefined(this.inRange(segment, 'segment'))}
+                  x-caption-segment-start="${segment.start}"
+                  x-caption-segment-end="${segment.end}"
+                >
+                  ${segment.words.map(
+                    (word, wordIndex) => html`
+                      <span
+                        data-word-id="word-${segmentIndex}-${wordIndex}"
+                        style=${styleMap(this.wordStyle(this.inRange(word) as boolean))}
+                        part=${ifDefined(
+                          this.inRange(word, 'word', segmentIndex, wordIndex),
+                        )}
+                        x-caption-word-start="${word.start}"
+                        x-caption-word-end="${word.end}"
+                        >${word.word.trim()}</span
+                      >
+                    `,
+                  )}
+                </p>
+              `,
+            )}
           </div>
         `;
-      }
-    })
+      },
+    });
   }
 }
 
