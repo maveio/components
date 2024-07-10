@@ -127,7 +127,10 @@ export class Pop extends LitElement {
       --frame-height: min(var(--ratio), var(--frame-max-height));
       position: relative;
       padding-bottom: var(--frame-height);
-      width: min(calc(var(--frame-height, 0) * (var(--frame-ratio-w) / var(--frame-ratio-h))), 100%);
+      width: min(
+        calc(var(--frame-height, 0) * (var(--frame-ratio-w) / var(--frame-ratio-h))),
+        100%
+      );
       height: 0;
       overflow: hidden;
       background-size: contain;
@@ -281,24 +284,29 @@ function getAllAttributesAsObject(element?: Element): Record<string, string> {
   if (!element) return attributesObject;
 
   for (let i = 0; i < element.attributes.length; i++) {
-      const attribute = element.attributes[i];
-      attributesObject[attribute.name] = attribute.value;
+    const attribute = element.attributes[i];
+    attributesObject[attribute.name] = attribute.value;
   }
   return attributesObject;
 }
 
-
 export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
-  function findOrCreatePop(embed: string): { pop: Pop, attributes?: Record<string, string> } {
+  function findOrCreatePop(embed: string): {
+    pop: Pop;
+    attributes?: Record<string, string>;
+  } {
+    if (document.querySelector(`mave-pop[embed="${embed}"]`)) {
+      const attributes = getAllAttributesAsObject(
+        document.querySelector(`mave-pop[embed="${embed}"] > mave-player`)!,
+      );
 
-    if (document.querySelector(`mave-pop[embed=${embed}]`)) {
-      const attributes = getAllAttributesAsObject(document.querySelector(`mave-pop[embed=${embed}] > mave-player`)!);
-
-      return { pop: document.querySelector(`mave-pop[embed=${embed}]`)!, attributes };
+      return { pop: document.querySelector(`mave-pop[embed="${embed}"]`)!, attributes };
     }
 
     if (document.querySelector('mave-pop:not([embed])')) {
-      const attributes = getAllAttributesAsObject(document.querySelector('mave-pop:not([embed]) > mave-player')!);
+      const attributes = getAllAttributesAsObject(
+        document.querySelector('mave-pop:not([embed]) > mave-player')!,
+      );
 
       return { pop: document.querySelector('mave-pop:not([embed])')!, attributes };
     }
@@ -332,9 +340,7 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
       (e as MouseEvent).preventDefault();
       const players = document.querySelectorAll('mave-player');
 
-      const popped = Array.from(players).find(
-        (player) => player.popped,
-      );
+      const popped = Array.from(players).find((player) => player.popped);
 
       if (!popped) {
         const player = createPlayer(embed, attributes);
