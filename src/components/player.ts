@@ -180,10 +180,6 @@ export class Player extends LitElement {
       outline: 0;
     }
 
-    video {
-      height: fit-content;
-    }
-
     :host,
     media-controller,
     theme-default,
