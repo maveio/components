@@ -84,7 +84,7 @@ export type Video = {
   poster_image: string;
   last_uploaded: string;
   language: string;
-  created: string;
+  created: number;
 };
 
 export type Word = {

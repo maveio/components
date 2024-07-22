@@ -1,12 +1,14 @@
-import { css, html, LitElement, nothing } from 'lit';
+import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { Collection } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
+import { MaveElement } from '../utils/mave_element';
 import { checkPop } from './pop.js';
 
-export class List extends LitElement {
+export class List extends MaveElement {
   @property() token: string;
+  @property() order?: 'oldest' | 'newest' | 'az' | 'za' = 'newest';
 
   static styles = css`
     :host {
@@ -57,12 +59,12 @@ export class List extends LitElement {
         error: (error: unknown) =>
           // TODO: add error state with error player UI
           html`<p>${error instanceof Error ? error.message : nothing}</p>`,
-        complete: (data) => {
+        complete: (data: any) => {
           this._collection = data as Collection;
           if (!data) return this.renderPending();
+          if (data.error) return console.warn(data.error);
           const templates = this._slottedChildren
             .map((item) => {
-
               function createClone() {
                 let clone: DocumentFragment;
                 if (item.nodeName === 'TEMPLATE') {
@@ -82,7 +84,10 @@ export class List extends LitElement {
                 return html`${template}`;
               }
 
-              if (item.getAttribute('name') == 'mave-list-root' && this.embedController.embed) {
+              if (
+                item.getAttribute('name') == 'mave-list-root' &&
+                this.embedController.embed
+              ) {
                 const template = createClone();
                 const link = template.querySelector('[slot="root-link"]');
                 if (link) {
@@ -111,9 +116,17 @@ export class List extends LitElement {
                     }
                   });
 
-                  this.#setTextContent(template, '[slot="folder-title"]', collection.name);
+                  this.#setTextContent(
+                    template,
+                    '[slot="folder-title"]',
+                    collection.name,
+                  );
                   if (typeof collection.video_count == 'number') {
-                    this.#setTextContent(template, '[slot="folder-count"]', collection.video_count.toString());
+                    this.#setTextContent(
+                      template,
+                      '[slot="folder-count"]',
+                      collection.video_count.toString(),
+                    );
                   }
 
                   return html`${template}`;
@@ -122,11 +135,47 @@ export class List extends LitElement {
                 return html`${result}`;
               }
 
-              if (item.getAttribute('name') == 'mave-list-item' || (!['mave-list-folder', 'mave-list-item', 'mave-list-root', 'list-title'].includes(item.hasAttribute('name') ? item.getAttribute('name')! : '') && item.nodeName == 'TEMPLATE')) {
-                const result = this._collection.videos?.map((video) => {
+              if (
+                item.getAttribute('name') == 'mave-list-item' ||
+                (![
+                  'mave-list-folder',
+                  'mave-list-item',
+                  'mave-list-root',
+                  'list-title',
+                ].includes(item.hasAttribute('name') ? item.getAttribute('name')! : '') &&
+                  item.nodeName == 'TEMPLATE')
+              ) {
+                let videos = this._collection.videos;
+                if (this.order == 'newest') {
+                  videos = this._collection.videos?.sort((a, b) => {
+                    return b.created - a.created;
+                  });
+                }
+                if (this.order == 'oldest') {
+                  videos = this._collection.videos?.sort((a, b) => {
+                    return a.created - b.created;
+                  });
+                }
+                if (this.order == 'az') {
+                  videos = this._collection.videos?.sort((a, b) => {
+                    return a.name.localeCompare(b.name);
+                  });
+                }
+                if (this.order == 'za') {
+                  videos = this._collection.videos?.sort((a, b) => {
+                    return b.name.localeCompare(a.name);
+                  });
+                }
+
+                const result = videos?.map((video) => {
                   const template = createClone();
 
                   this.#setTextContent(template, '[slot="item-title"]', video.name);
+                  this.#setTextContent(
+                    template,
+                    '[slot="item-duration"]',
+                    this.durationToTime(video.duration),
+                  );
                   this.#setEmbedAttribute(template, 'mave-clip', video.id);
                   this.#setEmbedAttribute(template, 'mave-player', video.id);
                   this.#setEmbedAttribute(template, 'mave-img', video.id);
@@ -135,7 +184,6 @@ export class List extends LitElement {
 
                 return html`${result}`;
               }
-
             })
             .filter((t) => t);
 
