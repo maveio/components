@@ -36,15 +36,6 @@ export class List extends MaveElement {
     return slot?.assignedElements({ flatten: true }) || [];
   }
 
-  get _stylesheets() {
-    if (document) {
-      const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
-      return html`${Array.from(styles).map((style) => style.cloneNode(true))}`;
-    } else {
-      return null;
-    }
-  }
-
   updated() {
     if (this.shadowRoot) {
       checkPop(this.shadowRoot);
@@ -93,6 +84,7 @@ export class List extends MaveElement {
                 if (link) {
                   link.addEventListener('click', (e) => {
                     e.preventDefault();
+                    this.emit(this.EVENT_TYPES.CLICK, { action: 'back', embedId: '' });
                     this.embedController.embed = '';
                   });
                   link.removeAttribute('slot');
@@ -110,6 +102,10 @@ export class List extends MaveElement {
                     if (element) {
                       element.addEventListener('click', (e) => {
                         e.preventDefault();
+                        this.emit(this.EVENT_TYPES.CLICK, {
+                          action: 'show_collection',
+                          collectionId: collection.id,
+                        });
                         this.embedController.embed = collection.id;
                       });
                       element.removeAttribute('slot');
@@ -167,10 +163,24 @@ export class List extends MaveElement {
                   });
                 }
 
-                const result = videos?.map((video) => {
+                const result = videos?.map((video, index) => {
                   const template = createClone();
+                  const position = index + 1;
+
+                  template.addEventListener('click', (e) => {
+                    this.emit(this.EVENT_TYPES.CLICK, {
+                      action: 'show_embed',
+                      embedId: video.id,
+                      position,
+                    });
+                  });
 
                   this.#setTextContent(template, '[slot="item-title"]', video.name);
+                  this.#setTextContent(
+                    template,
+                    '[slot="item-position"]',
+                    position.toString(),
+                  );
                   this.#setTextContent(
                     template,
                     '[slot="item-duration"]',
@@ -187,7 +197,7 @@ export class List extends MaveElement {
             })
             .filter((t) => t);
 
-          return html`${this._stylesheets} ${templates} `;
+          return html`${this._stylesheets} ${templates}`;
         },
       })}
     `;
