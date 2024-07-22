@@ -186,15 +186,17 @@ export class List extends MaveElement {
                   const title = template.querySelector('[slot="item-title"]');
                   const img = template.querySelector('mave-img');
 
-                  [clip, title, img].forEach((el: Element | null) => {
-                    el?.addEventListener('click', (e) => {
-                      this.emit(this.EVENT_TYPES.CLICK, {
-                        action: 'show_embed',
-                        embedId: video.id,
-                        position,
+                  [clip, title, img, template].forEach(
+                    (el: Element | DocumentFragment | null) => {
+                      el?.addEventListener('click', (e) => {
+                        this.emit(this.EVENT_TYPES.CLICK, {
+                          action: 'show_embed',
+                          embedId: video.id,
+                          position,
+                        });
                       });
-                    });
-                  });
+                    },
+                  );
                   return html`${template}`;
                 });
 
