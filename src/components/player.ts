@@ -28,6 +28,7 @@ export class Player extends LitElement {
       this._embedId = value;
       this.requestUpdate('embed');
       this.embedController.embed = this.embed;
+      this.updateStylePoster();
     }
   }
 
@@ -279,6 +280,13 @@ export class Player extends LitElement {
     }
   }
 
+  updateStylePoster() {
+    this.style.setProperty(
+      'background',
+      `center / contain no-repeat url(${this.poster})`,
+    );
+  }
+
   #xhrHLSSetup(xhr: XMLHttpRequest, url: string) {
     const newUrl = new URL(url);
     if (this.token && !newUrl.searchParams.get('token')) {
@@ -522,6 +530,7 @@ export class Player extends LitElement {
   // Used for updating the embed settings
   updateEmbed(embed: Embed, shouldOverwrite = true) {
     this._embed = embed;
+    this.updateStylePoster();
 
     if (shouldOverwrite) {
       this.poster = this._embed.settings.poster;
