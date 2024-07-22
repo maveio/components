@@ -167,14 +167,6 @@ export class List extends MaveElement {
                   const template = createClone();
                   const position = index + 1;
 
-                  template.addEventListener('click', (e) => {
-                    this.emit(this.EVENT_TYPES.CLICK, {
-                      action: 'show_embed',
-                      embedId: video.id,
-                      position,
-                    });
-                  });
-
                   this.#setTextContent(template, '[slot="item-title"]', video.name);
                   this.#setTextContent(
                     template,
@@ -189,6 +181,22 @@ export class List extends MaveElement {
                   this.#setEmbedAttribute(template, 'mave-clip', video.id);
                   this.#setEmbedAttribute(template, 'mave-player', video.id);
                   this.#setEmbedAttribute(template, 'mave-img', video.id);
+
+                  const clip = template.querySelector('mave-clip');
+                  const title = template.querySelector('[slot="item-title"]');
+                  const img = template.querySelector('mave-img');
+
+                  console.log(img);
+
+                  [clip, title, img].forEach((el: Element | null) => {
+                    el?.addEventListener('click', (e) => {
+                      this.emit(this.EVENT_TYPES.CLICK, {
+                        action: 'show_embed',
+                        embedId: video.id,
+                        position,
+                      });
+                    });
+                  });
                   return html`${template}`;
                 });
 
