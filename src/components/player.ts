@@ -429,7 +429,11 @@ export class Player extends LitElement {
 
   #intersected(entries: IntersectionObserverEntry[]) {
     for (const { isIntersecting } of entries) {
-      if (entries.length && entries[0].target.tagName == 'VIDEO') {
+      if (
+        entries.length &&
+        (entries[0].target.tagName == 'VIDEO' ||
+          entries[0].target.tagName == 'MAVE-PLAYER')
+      ) {
         this._intersected = isIntersecting;
         this.#handleAutoplay();
       }
@@ -496,7 +500,12 @@ export class Player extends LitElement {
           this._videoElement?.play();
         }
       } else {
-        if (!this._videoElement?.paused) this._videoElement?.pause();
+        if (
+          this._videoElement &&
+          !this._videoElement.paused &&
+          this._videoElement.readyState > 2
+        )
+          this._videoElement?.pause();
       }
     }
   }
