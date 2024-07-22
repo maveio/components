@@ -153,7 +153,7 @@ export class Files extends MaveElement {
             }
           });
 
-          return html`${templates}`;
+          return html`${this._stylesheets} ${templates}`;
         },
       })}
     `;

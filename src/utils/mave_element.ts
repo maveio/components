@@ -1,10 +1,14 @@
-import { LitElement } from 'lit';
+import { html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { Config } from '../config';
 
 export class MaveElement extends LitElement {
   _embed: string;
+
+  EVENT_TYPES = {
+    CLICK: 'user_click',
+  };
 
   @property({ type: String })
   get embed(): string {
@@ -27,6 +31,15 @@ export class MaveElement extends LitElement {
     return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
   }
 
+  get _stylesheets() {
+    if (document) {
+      const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+      return html`${Array.from(styles).map((style) => style.cloneNode(true))}`;
+    } else {
+      return null;
+    }
+  }
+
   durationToTime(duration: number): string {
     const totalSeconds = Math.floor(duration);
     const hours = Math.floor(totalSeconds / 3600);
@@ -40,5 +53,12 @@ export class MaveElement extends LitElement {
     } else {
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
+  }
+
+  emit(eventType: string, detail: any) {
+    this.dispatchEvent(
+      new CustomEvent(`mave:${eventType}`, { detail: { ...detail, eventType } }),
+    );
+    this.dispatchEvent(new CustomEvent('mave:*', { detail: { ...detail, eventType } }));
   }
 }
