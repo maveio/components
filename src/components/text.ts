@@ -16,6 +16,7 @@ export class Text extends LitElement {
     if (this._embedId != value) {
       this._embedId = value;
       this.captionController = new CaptionController(this, this.embed);
+      this.reset();
       this.requestUpdate('embed');
     }
   }
@@ -149,6 +150,14 @@ export class Text extends LitElement {
 
     this.addEventListener('scroll', this.#scrolling.bind(this));
 
+    this.reset();
+  }
+
+  reset() {
+    this.loop = false;
+    this.currentTime = 0;
+    this.wordIndex = 0;
+    this.segmentIndex = 0;
     const player = document.querySelector(`mave-player[embed="${this.embed}"]`) as Player;
 
     if (player) {
@@ -223,6 +232,7 @@ export class Text extends LitElement {
   }
 
   render() {
+    if (!this.captionController) return nothing;
     return this.captionController.render({
       complete: (data) => {
         this.captions = data as Caption;
