@@ -4,7 +4,7 @@ import 'media-chrome/dist/experimental/media-captions-selectmenu.js';
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
-import { css, html, LitElement } from 'lit';
+import { css, html } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
@@ -16,8 +16,9 @@ import { ThemeLoader } from '../themes/loader';
 import { videoEvents } from '../utils/video_events';
 
 import { Config } from '../config';
+import { MaveElement } from '../utils/mave_element';
 
-export class Player extends LitElement {
+export class Player extends MaveElement {
   private _embedId: string;
   @property()
   get embed(): string {
@@ -26,7 +27,7 @@ export class Player extends LitElement {
   set embed(value: string) {
     if (this._embedId != value) {
       this._embedId = value;
-      this.requestUpdate('embed');
+      // this.requestUpdate('embed');
       this.embedController.embed = this.embed;
       this.updateStylePoster();
     }
@@ -63,7 +64,7 @@ export class Player extends LitElement {
     return this._loop;
   }
 
-  private _controls: string[] = [
+  private _controls: string[] | string = [
     'play',
     'time',
     'seek',
@@ -72,7 +73,7 @@ export class Player extends LitElement {
     'subtitles',
   ];
   @property()
-  get controls(): string[] {
+  get controls(): string[] | string {
     return this._controls;
   }
   set controls(value: string | string[]) {
@@ -82,6 +83,8 @@ export class Player extends LitElement {
       this._controls = value;
     }
   }
+
+  _previousControls?: string[] | string;
 
   private _cache: boolean;
   @property({ attribute: 'cache', type: Boolean })
@@ -132,7 +135,7 @@ export class Player extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string {
-    if (!this.embed || !this._embed) return '';
+    if (!this.embed || !this._embedObj) return '';
 
     if (this._poster && this._poster == 'custom') {
       return this.embedController.embedFile(this.#posterRendition('thumbnail'));
@@ -212,7 +215,7 @@ export class Player extends LitElement {
   private _videoElement?: HTMLMediaElement;
 
   @state()
-  private _embed: Embed;
+  private _embedObj: Embed;
 
   private _metricsInstance?: Metrics;
   private _intersected = false;
@@ -272,6 +275,14 @@ export class Player extends LitElement {
     }
   }
 
+  restart() {
+    if (this._videoElement) {
+      this.pause();
+      this._videoElement.currentTime = 0;
+      this.play();
+    }
+  }
+
   pause() {
     if (this._videoElement) {
       this._videoElement.pause();
@@ -315,14 +326,14 @@ export class Player extends LitElement {
   }
 
   #posterRendition(type: 'poster' | 'thumbnail') {
-    if (this._embed.poster.renditions) {
+    if (this._embedObj.poster.renditions) {
       // get avif first, then webp, then jpg
-      const rendition = this._embed.poster.renditions.find(
+      const rendition = this._embedObj.poster.renditions.find(
         (rendition) => rendition.container === 'avif' && rendition.type === type,
       );
       return rendition
         ? `${type}.avif`
-        : this._embed.poster.renditions.find(
+        : this._embedObj.poster.renditions.find(
             (rendition) => rendition.container === 'webp' && rendition.type === type,
           )
         ? `${type}.webp`
@@ -377,7 +388,58 @@ export class Player extends LitElement {
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
           if (event == 'play') this.#videoPlayed();
-          if (event == 'ended') this.#videoEnded();
+          if (event == 'ended') this.#showEndscreen();
+          if (
+            event == 'timeupdate' &&
+            this._videoElement &&
+            this._videoElement.duration - this._videoElement.currentTime < 5
+          ) {
+            const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+            if (endScreen && endScreen.getAttribute('x-mave-end-shows') == 'near_end') {
+              this.#showEndscreen();
+
+              const remaining = this.querySelector("[name='mave-time-remaining']");
+              if (remaining) {
+                remaining.innerHTML = Math.floor(
+                  this._videoElement.duration - this._videoElement.currentTime,
+                ).toString();
+              }
+
+              if (
+                this._videoElement?.duration - this._videoElement?.currentTime <= 0 &&
+                endScreen.getAttribute('x-mave-list-trigger-next') == 'true'
+              ) {
+                const list = [...document.querySelectorAll('mave-list')].find((list) =>
+                  list.containsEmbed(this.embed),
+                );
+                if (list) {
+                  const next = list.getNextForEmbed(this.embed);
+                  if (next) this.emit(this.EVENT_TYPES.CLICK, { embedId: next.id });
+                }
+              }
+
+              const nextImage = this.querySelector("[name='mave-list-next-image']");
+              if (nextImage && nextImage.innerHTML == '') {
+                // get all mave-lists and use getNextForEmbed
+                const list = [...document.querySelectorAll('mave-list')].find((list) =>
+                  list.containsEmbed(this.embed),
+                );
+                if (list) {
+                  const next = list.getNextForEmbed(this.embed);
+                  if (next) {
+                    const img = document.createElement('mave-img');
+                    img.setAttribute('embed', next.id);
+                    img.addEventListener('click', () => {
+                      this.emit(this.EVENT_TYPES.CLICK, { embedId: next.id });
+                      nextImage.innerHTML = '';
+                    });
+                    nextImage.appendChild(img);
+                  }
+                }
+              }
+            }
+          }
+
           this.dispatchEvent(
             new CustomEvent(event, {
               detail: e,
@@ -390,13 +452,13 @@ export class Player extends LitElement {
 
       Metrics.config = {
         socketPath: Config.metrics.socket,
-        apiKey: this._embed.metrics_key,
+        apiKey: this._embedObj.metrics_key,
       };
 
       const metadata = {
         component: 'player',
-        video_id: this._embed.video.id,
-        space_id: this._embed.space_id,
+        video_id: this._embedObj.video.id,
+        space_id: this._embedObj.space_id,
       };
 
       if (Hls.isSupported() && this.#hlsPath) {
@@ -432,6 +494,7 @@ export class Player extends LitElement {
       }
 
       this.#handleAutoplay();
+      this.#hideEndscreen();
     }
   }
 
@@ -460,10 +523,11 @@ export class Player extends LitElement {
 
     this._startedPlaying = true;
 
-    const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
-    if (endScreen) {
-      this.endScreenElement.style.display = 'none';
-      endScreen.style.display = 'none';
+    this.#hideEndscreen();
+
+    if (this._previousControls) {
+      this.controls = this._previousControls;
+      this._previousControls = undefined;
     }
 
     const startScreen = this.querySelector('[slot="start-screen"]') as HTMLElement;
@@ -476,11 +540,40 @@ export class Player extends LitElement {
     }
   }
 
-  #videoEnded() {
+  #showEndscreen() {
     const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+
     if (endScreen) {
+      if (endScreen.tagName === 'TEMPLATE') {
+        const template = endScreen as HTMLTemplateElement;
+        const parent = template.parentElement;
+
+        const div = document.createElement('div');
+        for (let attr of template.attributes) {
+          div.setAttribute(attr.name, attr.value);
+        }
+        div.style.display = 'block';
+
+        div.innerHTML = template.innerHTML;
+        parent?.replaceChild(div, template);
+      }
+
       this.endScreenElement.style.display = 'block';
       endScreen.style.display = 'block';
+      if (!this._previousControls) this._previousControls = this.controls;
+      this.controls = 'none';
+    }
+  }
+
+  #hideEndscreen() {
+    const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+    if (endScreen) {
+      this.endScreenElement.style.display = 'none';
+      endScreen.style.display = 'none';
+    }
+    if (this._previousControls) {
+      this.controls = this._previousControls;
+      this._previousControls = undefined;
     }
   }
 
@@ -499,7 +592,7 @@ export class Player extends LitElement {
       this._embed &&
       (this.autoplay === 'lazy' ||
         this.autoplay === 'true' ||
-        this._embed.settings.autoplay == 'on_show')
+        this._embedObj.settings.autoplay == 'on_show')
     ) {
       if (this._intersected) {
         if (this._videoElement?.paused) {
@@ -529,24 +622,24 @@ export class Player extends LitElement {
 
   // Used for updating the embed settings
   updateEmbed(embed: Embed, shouldOverwrite = true) {
-    this._embed = embed;
+    this._embedObj = embed;
     this.updateStylePoster();
 
     if (shouldOverwrite) {
-      this.poster = this._embed.settings.poster;
-      this.color = this._embed.settings.color;
-      this.opacity = this._embed.settings.opacity
-        ? (this._embed.settings.opacity as unknown as string)
+      this.poster = this._embedObj.settings.poster;
+      this.color = this._embedObj.settings.color;
+      this.opacity = this._embedObj.settings.opacity
+        ? (this._embedObj.settings.opacity as unknown as string)
         : undefined;
-      this.aspect_ratio = this._embed.settings.aspect_ratio;
-      this.width = this._embed.settings.width;
-      this.height = this._embed.settings.height;
+      this.aspect_ratio = this._embedObj.settings.aspect_ratio;
+      this.width = this._embedObj.settings.width;
+      this.height = this._embedObj.settings.height;
       this.autoplay =
-        this._embed.settings.autoplay == 'on_show'
+        this._embedObj.settings.autoplay == 'on_show'
           ? 'lazy'
-          : this._embed.settings.autoplay;
-      this.controls = this._embed.settings.controls;
-      this.loop = this._embed.settings.loop;
+          : this._embedObj.settings.autoplay;
+      this.controls = this._embedObj.settings.controls;
+      this.loop = this._embedObj.settings.loop;
     }
   }
 
@@ -595,7 +688,7 @@ export class Player extends LitElement {
   }
 
   #highestRendition(type: 'hls' | 'mp4') {
-    const renditions = this._embed.video.renditions.filter(
+    const renditions = this._embedObj.video.renditions.filter(
       (rendition) => rendition.container == type,
     );
 
@@ -618,27 +711,30 @@ export class Player extends LitElement {
   get styles() {
     const style: { [key: string]: string } = {};
 
-    if (this.color || this._embed?.settings.color) {
-      style['--primary-color'] = `${this.color || this._embed?.settings.color}${
-        this.opacity || this._embed?.settings.opacity ? this._embed?.settings.opacity : ''
+    if (this.color || this._embedObj?.settings.color) {
+      style['--primary-color'] = `${this.color || this._embedObj?.settings.color}${
+        this.opacity || this._embedObj?.settings.opacity
+          ? this._embedObj?.settings.opacity
+          : ''
       }`;
     }
 
     if (
       this.aspect_ratio == 'auto' ||
-      (this._embed?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)
+      (this._embedObj?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)
     ) {
-      style['--aspect-ratio'] = this._embed?.video.aspect_ratio;
+      style['--aspect-ratio'] = this._embedObj?.video.aspect_ratio;
     } else {
-      style['--aspect-ratio'] = this.aspect_ratio || this._embed?.settings.aspect_ratio;
+      style['--aspect-ratio'] =
+        this.aspect_ratio || this._embedObj?.settings.aspect_ratio;
     }
 
-    if (this.width || this._embed?.settings.width) {
-      style['--width'] = this.width || this._embed?.settings.width;
+    if (this.width || this._embedObj?.settings.width) {
+      style['--width'] = this.width || this._embedObj?.settings.width;
     }
 
-    if (this.height || this._embed?.settings.height) {
-      style['--height'] = this.height || this._embed?.settings.height;
+    if (this.height || this._embedObj?.settings.height) {
+      style['--height'] = this.height || this._embedObj?.settings.height;
     }
 
     if (
@@ -666,7 +762,7 @@ export class Player extends LitElement {
 
     if (
       this.controls.includes('full') ||
-      (this._embed?.settings.controls == 'full' &&
+      (this._embedObj?.settings.controls == 'full' &&
         !this.controls.includes('big') &&
         !this.controls.includes('none'))
     ) {
@@ -677,7 +773,7 @@ export class Player extends LitElement {
 
     if (
       this.controls.includes('big') ||
-      (this._embed?.settings.controls == 'big' &&
+      (this._embedObj?.settings.controls == 'big' &&
         !this.controls.includes('full') &&
         !this.controls.includes('none'))
     ) {
@@ -686,7 +782,7 @@ export class Player extends LitElement {
       style['--big-button-display'] = 'none';
     }
 
-    if (this._embed?.video.audio === false) {
+    if (this._embedObj?.video.audio === false) {
       style['--media-volume-display'] = 'none';
     } else {
       style['--media-volume-display'] = 'inline-flex';
@@ -709,14 +805,14 @@ export class Player extends LitElement {
     const highestRendition = this.#highestRendition('mp4');
     const src = highestRendition
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
-      : this._embed.video.original;
+      : this._embedObj.video.original;
 
     return src;
   }
 
   get #subtitles() {
-    if (this._embed.subtitles.length > 0) {
-      return this._embed.subtitles.map((track) => {
+    if (this._embedObj.subtitles.length > 0) {
+      return this._embedObj.subtitles.map((track) => {
         if (
           (this.subtitles && this.subtitles.includes(track.language)) ||
           (this.active_subtitle && this.active_subtitle == track.language) ||
@@ -754,8 +850,8 @@ export class Player extends LitElement {
         ${this.embedController.render({
           complete: (data) => {
             if (!this._embed) {
-              this._embed = data as Embed;
-              this.updateEmbed(this._embed, false);
+              this._embedObj = data as Embed;
+              this.updateEmbed(this._embedObj, false);
             }
             if (!data) return;
 
@@ -763,7 +859,7 @@ export class Player extends LitElement {
                 <video
                   @click=${this.#requestPlay}
                   playsinline
-                  ?loop=${this.loop || this._embed.settings.loop}
+                  ?loop=${this.loop || this._embedObj.settings.loop}
                   poster=${this.poster}
                   ${ref(this.#handleVideo)}
                   slot="media"

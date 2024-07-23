@@ -42,6 +42,17 @@ export class List extends MaveElement {
     }
   }
 
+  containsEmbed(embedId: string): boolean {
+    return this._collection?.videos?.some((video) => video.id === embedId);
+  }
+
+  getNextForEmbed(embedId: string) {
+    const videos = this.#getVideos();
+    const index = videos.findIndex((video) => video.id === embedId);
+    if (index === -1) return;
+    return videos[index + 1];
+  }
+
   render() {
     return html`
       ${this.embedController.render({
@@ -141,29 +152,7 @@ export class List extends MaveElement {
                 ].includes(item.hasAttribute('name') ? item.getAttribute('name')! : '') &&
                   item.nodeName == 'TEMPLATE')
               ) {
-                let videos = this._collection.videos;
-                if (this.order == 'newest') {
-                  videos = this._collection.videos?.sort((a, b) => {
-                    return b.created - a.created;
-                  });
-                }
-                if (this.order == 'oldest') {
-                  videos = this._collection.videos?.sort((a, b) => {
-                    return a.created - b.created;
-                  });
-                }
-                if (this.order == 'az') {
-                  videos = this._collection.videos?.sort((a, b) => {
-                    return a.name.localeCompare(b.name);
-                  });
-                }
-                if (this.order == 'za') {
-                  videos = this._collection.videos?.sort((a, b) => {
-                    return b.name.localeCompare(a.name);
-                  });
-                }
-
-                const result = videos?.map((video, index) => {
+                const result = this.#getVideos().map((video, index) => {
                   const template = createClone();
                   const position = index + 1;
 
@@ -209,6 +198,32 @@ export class List extends MaveElement {
         },
       })}
     `;
+  }
+
+  #getVideos() {
+    if (!this._collection) return [];
+    let videos = this._collection.videos;
+    if (this.order == 'newest') {
+      videos = this._collection.videos?.sort((a, b) => {
+        return b.created - a.created;
+      });
+    }
+    if (this.order == 'oldest') {
+      videos = this._collection.videos?.sort((a, b) => {
+        return a.created - b.created;
+      });
+    }
+    if (this.order == 'az') {
+      videos = this._collection.videos?.sort((a, b) => {
+        return a.name.localeCompare(b.name);
+      });
+    }
+    if (this.order == 'za') {
+      videos = this._collection.videos?.sort((a, b) => {
+        return b.name.localeCompare(a.name);
+      });
+    }
+    return videos;
   }
 
   #setEmbedAttribute(template: DocumentFragment, selector: string, embed: string) {
