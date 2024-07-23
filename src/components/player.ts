@@ -268,7 +268,7 @@ export class Player extends MaveElement {
   }
 
   play() {
-    if (this._videoElement) {
+    if (this._videoElement && !this.embedController.loading) {
       this.#requestPlay();
     } else {
       this._queue.push(() => this.#requestPlay());
