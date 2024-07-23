@@ -400,9 +400,10 @@ export class Player extends MaveElement {
 
               const remaining = this.querySelector("[name='mave-time-remaining']");
               if (remaining) {
-                remaining.innerHTML = Math.floor(
+                const time = Math.floor(
                   this._videoElement.duration - this._videoElement.currentTime,
-                ).toString();
+                );
+                remaining.innerHTML = time <= 0 ? '0' : time.toString();
               }
 
               if (
@@ -419,7 +420,7 @@ export class Player extends MaveElement {
               }
 
               const nextImage = this.querySelector("[name='mave-list-next-image']");
-              if (nextImage && nextImage.innerHTML == '') {
+              if (nextImage) {
                 // get all mave-lists and use getNextForEmbed
                 const list = [...document.querySelectorAll('mave-list')].find((list) =>
                   list.containsEmbed(this.embed),
@@ -434,6 +435,8 @@ export class Player extends MaveElement {
                       nextImage.innerHTML = '';
                     });
                     nextImage.appendChild(img);
+                  } else {
+                    nextImage.innerHTML = '';
                   }
                 }
               }
