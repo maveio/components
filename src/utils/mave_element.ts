@@ -32,12 +32,8 @@ export class MaveElement extends LitElement {
   }
 
   get _stylesheets() {
-    if (document) {
-      const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
-      return html`${Array.from(styles).map((style) => style.cloneNode(true))}`;
-    } else {
-      return null;
-    }
+    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+    return html`${Array.from(styles).map((style) => style.cloneNode(true))}`;
   }
 
   durationToTime(duration: number): string {

@@ -30,6 +30,7 @@ export class Player extends MaveElement {
       // this.requestUpdate('embed');
       this.embedController.embed = this.embed;
       this.updateStylePoster();
+      this.loadTheme();
     }
   }
 

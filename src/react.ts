@@ -1,4 +1,6 @@
-import { createComponent } from '@lit-labs/react';
+'use client';
+
+import { createComponent } from '@lit/react';
 import React from 'react';
 
 import { Clip as ClipComponent } from './components/clip.js';
@@ -28,3 +30,26 @@ export const Upload = createComponent({
   elementClass: UploadComponent,
   react: React,
 });
+
+import { Files as FilesComponent } from './components/files.js';
+export const Files = createComponent({
+  tagName: 'mave-files',
+  elementClass: FilesComponent,
+  react: React,
+});
+
+import { Image as ImageComponent } from './components/img.js';
+export const Image = createComponent({
+  tagName: 'mave-img',
+  elementClass: ImageComponent,
+  react: React,
+});
+
+import { Text as TextComponent } from './components/text.js';
+export const Text = createComponent({
+  tagName: 'mave-text',
+  elementClass: TextComponent,
+  react: React,
+});
+
+export { setConfig } from './config.js';
