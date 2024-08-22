@@ -165,7 +165,7 @@ export class Player extends MaveElement {
   @query("slot[name='start-screen']") startScreenElement: HTMLElement;
 
   private _startedPlaying = false;
-  private _themeLoaded = false;
+  private _themeLoaded: string;
 
   private _subtitlesText: HTMLElement;
 
@@ -320,9 +320,9 @@ export class Player extends MaveElement {
   }
 
   loadTheme() {
-    if (this.embed && !this._themeLoaded) {
+    if (this.embed && this._themeLoaded != this.theme) {
       ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
-      this._themeLoaded = true;
+      this._themeLoaded = this.theme;
     }
   }
 
