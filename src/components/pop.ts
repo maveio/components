@@ -290,72 +290,94 @@ function getAllAttributesAsObject(element?: Element): Record<string, string> {
   return attributesObject;
 }
 
-export const checkPop = (element: HTMLElement | ShadowRoot | Document) => {
+export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => {
   function findOrCreatePop(embed: string): {
     pop: Pop;
     attributes?: Record<string, string>;
   } {
-    if (document.querySelector(`mave-pop[embed="${embed}"]`)) {
-      const attributes = getAllAttributesAsObject(
-        document.querySelector(`mave-pop[embed="${embed}"] > mave-player`)!,
-      );
+    let pop: Pop;
+    let attributes: Record<string, string> | undefined;
 
-      return { pop: document.querySelector(`mave-pop[embed="${embed}"]`)!, attributes };
+    const existingPop = document.querySelector(`mave-pop[embed="${embed}"]`);
+    if (existingPop) {
+      attributes = getAllAttributesAsObject(existingPop.querySelector(`mave-player`)!);
+      pop = existingPop as Pop;
+      return { pop, attributes };
     }
 
-    if (document.querySelector('mave-pop:not([embed])')) {
-      const attributes = getAllAttributesAsObject(
-        document.querySelector('mave-pop:not([embed]) > mave-player')!,
-      );
-
-      return { pop: document.querySelector('mave-pop:not([embed])')!, attributes };
+    const unnamedPop = document.querySelector('mave-pop:not([embed])');
+    if (unnamedPop) {
+      attributes = getAllAttributesAsObject(unnamedPop.querySelector('mave-player')!);
+      pop = unnamedPop as Pop;
+      return { pop, attributes };
     }
 
-    const pop = new Pop();
-    document.body.appendChild(pop);
+    pop = new Pop();
+    document.body.appendChild(pop as unknown as Node);
     return { pop };
   }
 
-  function createPlayer(embed: string, attributes?: Record<string, string>) {
+  function createPlayer(embed: string, attributes?: Record<string, string>): Player {
     const player = new Player();
-    for (const key in attributes) {
-      player.setAttribute(key, attributes[key]);
+    if (attributes) {
+      for (const key in attributes) {
+        player.setAttribute(key, attributes[key]);
+      }
     }
     player.embed = embed;
     return player;
   }
 
-  if (!document || !document.body) return;
-  element.querySelectorAll('[x-mave-pop]').forEach((el) => {
-    // prepare each player to load
-    const embed = el.getAttribute('x-mave-pop') || el.getAttribute('embed');
-    if (!embed) return;
+  function processElements(element: HTMLElement | ShadowRoot | Document) {
+    element.querySelectorAll('[x-mave-pop]').forEach((el) => {
+      const embed = el.getAttribute('x-mave-pop') || el.getAttribute('embed');
+      if (!embed) return;
 
-    const { pop, attributes } = findOrCreatePop(embed);
+      const { pop, attributes } = findOrCreatePop(embed);
 
-    // preload players
-    createPlayer(embed, attributes);
+      createPlayer(embed, attributes);
 
-    el.addEventListener('click', (e: Event) => {
-      (e as MouseEvent).preventDefault();
-      const players = document.querySelectorAll('mave-player');
+      el.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        const players = document.querySelectorAll('mave-player');
+        const popped = Array.from(players).find((player) => (player as Player).popped);
 
-      const popped = Array.from(players).find((player) => player.popped);
+        if (!popped) {
+          const player = createPlayer(embed, attributes);
 
-      if (!popped) {
-        const player = createPlayer(embed, attributes);
+          pop.open(player).then(() => {
+            player.play();
+          });
 
-        pop.open(player).then(() => {
-          player.play();
-        });
+          pop.addEventListener('closed', () => {
+            player.pause();
+          });
+        }
+      });
+    });
+  }
 
-        pop.addEventListener('closed', () => {
-          // Player is removed from DOM, but to be sure...
-          player.pause();
+  processElements(element);
+
+  const observer = new MutationObserver((mutationsList) => {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof HTMLElement) {
+            processElements(node);
+          }
         });
       }
-    });
+    }
   });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 };
 
-if (document) checkPop(document);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    checkPop(document);
+  });
+} else {
+  setTimeout(() => checkPop(document), 500); // Adding a delay to ensure the document is truly loaded
+}

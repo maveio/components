@@ -52,4 +52,11 @@ export const Text = createComponent({
   react: React,
 });
 
+import { Pop as PopComponent } from './components/pop.js';
+export const Pop = createComponent({
+  tagName: 'mave-pop',
+  elementClass: PopComponent,
+  react: React,
+});
+
 export { setConfig } from './config.js';
