@@ -95,7 +95,7 @@
     "@lit/task": "^1.0.0",
     "@lottiefiles/lottie-player": "^2.0.2",
     "@maveio/metrics": "^0.1.5",
-    "hls.js": "^1.5.4",
+    "hls.js": "^1.5.15",
     "lit": "^3.1.2",
     "media-chrome": "^2.2.4",
     "phoenix": "^1.7.11",

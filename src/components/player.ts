@@ -5,18 +5,17 @@ import { IntersectionController } from '@lit-labs/observers/intersection-control
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 
+import { Config } from '../config';
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
-import { videoEvents } from '../utils/video_events';
-
-import { Config } from '../config';
 import { MaveElement } from '../utils/mave_element';
+import { videoEvents } from '../utils/video_events';
 
 export class Player extends MaveElement {
   private _embedId: string;
@@ -465,7 +464,9 @@ export class Player extends MaveElement {
         space_id: this._embedObj.space_id,
       };
 
-      if (Hls.isSupported() && this.#hlsPath) {
+      const isIOS = /iPhone|iPad/.test(navigator.userAgent);
+
+      if (Hls.isSupported() && this.#hlsPath && !isIOS) {
         this.hls = new Hls({
           startLevel: this.#getStartLevel(),
           capLevelToPlayerSize: true,
@@ -553,7 +554,7 @@ export class Player extends MaveElement {
         const parent = template.parentElement;
 
         const div = document.createElement('div');
-        for (let attr of template.attributes) {
+        for (const attr of template.attributes) {
           div.setAttribute(attr.name, attr.value);
         }
         div.style.display = 'block';
