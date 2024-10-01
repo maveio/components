@@ -5,10 +5,10 @@ import { IntersectionController } from '@lit-labs/observers/intersection-control
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html } from 'lit';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
-import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Config } from '../config';
 import { Embed } from '../embed/api';
@@ -583,18 +583,16 @@ export class Player extends MaveElement {
   }
 
   #handleAutoplay() {
-    if (this._embed && this.autoplay == 'always') {
-      if (this._intersected) {
-        if (this._videoElement?.paused) {
-          this._metricsInstance?.monitor();
-          this._videoElement.muted = true;
-          this._videoElement?.play();
-        }
+    if (this._embedObj && this.autoplay == 'always') {
+      if (this._videoElement?.paused) {
+        this._metricsInstance?.monitor();
+        this._videoElement.muted = true;
+        this._videoElement?.play();
       }
     }
 
     if (
-      this._embed &&
+      this._embedObj &&
       (this.autoplay === 'lazy' ||
         this.autoplay === 'true' ||
         this._embedObj.settings.autoplay == 'on_show')
@@ -626,24 +624,46 @@ export class Player extends MaveElement {
   }
 
   // Used for updating the embed settings
-  updateEmbed(embed: Embed, shouldOverwrite = true) {
+  updateEmbed(embed: Embed) {
     this._embedObj = embed;
     this.updateStylePoster();
 
-    if (shouldOverwrite) {
-      this.poster = this._embedObj.settings.poster;
+    this.poster = this._embedObj.settings.poster;
+
+    if (!this.attributes.getNamedItem('color')) {
       this.color = this._embedObj.settings.color;
+    }
+
+    if (!this.attributes.getNamedItem('opacity')) {
       this.opacity = this._embedObj.settings.opacity
         ? (this._embedObj.settings.opacity as unknown as string)
         : undefined;
+    }
+
+    if (!this.attributes.getNamedItem('aspect_ratio')) {
       this.aspect_ratio = this._embedObj.settings.aspect_ratio;
+    }
+
+    if (!this.attributes.getNamedItem('width')) {
       this.width = this._embedObj.settings.width;
+    }
+
+    if (!this.attributes.getNamedItem('height')) {
       this.height = this._embedObj.settings.height;
+    }
+
+    if (!this.attributes.getNamedItem('autoplay')) {
       this.autoplay =
         this._embedObj.settings.autoplay == 'on_show'
           ? 'lazy'
           : this._embedObj.settings.autoplay;
+    }
+
+    if (!this.attributes.getNamedItem('controls')) {
       this.controls = this._embedObj.settings.controls;
+    }
+
+    if (!this.attributes.getNamedItem('loop')) {
       this.loop = this._embedObj.settings.loop;
     }
   }
@@ -856,7 +876,7 @@ export class Player extends MaveElement {
           complete: (data) => {
             if (!this._embed) {
               this._embedObj = data as Embed;
-              this.updateEmbed(this._embedObj, false);
+              this.updateEmbed(this._embedObj);
             }
             if (!data) return;
 
