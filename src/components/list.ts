@@ -42,6 +42,10 @@ export class List extends MaveElement {
     }
   }
 
+  refresh(): Promise<unknown> {
+    return this.embedController.refresh();
+  }
+
   containsEmbed(embedId: string): boolean {
     return this._collection?.videos?.some((video) => video.id === embedId);
   }

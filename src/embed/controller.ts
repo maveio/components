@@ -117,6 +117,11 @@ export class EmbedController {
     return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
   }
 
+  refresh(): Promise<unknown> {
+    this.loading = true;
+    return this.task?.run();
+  }
+
   embedFile(file: string, params = new URLSearchParams()): string {
     const url = new URL(
       `${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`,
