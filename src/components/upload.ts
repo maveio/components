@@ -241,6 +241,7 @@ export class Upload extends LitElement {
         <input
           .disabled=${!this._upload_id}
           type="file"
+          accept="video/*, audio/*"
           @change=${this.handleForm}
           style="position: absolute; top: 0; left: -150px; display: block; width: 500px; height: 100%; opacity: 0; cursor: pointer;"
         />
