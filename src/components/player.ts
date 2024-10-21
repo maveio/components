@@ -518,9 +518,18 @@ export class Player extends MaveElement {
 
   #videoPlayed() {
     if (this.active_subtitle && !this._startedPlaying) {
-      const trackElement = this._videoElement?.querySelector(
-        `track[srclang="${this.active_subtitle}"]`,
-      ) as HTMLTrackElement;
+      let trackElement;
+      if (this.active_subtitle == 'original' || this.subtitles == 'original') {
+        const language = this._embedObj.video.language;
+        trackElement = this._videoElement?.querySelector(
+          `track[srclang="${language}"]`,
+        ) as HTMLTrackElement;
+      } else {
+        trackElement = this._videoElement?.querySelector(
+          `track[srclang="${this.active_subtitle}"]`,
+        ) as HTMLTrackElement;
+      }
+
       if (trackElement) {
         trackElement.track.mode = 'showing';
       }
@@ -841,7 +850,9 @@ export class Player extends MaveElement {
         if (
           (this.subtitles && this.subtitles.includes(track.language)) ||
           (this.active_subtitle && this.active_subtitle == track.language) ||
-          this.subtitles == 'all'
+          this.subtitles == 'all' ||
+          ((this.subtitles == 'original' || this.active_subtitle == 'original') &&
+            this._embedObj.video.language == track.language)
         ) {
           return html`
             <track mode="hidden" @cuechange=${this.#cuechange} label=${
