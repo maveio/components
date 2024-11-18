@@ -53,6 +53,7 @@ export class CaptionController {
           const url = this.embedFile('subtitle.json');
 
           const response = await fetch(url);
+          if (response.status !== 200) throw new Error();
           const data = await response.json();
 
           // Split the text using the regular expression
@@ -157,8 +158,8 @@ export class CaptionController {
           // Return the final structure
           return { text: data.text, segments: paragraphs } as Partial<API.Caption>;
         } catch (e) {
-          console.log(e);
-          throw new Error(`Failed to fetch language file for "${this.embed}"`);
+          console.warn(`Failed to fetch language file for "${this.embed}"`);
+          throw new Error();
         }
       },
       () => [this.embed],

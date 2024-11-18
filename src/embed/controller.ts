@@ -18,11 +18,13 @@ export class EmbedController {
   private _token: string;
   private _version: number;
   caching: boolean = true;
+  loading: boolean = true;
 
   constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
     this.host = host;
     this.type = embedType;
 
+    this.loading = true;
     this.task = new Task(
       this.host,
       async () => {
@@ -37,6 +39,8 @@ export class EmbedController {
 
           const response = await fetch(this.manifest_url);
           const data = await response.json();
+          this.loading = false;
+
           if (this.type == EmbedType.Embed) {
             const embed = data as Partial<API.Embed>;
             this.version = embed.video?.version || 0;
@@ -58,7 +62,8 @@ export class EmbedController {
       return this.embedFile('manifest.json');
     } else {
       const url = new URL(`${API.baseUrl}/collection/${this.token}`);
-      if (this.embed && this.embed?.length > 1) url.searchParams.append('embed', this.embed);
+      if (this.embed && this.embed?.length > 1)
+        url.searchParams.append('embed', this.embed);
       return url.toString();
     }
   }
@@ -66,6 +71,7 @@ export class EmbedController {
   set embed(value: string) {
     if (this._embed != value) {
       this._embed = value;
+      this.loading = true;
       this.host.requestUpdate();
     }
   }
@@ -97,7 +103,7 @@ export class EmbedController {
     if (this._version) {
       return `/v${this._version}/`;
     }
-    return '/'
+    return '/';
   }
 
   set version(value: number) {
@@ -111,8 +117,15 @@ export class EmbedController {
     return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
   }
 
+  refresh(): Promise<unknown> {
+    this.loading = true;
+    return this.task?.run();
+  }
+
   embedFile(file: string, params = new URLSearchParams()): string {
-    const url = new URL(`${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`);
+    const url = new URL(
+      `${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`,
+    );
     if (this.token) params.append('token', this.token);
     if (!this.caching) params.append('e', new Date().getTime().toString());
     url.search = params.toString();

@@ -18,7 +18,6 @@ interface EmbedChannel {
   upload_id?: string;
 }
 
-
 @localized()
 export class Upload extends LitElement {
   @property() token: string;
@@ -26,6 +25,7 @@ export class Upload extends LitElement {
   @property() color: string;
   @property() font: string;
   @property() radius: string;
+  @property({ type: Boolean }) disableCompletion = false;
 
   @state() _progress: number;
   @state() _upload_id: string;
@@ -76,6 +76,7 @@ export class Upload extends LitElement {
       this.embedChannel.upload_id = upload_id;
     });
     this.embedChannel.channel.on('completed', this.completed.bind(this));
+    this.embedChannel.channel.on('rendition', this.rendition.bind(this));
     this.embedChannel.channel.on('error', this.error.bind(this));
   }
 
@@ -104,7 +105,10 @@ export class Upload extends LitElement {
       for (const item of event.dataTransfer.items) {
         if (item.kind === 'file') {
           const file = item.getAsFile();
-          if (file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) {
+          if (
+            file &&
+            (file.type.startsWith('video/') || file.type.startsWith('audio/'))
+          ) {
             this._progress = 1;
             this.upload(file);
           }
@@ -169,9 +173,15 @@ export class Upload extends LitElement {
   }
 
   completed(data: { embed: string }) {
-    this._completed = true;
+    if (!this.disableCompletion) this._completed = true;
     this.dispatchEvent(
       new CustomEvent('completed', { bubbles: true, composed: true, detail: data }),
+    );
+  }
+
+  rendition(data: any) {
+    this.dispatchEvent(
+      new CustomEvent('rendition', { bubbles: true, composed: true, detail: data }),
     );
   }
 
@@ -182,9 +192,7 @@ export class Upload extends LitElement {
   }
 
   render() {
-    return html`
-      ${this._progress ? this.renderProgress() : this.renderUpload()}
-    `;
+    return html` ${this._progress ? this.renderProgress() : this.renderUpload()} `;
   }
 
   styleOpacity() {
@@ -233,6 +241,7 @@ export class Upload extends LitElement {
         <input
           .disabled=${!this._upload_id}
           type="file"
+          accept="video/*, audio/*"
           @change=${this.handleForm}
           style="position: absolute; top: 0; left: -150px; display: block; width: 500px; height: 100%; opacity: 0; cursor: pointer;"
         />

@@ -460,31 +460,32 @@ export function build(name, LitElement, html, css) {
         font-size: 14px;
       }
 
-       media-play-button.small-button {
+      media-play-button.small-button {
         display: var(--play-display, flex);
       }
 
-       media-time-display {
+      media-time-display {
         display: var(--time-display, flex);
       }
 
-       media-time-range {
+      media-time-range {
         visibility: var(--seek-bar-visibility, visible);
       }
 
-       media-mute-button.small-button {
+      media-mute-button.small-button {
         display: var(--volume-display, flex);
       }
 
-       media-fullscreen-button.small-button {
+      media-fullscreen-button.small-button {
         display: var(--fullscreen-display, flex);
       }
 
-       media-playback-rate-button {
+      media-playback-rate-button {
         display: var(--playbackrate-display, flex);
       }
 
-       media-captions-selectmenu,  media-captions-button[mediasubtitleslist].small-button {
+      media-captions-selectmenu,
+      media-captions-button[mediasubtitleslist].small-button {
         display: var(--captions-display, flex);
       }
     `;
@@ -640,8 +641,8 @@ export function build(name, LitElement, html, css) {
                   stroke-linejoin="round"
                 >
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg
-                >
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
                 <svg
                   slot="medium"
                   xmlns="http://www.w3.org/2000/svg"
@@ -655,8 +656,8 @@ export function build(name, LitElement, html, css) {
                   stroke-linejoin="round"
                 >
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg
-                >
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
                 <svg
                   slot="high"
                   xmlns="http://www.w3.org/2000/svg"

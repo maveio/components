@@ -5,12 +5,10 @@ import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { ref } from 'lit/directives/ref.js';
 
+import { Config } from '../config';
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { videoEvents } from '../utils/video_events';
-
-import { Config } from '../config';
-
 
 interface Source {
   media?: number | undefined;
@@ -35,6 +33,8 @@ export class Clip extends LitElement {
   @property() autoplay?: 'always' | 'off' | 'true' | 'scroll' | 'lazy' = 'lazy';
   @property() quality = 'auto';
 
+  @property() fallback?: 'placeholder' | 'thumbnail' = 'placeholder';
+
   private _loop: boolean;
   @property()
   set loop(value: boolean | string) {
@@ -47,7 +47,7 @@ export class Clip extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string {
-    return this.embedController.embedFile('placeholder.jpg');
+    return this.embedController.embedFile(`${this.fallback}.jpg`);
   }
   set poster(value: string | null) {
     if (value) {
@@ -71,48 +71,59 @@ export class Clip extends LitElement {
   }
 
   get sources(): Source[] {
-    const renditionType = this.autoplay === 'scroll' ? ['clip_keyframes'] : ['video', 'clip'];
+    const renditionType =
+      this.autoplay === 'scroll' ? ['clip_keyframes'] : ['video', 'clip'];
 
     const renditions = this._embed.video.renditions
-      .filter((r) =>
-        (this.quality == 'auto' ? r.size !== 'uhd' : this.#sizes.indexOf(r.size) <= this.#sizes.indexOf(this.quality)) &&
-        r.container === 'mp4' &&
-        this.#codecs.includes(r.codec) &&
-        (!r.type || renditionType.includes(r.type))
+      .filter(
+        (r) =>
+          (this.quality == 'auto'
+            ? r.size !== 'uhd'
+            : this.#sizes.indexOf(r.size) <= this.#sizes.indexOf(this.quality)) &&
+          r.container === 'mp4' &&
+          this.#codecs.includes(r.codec) &&
+          (!r.type || renditionType.includes(r.type)),
       )
       .sort((a, b) =>
-        (a.size === b.size) ? this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec) : this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size))
-      .map(r => {
-        const media = this.#mediaWidth.find(m => m.size === r.size)?.media;
-        const file = `${r.codec}_${r.size}${r.type && r.type != 'video' ? `_${r.type}` : ''}.mp4`
+        a.size === b.size
+          ? this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec)
+          : this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size),
+      )
+      .map((r) => {
+        const media = this.#mediaWidth.find((m) => m.size === r.size)?.media;
+        const file = `${r.codec}_${r.size}${
+          r.type && r.type != 'video' ? `_${r.type}` : ''
+        }.mp4`;
 
         return {
           media,
           src: this.embedController.embedFile(file),
-          codec: this.#codecDescription[r.codec]
+          codec: this.#codecDescription[r.codec],
         };
-      })
-
+      });
 
     const fallbackRenditions = this._embed.video.renditions
-    .filter((r) =>
-      this.#sizes.indexOf(r.size) <= this.#sizes.indexOf('fhd') &&
-      r.container === 'mp4' &&
-      this.#codecs.includes(r.codec) &&
-      (!r.type || renditionType.includes(r.type))
-    )
-    .sort((a, b) =>
-      this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size)
-    ); // Get the highest quality available up to fhd
+      .filter(
+        (r) =>
+          this.#sizes.indexOf(r.size) <= this.#sizes.indexOf('fhd') &&
+          r.container === 'mp4' &&
+          this.#codecs.includes(r.codec) &&
+          (!r.type || renditionType.includes(r.type)),
+      )
+      .sort((a, b) => this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size)); // Get the highest quality available up to fhd
 
     if (fallbackRenditions.length > 0) {
       const fallbackRendition = fallbackRenditions[0];
-      const file = `${fallbackRendition.codec}_${fallbackRendition.size}${fallbackRendition.type && fallbackRendition.type != 'video' ? `_${fallbackRendition.type}` : ''}.mp4`;
+      const file = `${fallbackRendition.codec}_${fallbackRendition.size}${
+        fallbackRendition.type && fallbackRendition.type != 'video'
+          ? `_${fallbackRendition.type}`
+          : ''
+      }.mp4`;
 
       const fallbackSource = {
         media: undefined,
         src: this.embedController.embedFile(file),
-        codec: this.#codecDescription[fallbackRendition.codec]
+        codec: this.#codecDescription[fallbackRendition.codec],
       };
 
       renditions.push(fallbackSource);
@@ -127,7 +138,7 @@ export class Clip extends LitElement {
   @state() private _failedPlay = false;
 
   private _intersectionObserver = new IntersectionController(this, {
-    callback: this.#intersected.bind(this)
+    callback: this.#intersected.bind(this),
   });
 
   static styles = css`
@@ -153,14 +164,15 @@ export class Clip extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    if (this.autoplay === 'scroll') document.addEventListener('scroll', this.#handleScroll.bind(this));
-
+    if (this.autoplay === 'scroll')
+      document.addEventListener('scroll', this.#handleScroll.bind(this));
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
 
-    if (this.autoplay === 'scroll') document.removeEventListener('scroll', this.#handleScroll.bind(this));
+    if (this.autoplay === 'scroll')
+      document.removeEventListener('scroll', this.#handleScroll.bind(this));
 
     this._metricsInstance?.demonitor();
   }
@@ -171,7 +183,7 @@ export class Clip extends LitElement {
 
     if (this._videoElement) {
       if (!this._videoElement.duration) {
-          this._videoElement.load();
+        this._videoElement.load();
       }
 
       let time = 0;
@@ -193,6 +205,8 @@ export class Clip extends LitElement {
   set muted(value: boolean) {
     if (this._videoElement) {
       this._videoElement.muted = value;
+    } else {
+      this._queue.push(() => (this._videoElement!.muted = value));
     }
   }
 
@@ -204,6 +218,33 @@ export class Clip extends LitElement {
     return this._videoElement?.paused || true;
   }
 
+  get duration(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (this._videoElement && !isNaN(this._videoElement.duration)) {
+        return resolve(this._videoElement.duration);
+      }
+
+      const listener = () => {
+        this._videoElement?.addEventListener('loadedmetadata', () => {
+          if (this._videoElement) {
+            resolve(this._videoElement.duration);
+          }
+        });
+
+        this._videoElement?.addEventListener('error', (event) => {
+          reject(new Error('Failed to load video metadata.'));
+        });
+      };
+
+      if (!this._videoElement) {
+        this.addEventListener('mave:video_element_ready', () => {
+          listener();
+        });
+      } else {
+        listener();
+      }
+    });
+  }
   play() {
     if (this._videoElement) {
       this.#handlePlay();
@@ -244,7 +285,7 @@ export class Clip extends LitElement {
       av1: 'av01.0.08M.08.0.110.01.01.01.0,opus',
       hevc: 'hevc.01.00.78,mp4a.40.2',
       h264: 'avc1.64.00.28,mp4a.40.2',
-    }
+    };
   }
 
   get #mediaWidth() {
@@ -252,15 +293,15 @@ export class Clip extends LitElement {
       { size: 'qhd', media: 1280 },
       { size: 'fhd', media: 1080 },
       { size: 'hd', media: 720 },
-      { size: 'sd', media: 640 }
-    ]
+      { size: 'sd', media: 640 },
+    ];
   }
 
   #handlePlay() {
     this._metricsInstance?.monitor();
     if (this._videoElement) {
       this._videoElement.muted = true;
-      this._videoElement.play().catch(e => {
+      this._videoElement.play().catch((e) => {
         this._failedPlay = true;
       });
     }
@@ -269,6 +310,13 @@ export class Clip extends LitElement {
   #handleVideo(videoElement?: Element) {
     if (!this._videoElement) {
       this._videoElement = videoElement as HTMLMediaElement;
+      this.dispatchEvent(
+        new CustomEvent('mave:video_element_ready', {
+          detail: this._videoElement,
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }
 
     this._intersectionObserver.observe(this._videoElement);
@@ -276,7 +324,6 @@ export class Clip extends LitElement {
     if (this._videoElement && this._embed) {
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
-
           if (!this._canPlay && this.autoplay === 'scroll' && event === 'canplay') {
             this._canPlay = true;
             this.#handleScroll();
@@ -303,7 +350,8 @@ export class Clip extends LitElement {
         apiKey: this._embed.metrics_key,
       };
 
-      if(Config.metrics.enabled) this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+      if (Config.metrics.enabled)
+        this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
     }
 
     if (this._queue.length) {
@@ -347,7 +395,11 @@ export class Clip extends LitElement {
             <video
               @click=${this.#requestPlay}
               preload="metadata"
-              style=${ifDefined(this._failedPlay || this.autoplay === 'off' ? "cursor: pointer" : undefined)}
+              style=${ifDefined(
+                this._failedPlay || this.autoplay === 'off'
+                  ? 'cursor: pointer'
+                  : undefined,
+              )}
               muted
               playsinline
               poster=${ifDefined(this._failedPlay ? this.poster : undefined)}
@@ -355,10 +407,18 @@ export class Clip extends LitElement {
               ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.loop || true}
             >
-            ${this.sources.map((source) => html`
-              <source media=${ifDefined(source.media ? `(min-width: ${source.media}px)` : undefined)} src=${source.src} type=${`video/mp4; ${source.codec}`} />
-            `)}
-          </video>
+              ${this.sources.map(
+                (source) => html`
+                  <source
+                    media=${ifDefined(
+                      source.media ? `(min-width: ${source.media}px)` : undefined,
+                    )}
+                    src=${source.src}
+                    type=${`video/mp4; ${source.codec}`}
+                  />
+                `,
+              )}
+            </video>
           `;
         },
       })}

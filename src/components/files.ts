@@ -53,85 +53,107 @@ export class Files extends MaveElement {
           this._data = data as Embed;
           if (!data) return;
 
-          const templates = this._slottedChildren
-            .map((item: any) => {
-              function createClone() {
-                let clone: DocumentFragment;
-                if (item.nodeName === 'TEMPLATE') {
-                  clone = (item as HTMLTemplateElement).content.cloneNode(
-                    true,
-                  ) as DocumentFragment;
-                } else {
-                  clone = item.cloneNode(true) as DocumentFragment;
-                }
-                return clone;
+          const templates = this._slottedChildren.map((item: any) => {
+            function createClone() {
+              let clone: DocumentFragment;
+              if (item.nodeName === 'TEMPLATE') {
+                clone = (item as HTMLTemplateElement).content.cloneNode(
+                  true,
+                ) as DocumentFragment;
+              } else {
+                clone = item.cloneNode(true) as DocumentFragment;
               }
+              return clone;
+            }
 
-              if (item.getAttribute('name') == 'mave-files-video') {
-                const template = createClone();
+            if (item.getAttribute('name') == 'mave-files-video') {
+              const template = createClone();
 
-                // created_at
-                const createdAt = new Date(this._data.created_at);
-                if(createdAt) this.#setTextContent(template, '[slot="date"]', createdAt.toLocaleDateString().replaceAll('/', '-'));
+              // created_at
+              const createdAt = new Date(this._data.created_at);
+              if (createdAt)
+                this.#setTextContent(
+                  template,
+                  '[slot="date"]',
+                  createdAt.toLocaleDateString().replaceAll('/', '-'),
+                );
 
-                // duration
-                const duration = this._data.video.duration;
-                const hours = Math.floor(duration / 3600);
-                const minutes = Math.floor((duration % 3600) / 60);
-                const minutesString = minutes < 10 ? `0${minutes}` : minutes.toString();
-                const seconds = Math.floor(duration % 60);
-                const secondsString = seconds < 10 ? `0${seconds}` : seconds.toString();
-                const formattedDuration = `${hours ? hours + ':' : ''}${minutesString}:${secondsString}`;
-                if(duration) this.#setTextContent(template, '[slot="duration"]', formattedDuration);
+              // duration
+              const duration = this._data.video.duration;
+              if (duration)
+                this.#setTextContent(
+                  template,
+                  '[slot="duration"]',
+                  this.durationToTime(duration),
+                );
 
-                // format
-                const filetype = this._data.video.filetype;
-                if (filetype) this.#setTextContent(template, '[slot="filetype"]', filetype);
+              // format
+              const filetype = this._data.video.filetype;
+              if (filetype) this.#setTextContent(template, '[slot="filetype"]', filetype);
 
-                // size
-                const size = this._data.video.size; // in bytes
-                const sizeInMb = size / 1000000;
+              // size
+              const size = this._data.video.size; // in bytes
+              const sizeInMb = size / 1000000;
 
-                if (size) this.#setTextContent(template, '[slot="size"]', `${sizeInMb.toFixed(1)} MB`);
+              if (size)
+                this.#setTextContent(
+                  template,
+                  '[slot="size"]',
+                  `${sizeInMb.toFixed(1)} MB`,
+                );
 
-                // download
-                const link = this.#createDownloadLink(`${this.cdn_root}/${this.embedId}/h264_hd.mp4`, `${this._data.name}.mp4`);
-                link.setAttribute('aria-label', 'Download video');
-                link.appendChild(template);
+              // download
+              const link = this.#createDownloadLink(
+                `${this.cdn_root}/${this.embedId}/h264_hd.mp4`,
+                `${this._data.name}.mp4`,
+              );
+              link.setAttribute('aria-label', 'Download video');
+              link.appendChild(template);
 
-                return html`${link}`;
-              }
+              return html`${link}`;
+            }
 
-              if (this._data.video.audio && item.getAttribute('name') == 'mave-files-audio') {
-                const template = createClone();
+            if (
+              this._data.video.audio &&
+              item.getAttribute('name') == 'mave-files-audio'
+            ) {
+              const template = createClone();
 
-                this.#setTextContent(template, '[slot="filetype"]', "mp3");
+              this.#setTextContent(template, '[slot="filetype"]', 'mp3');
 
-                // download
-                const link = this.#createDownloadLink(`${this.cdn_root}/${this.embedId}/audio.mp3`, `${this._data.name}.mp3`);
-                link.setAttribute('aria-label', 'Download audio');
-                link.appendChild(template);
+              // download
+              const link = this.#createDownloadLink(
+                `${this.cdn_root}/${this.embedId}/audio.mp3`,
+                `${this._data.name}.mp3`,
+              );
+              link.setAttribute('aria-label', 'Download audio');
+              link.appendChild(template);
 
-                return html`${link}`;
-              }
+              return html`${link}`;
+            }
 
-              const subtitle = this._data.subtitles.find(l => l.language == this._data.video.language);
+            const subtitle = this._data.subtitles.find(
+              (l) => l.language == this._data.video.language,
+            );
 
-              if (subtitle && item.getAttribute('name') == 'mave-files-subtitles') {
-                const template = createClone();
+            if (subtitle && item.getAttribute('name') == 'mave-files-subtitles') {
+              const template = createClone();
 
-                this.#setTextContent(template, '[slot="filetype"]', "vtt");
+              this.#setTextContent(template, '[slot="filetype"]', 'vtt');
 
-                // download
-                const link = this.#createDownloadLink(subtitle.path, `${this._data.name}.vtt`);
-                link.setAttribute('aria-label', 'Download subtitles');
-                link.appendChild(template);
+              // download
+              const link = this.#createDownloadLink(
+                subtitle.path,
+                `${this._data.name}.vtt`,
+              );
+              link.setAttribute('aria-label', 'Download subtitles');
+              link.appendChild(template);
 
-                return html`${link}`;
-              }
-            })
+              return html`${link}`;
+            }
+          });
 
-          return html`${templates}`;
+          return html`${this._stylesheets} ${templates}`;
         },
       })}
     `;
@@ -158,18 +180,18 @@ export class Files extends MaveElement {
     a.click();
     window.URL.revokeObjectURL(url);
     this.removeChild(a);
-}
+  }
 
   #fetchAndDownloadFile(url: string, filename: string): Promise<void> {
     return fetch(url)
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
         return response.blob();
       })
-      .then(blob => this.#downloadBlob(blob, filename))
-      .catch(e => console.error('Something went wrong:', e));
+      .then((blob) => this.#downloadBlob(blob, filename))
+      .catch((e) => console.error('Something went wrong:', e));
   }
 
   #createDownloadLink(url: string, filename: string): HTMLAnchorElement {
@@ -182,7 +204,7 @@ export class Files extends MaveElement {
     let isDownloading = false;
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      if(isDownloading) return;
+      if (isDownloading) return;
       isDownloading = true;
 
       link.style.cursor = 'wait';
