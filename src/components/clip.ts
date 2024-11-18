@@ -205,6 +205,8 @@ export class Clip extends LitElement {
   set muted(value: boolean) {
     if (this._videoElement) {
       this._videoElement.muted = value;
+    } else {
+      this._queue.push(() => (this._videoElement!.muted = value));
     }
   }
 
@@ -216,6 +218,33 @@ export class Clip extends LitElement {
     return this._videoElement?.paused || true;
   }
 
+  get duration(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (this._videoElement && !isNaN(this._videoElement.duration)) {
+        return resolve(this._videoElement.duration);
+      }
+
+      const listener = () => {
+        this._videoElement?.addEventListener('loadedmetadata', () => {
+          if (this._videoElement) {
+            resolve(this._videoElement.duration);
+          }
+        });
+
+        this._videoElement?.addEventListener('error', (event) => {
+          reject(new Error('Failed to load video metadata.'));
+        });
+      };
+
+      if (!this._videoElement) {
+        this.addEventListener('mave:video_element_ready', () => {
+          listener();
+        });
+      } else {
+        listener();
+      }
+    });
+  }
   play() {
     if (this._videoElement) {
       this.#handlePlay();
@@ -281,6 +310,13 @@ export class Clip extends LitElement {
   #handleVideo(videoElement?: Element) {
     if (!this._videoElement) {
       this._videoElement = videoElement as HTMLMediaElement;
+      this.dispatchEvent(
+        new CustomEvent('mave:video_element_ready', {
+          detail: this._videoElement,
+          bubbles: true,
+          composed: true,
+        }),
+      );
     }
 
     this._intersectionObserver.observe(this._videoElement);

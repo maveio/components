@@ -262,6 +262,34 @@ export class Player extends MaveElement {
     return this._videoElement?.currentTime;
   }
 
+  get duration(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (this._videoElement && !isNaN(this._videoElement.duration)) {
+        return resolve(this._videoElement.duration);
+      }
+
+      const listener = () => {
+        this._videoElement?.addEventListener('loadedmetadata', () => {
+          if (this._videoElement) {
+            resolve(this._videoElement.duration);
+          }
+        });
+
+        this._videoElement?.addEventListener('error', (event) => {
+          reject(new Error('Failed to load video metadata.'));
+        });
+      };
+
+      if (!this._videoElement) {
+        this.addEventListener('mave:video_element_ready', () => {
+          listener();
+        });
+      } else {
+        listener();
+      }
+    });
+  }
+
   get paused(): boolean {
     if (!this._videoElement) return true;
     return this._videoElement.paused;
@@ -383,6 +411,13 @@ export class Player extends MaveElement {
       (this.#hlsPath || this.#srcPath)
     ) {
       this._videoElement = videoElement as HTMLMediaElement;
+      this.dispatchEvent(
+        new CustomEvent('mave:video_element_ready', {
+          detail: this._videoElement,
+          bubbles: true,
+          composed: true,
+        }),
+      );
       this._intersectionObserver.observe(this._videoElement);
 
       videoEvents.forEach((event) => {
