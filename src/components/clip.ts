@@ -245,6 +245,20 @@ export class Clip extends LitElement {
       }
     });
   }
+
+  set currentTime(value: number) {
+    if (this._videoElement) {
+      this._videoElement.currentTime = value;
+    } else {
+      this._queue.push(() => (this._videoElement!.currentTime = value));
+    }
+  }
+
+  get currentTime(): number {
+    if (!this._videoElement) return 0;
+    return this._videoElement?.currentTime;
+  }
+
   play() {
     if (this._videoElement) {
       this.#handlePlay();
