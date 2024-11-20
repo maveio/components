@@ -47,6 +47,7 @@ export class Player extends MaveElement {
   }
 
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
+
   @property() width?: string;
   @property() subtitles?: string | [string];
   @property({ attribute: 'active-subtitle' }) active_subtitle?: string;
@@ -684,7 +685,7 @@ export class Player extends MaveElement {
         : undefined;
     }
 
-    if (!this.attributes.getNamedItem('aspect_ratio')) {
+    if (!this.attributes.getNamedItem('aspect-ratio')) {
       this.aspect_ratio = this._embedObj.settings.aspect_ratio;
     }
 
@@ -787,7 +788,6 @@ export class Player extends MaveElement {
           : ''
       }`;
     }
-
     if (
       this.aspect_ratio == 'auto' ||
       (this._embedObj?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)
