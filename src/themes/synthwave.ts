@@ -5,7 +5,6 @@ export function build(name, LitElement, html, css) {
   class Theme extends LitElement {
     static styles = css`
       :host {
-        all: initial !important;
         width: 100%;
         height: 100%;
         display: flex;
@@ -15,7 +14,13 @@ export function build(name, LitElement, html, css) {
         direction: ltr !important;
       }
 
+      img,
+      video {
+        overflow: hidden;
+      }
+
       ::slotted(video) {
+        overflow: hidden;
         display: flex;
         width: 100%;
         height: 100%;
@@ -28,6 +33,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-controller {
+        overflow: hidden;
         display: flex;
         width: 100%;
         height: 100%;
@@ -39,12 +45,12 @@ export function build(name, LitElement, html, css) {
         --media-font-family: 'Inter', system-ui, sans-serif;
         --media-background-color: transparent;
 
-        --media-primary-color: rgba(255,255,255,0.94);
-        --media-secondary-color: rgba(255,255,255,0.94);
+        --media-primary-color: rgba(255, 255, 255, 0.94);
+        --media-secondary-color: rgba(255, 255, 255, 0.94);
 
         --media-control-padding: 8px;
         --media-control-background: transparent;
-        --media-option-hover-background: rgba(0,0,0,0.25);
+        --media-option-hover-background: rgba(0, 0, 0, 0.25);
 
         --media-preview-time-margin: 0 0 8px 0;
 
@@ -65,12 +71,9 @@ export function build(name, LitElement, html, css) {
         padding: 0 8px;
         z-index: 10;
         user-select: none;
-        transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
 
-        background: var(
-          --primary-color,
-          transparent
-        );
+        background: var(--primary-color, transparent);
 
         --media-control-hover-background: transparent;
       }
@@ -107,7 +110,7 @@ export function build(name, LitElement, html, css) {
       media-fullscreen-button,
       media-mute-button,
       media-captions-button {
-        transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 100ms;
@@ -121,7 +124,7 @@ export function build(name, LitElement, html, css) {
       media-fullscreen-button:hover,
       media-mute-button:hover,
       media-captions-button:hover {
-        --media-primary-color: rgba(255,255,255,1);
+        --media-primary-color: rgba(255, 255, 255, 1);
         transform: scale(1.3);
       }
 
@@ -211,11 +214,11 @@ export function build(name, LitElement, html, css) {
         font-family: 'Inter', system-ui, sans-serif;
       }
 
-      .subtitles>div {
+      .subtitles > div {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255,255,255,1);
+        color: rgba(255, 255, 255, 1);
         height: 100px;
         width: 70%;
         text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
@@ -257,8 +260,28 @@ export function build(name, LitElement, html, css) {
         display: var(--playbackrate-display, flex);
       }
 
-      media-captions-selectmenu, media-captions-button[mediasubtitleslist] {
+      media-captions-selectmenu,
+      media-captions-button[mediasubtitleslist] {
         display: var(--captions-display, flex);
+      }
+
+      .mave-loader {
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 0 0 0 0;
+        pointer-events: none;
+      }
+
+      .mave-loader media-loading-indicator {
+        width: 72px;
+        height: 72px;
+      }
+
+      .mave-loader media-loading-indicator svg {
+        width: 80px;
+        height: 80px;
       }
     `;
 
@@ -394,7 +417,9 @@ export function build(name, LitElement, html, css) {
                 </svg>
               </div>
             </media-mute-button>
-            <media-loading-indicator loadingdelay="0"></media-loading-indicator>
+            <div class="mave-loader">
+              <media-loading-indicator loading-delay="0"></media-loading-indicator>
+            </div>
             <div style="flex-grow: 1;"></div>
             <media-time-display showduration></media-time-display>
             <media-playback-rate-button></media-playback-rate-button>

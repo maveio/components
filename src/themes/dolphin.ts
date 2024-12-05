@@ -5,7 +5,6 @@ export function build(name, LitElement, html, css) {
   class Theme extends LitElement {
     static styles = css`
       :host {
-        all: initial !important;
         width: 100%;
         height: 100%;
         display: flex;
@@ -15,7 +14,13 @@ export function build(name, LitElement, html, css) {
         direction: ltr !important;
       }
 
+      img,
+      video {
+        overflow: hidden;
+      }
+
       ::slotted(video) {
+        overflow: hidden;
         display: flex;
         width: 100%;
         height: 100%;
@@ -28,6 +33,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-controller {
+        overflow: hidden;
         display: flex;
         width: 100%;
         height: 100%;
@@ -36,12 +42,12 @@ export function build(name, LitElement, html, css) {
         --media-font-family: 'Inter', system-ui, sans-serif;
         --media-background-color: transparent;
 
-        --media-primary-color: rgba(255,255,255,0.94);
-        --media-secondary-color: rgba(255,255,255,0.94);
+        --media-primary-color: rgba(255, 255, 255, 0.94);
+        --media-secondary-color: rgba(255, 255, 255, 0.94);
 
         --media-control-padding: 8px;
         --media-control-background: transparent;
-        --media-option-hover-background: rgba(0,0,0,0.25);
+        --media-option-hover-background: rgba(0, 0, 0, 0.25);
 
         --media-preview-time-margin: 0;
 
@@ -56,12 +62,9 @@ export function build(name, LitElement, html, css) {
         padding: 0 0 0 3px;
         z-index: 20;
 
-        background: var(
-          --primary-color,
-          rgba(0,0,0,0.25)
-        );
+        background: var(--primary-color, rgba(0, 0, 0, 0.25));
 
-        transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
 
         --media-range-track-height: 5px;
         --media-control-hover-background: transparent;
@@ -94,7 +97,7 @@ export function build(name, LitElement, html, css) {
       media-fullscreen-button,
       media-mute-button,
       media-captions-button {
-        transform: translate3d(0,0,0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+        transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 100ms;
@@ -104,7 +107,7 @@ export function build(name, LitElement, html, css) {
       media-fullscreen-button:hover,
       media-mute-button:hover,
       media-captions-button:hover {
-        --media-primary-color: rgba(255,255,255,1);
+        --media-primary-color: rgba(255, 255, 255, 1);
         transform: scale(1.3);
       }
 
@@ -193,11 +196,11 @@ export function build(name, LitElement, html, css) {
         font-family: 'Inter', system-ui, sans-serif;
       }
 
-      .subtitles>div {
+      .subtitles > div {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255,255,255,1);
+        color: rgba(255, 255, 255, 1);
         height: 120px;
         width: 70%;
         text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
@@ -238,7 +241,8 @@ export function build(name, LitElement, html, css) {
         display: var(--playbackrate-display, flex);
       }
 
-      media-captions-selectmenu, media-captions-button[mediasubtitleslist] {
+      media-captions-selectmenu,
+      media-captions-button[mediasubtitleslist] {
         display: var(--captions-display, flex);
       }
     `;

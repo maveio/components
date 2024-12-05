@@ -5,7 +5,6 @@ export function build(name, LitElement, html, css) {
   class Theme extends LitElement {
     static styles = css`
       :host {
-        all: initial !important;
         width: 100%;
         height: 100%;
         display: flex;
@@ -15,7 +14,13 @@ export function build(name, LitElement, html, css) {
         direction: ltr !important;
       }
 
+      img,
+      video {
+        overflow: hidden;
+      }
+
       ::slotted(video) {
+        overflow: hidden;
         display: flex;
         width: 100%;
         height: 100%;
@@ -26,6 +31,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-controller {
+        overflow: hidden;
         display: flex;
         background: transparent;
         --media-font-family: system-ui, sans-serif;
