@@ -1,8 +1,10 @@
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, nothing } from 'lit';
 import { query } from 'lit/decorators/query.js';
 
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { Collection } from '../embed/api';
+import { EmbedController, EmbedType } from '../embed/controller';
 import { Player } from './player.js';
 
 export class Pop extends LitElement {
@@ -12,6 +14,8 @@ export class Pop extends LitElement {
   @query('.backdrop') _backdrop: HTMLElement;
 
   private _player?: Player;
+  private embedController = new EmbedController(this, EmbedType.Collection);
+  private _collection: Collection;
 
   static styles = css`
     :host {
@@ -139,6 +143,8 @@ export class Pop extends LitElement {
     }
   `;
 
+  @property() token?: string;
+
   private _backdropColor: string;
   @property()
   get backdrop(): string {
@@ -169,6 +175,11 @@ export class Pop extends LitElement {
       '--backdrop-filter': this.backdropFilter,
     };
     return styleMap(style);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.token) this.embedController.token = this.token;
   }
 
   open(player: Player) {
@@ -234,6 +245,15 @@ export class Pop extends LitElement {
 
   render() {
     return html`
+      ${this.token
+        ? this.embedController.render({
+            complete: (data: any) => {
+              this._collection = data as Collection;
+              if (data.error) return console.warn(data.error);
+            },
+          })
+        : nothing}
+
       <dialog style=${this.styles}>
         <div class="backdrop"></div>
         <div class="content" @click=${this.possibleClose}>
