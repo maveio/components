@@ -92,6 +92,14 @@ export class Pop extends LitElement {
       display: block;
     }
 
+    dialog[closed] slot {
+      display: block;
+    }
+
+    dialog[open] slot {
+      display: block;
+    }
+
     .button-close {
       display: none;
       position: fixed;
@@ -140,6 +148,12 @@ export class Pop extends LitElement {
       background-size: contain;
       background-position: center center;
       background-repeat: no-repeat;
+    }
+
+    slot {
+      position: fixed;
+      color: white;
+      bottom: 10px;
     }
   `;
 
@@ -227,6 +241,7 @@ export class Pop extends LitElement {
   }
 
   possibleClose(e: MouseEvent) {
+    if (e.target instanceof HTMLElement && !e.target.closest('dialog')) return;
     if (e.target != this._player) this.close();
   }
 
@@ -258,7 +273,7 @@ export class Pop extends LitElement {
         <div class="backdrop"></div>
         <div class="content" @click=${this.possibleClose}>
           <div class="wrapper">
-            <slot style="display: none;"></slot>
+            <slot></slot>
             <div class="frame"></div>
           </div>
         </div>
