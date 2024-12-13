@@ -150,6 +150,13 @@ export class Pop extends LitElement {
       background-repeat: no-repeat;
     }
 
+    .frame_multiple {
+      width: 24rem;
+      padding-bottom: 0;
+      height: 75vh;
+      margin-bottom: 4.75rem;
+    }
+
     slot {
       position: fixed;
       color: white;
@@ -191,13 +198,100 @@ export class Pop extends LitElement {
     return styleMap(style);
   }
 
+  get _slottedChildren() {
+    const slot = this.shadowRoot?.querySelector('slot');
+    return slot?.assignedElements({ flatten: true }) || [];
+  }
+
+  _nextPreviousSet = false;
+  _opened = false;
+
   connectedCallback() {
     super.connectedCallback();
     if (this.token) this.embedController.token = this.token;
+    if (window) {
+      window.addEventListener('keydown', this.keyPressed.bind(this));
+    }
+  }
+
+  keyPressed(e: KeyboardEvent) {
+    const index = this._collection.videos.findIndex(
+      (video) => video.id === this._player?.embed,
+    );
+
+    if (this._opened) {
+      if (e.key === 'ArrowRight' && index < this._collection.videos.length - 1) {
+        this.playNextOrPrevious(1);
+      } else if (e.key === 'ArrowLeft' && index > 0) {
+        this.playNextOrPrevious(-1);
+      }
+    }
+  }
+
+  findInSlotted(selector: string, tagNameCheck?: string): Element | null {
+    for (const child of this._slottedChildren) {
+      if (
+        child.matches(selector) ||
+        (tagNameCheck && child.tagName === tagNameCheck.toUpperCase())
+      ) {
+        return child;
+      }
+
+      const found = child.querySelector(selector);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+
+  playNextOrPrevious(direction: number) {
+    const currentIndex = this._collection.videos.findIndex(
+      (video) => video.id === this._player?.embed,
+    );
+
+    const newIndex =
+      (currentIndex + direction + this._collection.videos.length) %
+      this._collection.videos.length;
+    const newEmbed = this._collection.videos[newIndex].id;
+
+    this._player?.setAttribute('embed', newEmbed);
+    this._player?.play();
+
+    const currentIndexElement = this.findInSlotted('[name="mave-current-index"]');
+    if (currentIndexElement) {
+      currentIndexElement.textContent = (newIndex + 1).toString();
+    }
+
+    this.nextPreviousStyle(newIndex);
+  }
+
+  nextPreviousStyle(index: number) {
+    const previous = this.findInSlotted('[name="mave-pop-previous"]') as HTMLElement;
+    const next = this.findInSlotted('[name="mave-pop-next"]') as HTMLElement;
+    if (next && previous) {
+      if (index == 0) {
+        previous.style.opacity = '0.5';
+        previous.style.pointerEvents = 'none';
+      } else {
+        previous.style.opacity = '1';
+        previous.style.pointerEvents = 'auto';
+      }
+
+      if (index == this._collection.videos.length - 1) {
+        next.style.opacity = '0.5';
+        next.style.pointerEvents = 'none';
+      } else {
+        next.style.opacity = '1';
+        next.style.pointerEvents = 'auto';
+      }
+    }
   }
 
   open(player: Player) {
-    this._player = player;
+    let hasPlayer = false;
+    const playerElement = this.findInSlotted('mave-player', 'mave-player');
+
     if (player.aspect_ratio) {
       const [w, h] = player.aspect_ratio.split('/');
       this.style.setProperty('--frame-ratio-w', w);
@@ -206,12 +300,54 @@ export class Pop extends LitElement {
 
     this.style.display = 'block';
 
-    const tryToOpen = (resolve: (value: unknown) => void) => {
-      this._frame.appendChild(player);
+    if (playerElement) {
+      hasPlayer = true;
+      this._frame.style.display = 'none';
+      for (const attr of player.attributes) {
+        playerElement.setAttribute(attr.name, attr.value);
+      }
+      this._player = playerElement as Player;
+    }
 
-      setTimeout(() => {
-        this._dialog.showModal();
-      }, 25);
+    if (!hasPlayer) {
+      this._frame.appendChild(player);
+      this._player = player;
+    }
+
+    const tryToOpen = (resolve: (value: unknown) => void) => {
+      if (this.token) {
+        this._frame.classList.add('frame_multiple');
+
+        const next = this.findInSlotted('[name="mave-pop-next"]');
+        const previous = this.findInSlotted('[name="mave-pop-previous"]');
+        const folderCount = this.findInSlotted('[name="mave-folder-count"]');
+        const currentIndex = this.findInSlotted('[name="mave-current-index"]');
+
+        if (!this._nextPreviousSet) {
+          next?.addEventListener('click', () => {
+            this.playNextOrPrevious(1);
+          });
+
+          previous?.addEventListener('click', () => {
+            this.playNextOrPrevious(-1);
+          });
+          this._nextPreviousSet = true;
+        }
+
+        if (folderCount) {
+          folderCount.textContent = this._collection.videos.length.toString();
+        }
+
+        if (currentIndex) {
+          const index = this._collection.videos.findIndex(
+            (video) => video.id === this._player?.embed,
+          );
+          currentIndex.textContent = (index + 1).toString();
+          this.nextPreviousStyle(index);
+        }
+      }
+
+      setTimeout(() => this._dialog.showModal(), 25);
 
       this._dialog.addEventListener(
         'close',
@@ -222,7 +358,9 @@ export class Pop extends LitElement {
         { once: true },
       );
 
-      resolve(this);
+      this._opened = true;
+
+      resolve(this._player);
     };
 
     return new Promise((resolve) => {
@@ -252,10 +390,25 @@ export class Pop extends LitElement {
       'transitionend',
       () => {
         this._frame.innerHTML = '';
-        this.dispatchEvent(new Event('closed', { bubbles: true }));
+
+        if (this._player) {
+          this._player.pause();
+          this._player.currentTime = 0;
+        }
+
+        const detail = {
+          player: this._player,
+        };
+        this.dispatchEvent(new CustomEvent('closed', { bubbles: true, detail }));
       },
       { once: true },
     );
+
+    this._opened = false;
+  }
+
+  disconnectedCallback(): void {
+    window.removeEventListener('keydown', this.keyPressed.bind(this));
   }
 
   render() {
@@ -360,6 +513,7 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
       }
     }
     player.embed = embed;
+    player.setAttribute('embed', embed);
     return player;
   }
 
@@ -380,12 +534,15 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
         if (!popped) {
           const player = createPlayer(embed, attributes);
 
-          pop.open(player).then(() => {
-            player.play();
+          pop.open(player).then((p) => {
+            (p as Player).play();
           });
 
-          pop.addEventListener('closed', () => {
+          pop.addEventListener('closed', (event: Event) => {
+            const customEvent = event as CustomEvent;
+            const player = customEvent.detail.player as Player;
             player.pause();
+            player.currentTime = 0;
           });
         }
       });
