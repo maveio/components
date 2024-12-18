@@ -206,6 +206,9 @@ export class Pop extends LitElement {
   _nextPreviousSet = false;
   _opened = false;
 
+  _touchStartX: number = 0;
+  _touchEndX: number = 0;
+
   connectedCallback() {
     super.connectedCallback();
     if (this.token) this.embedController.token = this.token;
@@ -223,6 +226,21 @@ export class Pop extends LitElement {
       if (e.key === 'ArrowRight' && index < this._collection.videos.length - 1) {
         this.playNextOrPrevious(1);
       } else if (e.key === 'ArrowLeft' && index > 0) {
+        this.playNextOrPrevious(-1);
+      }
+    }
+  }
+
+  handleSwipe() {
+    const swipeThreshold = 50; // Minimum distance in pixels for a swipe to be counted
+    const swipeDistance = this._touchStartX - this._touchEndX;
+
+    if (Math.abs(swipeDistance) > swipeThreshold) {
+      if (swipeDistance > 0) {
+        // Swipe left, go to the next video
+        this.playNextOrPrevious(1);
+      } else {
+        // Swipe right, go to the previous video
         this.playNextOrPrevious(-1);
       }
     }
@@ -358,6 +376,9 @@ export class Pop extends LitElement {
         { once: true },
       );
 
+      this.addEventListener('touchstart', this.touchStart.bind(this), { passive: true });
+      this.addEventListener('touchend', this.touchEnd.bind(this), { passive: true });
+
       this._opened = true;
 
       resolve(this._player);
@@ -376,6 +397,15 @@ export class Pop extends LitElement {
         tryToOpen(resolve);
       }
     });
+  }
+
+  touchStart(e: TouchEvent) {
+    this._touchStartX = e.touches[0].clientX;
+  }
+
+  touchEnd(e: TouchEvent) {
+    this._touchEndX = e.changedTouches[0].clientX;
+    this.handleSwipe();
   }
 
   possibleClose(e: MouseEvent) {
@@ -403,6 +433,9 @@ export class Pop extends LitElement {
       },
       { once: true },
     );
+
+    this.removeEventListener('touchstart', this.touchStart.bind(this));
+    this.removeEventListener('touchend', this.touchEnd.bind(this));
 
     this._opened = false;
   }
