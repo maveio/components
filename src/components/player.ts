@@ -363,15 +363,18 @@ export class Player extends MaveElement {
         );
       };
 
-      const avif = getImage('avif');
-      const webp = getImage('webp');
+      // Safari has issues with posters that are not jpg
+      // const avif = getImage('avif');
+      // const webp = getImage('webp');
       const jpg = getImage('jpg');
 
-      return avif
-        ? `${type}.avif${avif.date ? `?date=${avif.date}` : ''}`
-        : webp
-        ? `${type}.webp${webp.date ? `?date=${webp.date}` : ''}`
-        : `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
+      // return avif
+      //   ? `${type}.avif${avif.date ? `?date=${avif.date}` : ''}`
+      //   : webp
+      //   ? `${type}.webp${webp.date ? `?date=${webp.date}` : ''}`
+      //   : `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
+
+      return `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
     } else {
       // fallback to jpg
       return `${type}.jpg`;
