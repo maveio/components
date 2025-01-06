@@ -126,6 +126,15 @@ export class EmbedController {
     const url = new URL(
       `${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`,
     );
+
+    if (file.includes('?')) {
+      const [_file, query] = file.split('?');
+      const query_params = new URLSearchParams(query);
+      query_params.forEach((value, key) => {
+        params.append(key, value);
+      });
+    }
+
     if (this.token) params.append('token', this.token);
     if (!this.caching) params.append('e', new Date().getTime().toString());
     url.search = params.toString();
