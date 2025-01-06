@@ -357,16 +357,21 @@ export class Player extends MaveElement {
   #posterRendition(type: 'poster' | 'thumbnail') {
     if (this._embedObj.poster.renditions) {
       // get avif first, then webp, then jpg
-      const rendition = this._embedObj.poster.renditions.find(
-        (rendition) => rendition.container === 'avif' && rendition.type === type,
-      );
-      return rendition
-        ? `${type}.avif`
-        : this._embedObj.poster.renditions.find(
-            (rendition) => rendition.container === 'webp' && rendition.type === type,
-          )
-        ? `${type}.webp`
-        : `${type}.jpg`;
+      const getImage = (container: 'webp' | 'avif' | 'jpg') => {
+        return this._embedObj.poster.renditions.find(
+          (rendition) => rendition.container === container && rendition.type === type,
+        );
+      };
+
+      const avif = getImage('avif');
+      const webp = getImage('webp');
+      const jpg = getImage('jpg');
+
+      return avif
+        ? `${type}.avif${avif.date ? `?date=${avif.date}` : ''}`
+        : webp
+        ? `${type}.webp${webp.date ? `?date=${webp.date}` : ''}`
+        : `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
     } else {
       // fallback to jpg
       return `${type}.jpg`;
