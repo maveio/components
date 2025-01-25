@@ -1,7 +1,7 @@
 export const potentialDistFolder = () => {
   if (!document) return '';
-  const host = new URL(import.meta.url).host;
-  if (['cdn.mave.io', 'cdn.video-dns.com'].includes(host)) {
+  const pathname = new URL(import.meta.url).pathname;
+  if (pathname.includes('+esm')) {
     return 'dist/';
   }
   return '';
