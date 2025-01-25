@@ -28,8 +28,8 @@
   "scripts": {
     "ts-types": "tsc",
     "build": "tsup",
-    "dev": "tsup --watch",
-    "build:prod": "NODE_ENV=production npm run build",
+    "dev": "tsup --watch --sourcemap",
+    "build:prod": "NODE_ENV=production npm run build --no-sourcemap",
     "localize": "lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",
     "test": "jest",
