@@ -374,7 +374,7 @@ export class Player extends MaveElement {
       //   ? `${type}.webp${webp.date ? `?date=${webp.date}` : ''}`
       //   : `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
 
-      return `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
+      return `${type}.jpg${jpg && jpg.date ? `?e=${jpg.date}` : ''}`;
     } else {
       // fallback to jpg
       return `${type}.jpg`;
