@@ -136,7 +136,9 @@ export class EmbedController {
     }
 
     if (this.token) params.append('token', this.token);
-    if (!this.caching) params.append('e', new Date().getTime().toString());
+    if (!this.caching && file == 'manifest') {
+      params.append('e', new Date().getTime().toString());
+    }
     url.search = params.toString();
     return url.toString();
   }

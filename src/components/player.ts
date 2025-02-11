@@ -88,21 +88,19 @@ export class Player extends MaveElement {
   _previousControls?: string[] | string;
 
   private _cache: boolean;
-  @property({ attribute: 'cache', type: Boolean })
-  get caching(): boolean {
+  @property()
+  get cache(): boolean {
     return this._cache;
   }
-  set caching(value: boolean) {
+  set cache(value: string | boolean) {
     if (this._cache != value) {
-      this._cache = value;
-      this.requestUpdate('caching');
-
       if (typeof value === 'string') {
         this._cache = value === 'true' || value === '';
       } else {
-        this._cache = value;
+        this._cache = false;
       }
 
+      this.requestUpdate('caching');
       this.embedController.caching = this._cache;
     }
   }
