@@ -17,6 +17,7 @@ export class EmbedController {
   private _embed: string;
   private _token: string;
   private _version: number;
+  private _embedData: Partial<API.Embed>;
   caching: boolean = true;
   loading: boolean = true;
 
@@ -42,9 +43,9 @@ export class EmbedController {
           this.loading = false;
 
           if (this.type == EmbedType.Embed) {
-            const embed = data as Partial<API.Embed>;
-            this.version = embed.video?.version || 0;
-            return embed;
+            this._embedData = data;
+            this.version = this._embedData.video?.version || 0;
+            return this._embedData;
           } else {
             return data as Partial<API.Collection>;
           }
@@ -136,8 +137,12 @@ export class EmbedController {
     }
 
     if (this.token) params.append('token', this.token);
-    if (!this.caching && file == 'manifest') {
+    if (file == 'manifest') {
       params.append('e', new Date().getTime().toString());
+    }
+    if (file !== 'manifest' && this._embedData?.created_at) {
+      const e = !this.caching ? new Date().getTime() : this._embedData.created_at;
+      params.append('e', e.toString());
     }
     url.search = params.toString();
     return url.toString();

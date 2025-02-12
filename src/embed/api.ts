@@ -21,7 +21,7 @@ export type Embed = {
   id: string;
   name: string;
   space_id: string;
-  created_at: Date;
+  created_at: number;
   poster: {
     renditions: [Poster];
     image_src: string;
