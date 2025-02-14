@@ -9,7 +9,7 @@ export type Rendition = {
 
 export type Poster = {
   container: 'avif' | 'webp' | 'jpg';
-  type: 'thumbnail' | 'poster';
+  type: 'thumbnail' | 'poster' | 'custom_thumbnail';
   date?: number;
 };
 

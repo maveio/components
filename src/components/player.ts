@@ -137,14 +137,18 @@ export class Player extends MaveElement {
     if (!this.embed || !this._embedObj) return '';
 
     if (this._poster && this._poster == 'custom') {
-      return this.embedController.embedFile(this.#posterRendition('thumbnail'));
+      return this.embedController.embedFile(this.#posterRendition('custom_thumbnail'));
     }
 
     if (
       this._poster &&
       (!Number.isNaN(parseFloat(this._poster)) || !Number.isNaN(parseInt(this._poster)))
     ) {
-      return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
+      if (this._embedObj.poster.renditions.find((p) => p.type == 'custom_thumbnail')) {
+        return this.embedController.embedFile(this.#posterRendition('custom_thumbnail'));
+      } else {
+        return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
+      }
     }
 
     if (this._poster) {
@@ -355,19 +359,21 @@ export class Player extends MaveElement {
     }
   }
 
-  #posterRendition(type: 'poster' | 'thumbnail') {
-    if (this._embedObj.poster.renditions) {
+  #posterRendition(type: 'poster' | 'thumbnail' | 'custom_thumbnail') {
+    const getImage = (container: 'webp' | 'avif' | 'jpg') => {
+      return this._embedObj.poster.renditions.find(
+        (rendition) => rendition.container === container && rendition.type === type,
+      );
+    };
+
+    const jpg = getImage('jpg');
+
+    if (jpg) {
       // get avif first, then webp, then jpg
-      const getImage = (container: 'webp' | 'avif' | 'jpg') => {
-        return this._embedObj.poster.renditions.find(
-          (rendition) => rendition.container === container && rendition.type === type,
-        );
-      };
 
       // Safari has issues with posters that are not jpg
       // const avif = getImage('avif');
       // const webp = getImage('webp');
-      const jpg = getImage('jpg');
 
       // return avif
       //   ? `${type}.avif${avif.date ? `?date=${avif.date}` : ''}`
@@ -378,6 +384,9 @@ export class Player extends MaveElement {
       return `${type}.jpg${jpg && jpg.date ? `?e=${jpg.date}` : ''}`;
     } else {
       // fallback to jpg
+      if (type == 'custom_thumbnail') {
+        return `thumbnail.jpg`;
+      }
       return `${type}.jpg`;
     }
   }
