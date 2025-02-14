@@ -367,6 +367,7 @@ export class Player extends MaveElement {
     };
 
     const jpg = getImage('jpg');
+    const t = type == 'custom_thumbnail' ? 'thumbnail' : type;
 
     if (jpg) {
       // get avif first, then webp, then jpg
@@ -381,13 +382,13 @@ export class Player extends MaveElement {
       //   ? `${type}.webp${webp.date ? `?date=${webp.date}` : ''}`
       //   : `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
 
-      return `${type}.jpg${jpg && jpg.date ? `?e=${jpg.date}` : ''}`;
+      return `${t}.jpg${jpg && jpg.date ? `?e=${jpg.date}` : ''}`;
     } else {
       // fallback to jpg
       if (type == 'custom_thumbnail') {
         return `thumbnail.jpg`;
       }
-      return `${type}.jpg`;
+      return `${t}.jpg`;
     }
   }
 
