@@ -138,11 +138,14 @@ export class EmbedController {
 
     if (this.token) params.append('token', this.token);
     if (file == 'manifest') {
+      if (params.has('e')) params.delete('e');
       params.append('e', new Date().getTime().toString());
     }
     if (file !== 'manifest' && this._embedData?.created_at) {
-      const e = !this.caching ? new Date().getTime() : this._embedData.created_at;
-      params.append('e', e.toString());
+      const e = !this.caching ? new Date() : new Date(this._embedData.created_at);
+      if (!params.has('e')) {
+        params.append('e', e.getTime().toString());
+      }
     }
     url.search = params.toString();
     return url.toString();

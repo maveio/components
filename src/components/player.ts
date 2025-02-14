@@ -140,7 +140,10 @@ export class Player extends MaveElement {
       return this.embedController.embedFile(this.#posterRendition('thumbnail'));
     }
 
-    if (this._poster && !Number.isNaN(parseFloat(this._poster))) {
+    if (
+      this._poster &&
+      (!Number.isNaN(parseFloat(this._poster)) || !Number.isNaN(parseInt(this._poster)))
+    ) {
       return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
     }
 
@@ -148,7 +151,7 @@ export class Player extends MaveElement {
       return this._poster;
     }
 
-    return this.embedController.embedFile(this.#posterRendition('poster'));
+    return this.embedController.embedFile(this.#posterRendition('thumbnail'));
   }
   set poster(value: string | null) {
     if (value) {
