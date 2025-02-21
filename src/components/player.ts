@@ -361,8 +361,11 @@ export class Player extends MaveElement {
 
   #posterRendition(type: 'poster' | 'thumbnail' | 'custom_thumbnail') {
     const getImage = (container: 'webp' | 'avif' | 'jpg') => {
-      return this._embedObj.poster.renditions.find(
-        (rendition) => rendition.container === container && rendition.type === type,
+      return (
+        this._embedObj.poster.renditions &&
+        this._embedObj.poster.renditions.find(
+          (rendition) => rendition.container === container && rendition.type === type,
+        )
       );
     };
 
@@ -384,10 +387,6 @@ export class Player extends MaveElement {
 
       return `${t}.jpg${jpg && jpg.date ? `?e=${jpg.date}` : ''}`;
     } else {
-      // fallback to jpg
-      if (type == 'custom_thumbnail') {
-        return `thumbnail.jpg`;
-      }
       return `${t}.jpg`;
     }
   }
