@@ -387,11 +387,6 @@ export class Player extends MaveElement {
 
       return `${t}.jpg${jpg && jpg.date ? `?e=${jpg.date}` : ''}`;
     } else {
-      // fallback to jpg
-      if (type == 'custom_thumbnail') {
-        return `thumbnail.jpg`;
-      }
-
       return `${t}.jpg`;
     }
   }
