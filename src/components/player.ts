@@ -5,10 +5,10 @@ import { IntersectionController } from '@lit-labs/observers/intersection-control
 import { Metrics } from '@maveio/metrics';
 import Hls from 'hls.js';
 import { css, html } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Config } from '../config';
 import { Embed } from '../embed/api';
@@ -359,6 +359,10 @@ export class Player extends MaveElement {
       this.style.setProperty('--subtitle-transform', 'translateY(100em)');
       this.style.setProperty('--subtitle-display', 'none');
       this.style.setProperty('--subtitle-opacity', '0');
+
+      this._videoElement?.style.setProperty('--subtitle-transform', 'translateY(100em)');
+      this._videoElement?.style.setProperty('--subtitle-display', 'none');
+      this._videoElement?.style.setProperty('--subtitle-opacity', '0');
     }
 
     this._videoElement?.addEventListener('webkitbeginfullscreen', () => {
@@ -763,6 +767,8 @@ export class Player extends MaveElement {
     }
 
     if (!navigator.userAgent.includes('Mobi')) {
+      // track.mode = 'hidden';
+
       if (!this._subtitlesText) {
         const subtitleText = this.shadowRoot
           ?.querySelector(`theme-${this.theme}`)
@@ -865,10 +871,14 @@ export class Player extends MaveElement {
     style['--playbackrate-display'] = this.controls.includes('rate') ? 'flex' : 'none';
 
     if (
-      (this.subtitles == 'none' ||
+      ((this.subtitles == 'none' ||
         this.subtitles == 'off' ||
         this._embedObj?.subtitles.length == 0) &&
-      !this.active_subtitle
+        !this.active_subtitle) ||
+      // Don't change behaviour of older videos:
+      (this._embedObj?.created_at < 1740674988 &&
+        !this.subtitles &&
+        !this.active_subtitle)
     ) {
       style['--captions-display'] = 'none';
     }

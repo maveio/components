@@ -451,8 +451,8 @@ export function build(name, LitElement, html, css) {
       media-controller[mediaisfullscreen] .subtitles > div {
         min-height: 44px;
         padding: 14px 24px 12px 24px;
-        font-size: 44px;
-        line-height: 3.5rem;
+        font-size: 26px;
+        line-height: 2rem;
         max-width: 40%;
         margin-bottom: 40px;
       }
