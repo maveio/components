@@ -355,17 +355,10 @@ export class Player extends MaveElement {
   }
 
   #applySubtitleStyles() {
-    const userAgent = navigator.userAgent.toLowerCase();
-
-    switch (true) {
-      case userAgent.includes('firefox'):
-        this.style.setProperty('--subtitle-display', 'none');
-        this.style.setProperty('--subtitle-opacity', '0');
-        break;
-      case userAgent.includes('chrome'):
-      case userAgent.includes('safari'):
-        this.style.setProperty('--subtitle-transform', 'translateY(100em)');
-        break;
+    if (!navigator.userAgent.includes('Mobi')) {
+      this.style.setProperty('--subtitle-transform', 'translateY(100em)');
+      this.style.setProperty('--subtitle-display', 'none');
+      this.style.setProperty('--subtitle-opacity', '0');
     }
 
     this._videoElement?.addEventListener('webkitbeginfullscreen', () => {
