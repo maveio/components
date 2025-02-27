@@ -34,6 +34,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-controller {
+        --media-tooltip-display: none;
         overflow: hidden;
         display: flex;
         width: 100%;
@@ -202,6 +203,7 @@ export function build(name, LitElement, html, css) {
       }
 
       .subtitles {
+        opacity: 1;
         position: absolute;
         top: 0;
         left: 0;
@@ -217,18 +219,34 @@ export function build(name, LitElement, html, css) {
 
       .subtitles > div {
         display: flex;
+        text-align: center;
         align-items: center;
         justify-content: center;
-        color: rgba(255, 255, 255, 1);
-        height: 100px;
-        width: 70%;
-        text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
-        letter-spacing: 0.01em;
-        text-align: center;
-        margin-bottom: 34px;
+        min-height: 22px;
+        margin-bottom: 24px;
         font-weight: 500;
-        font-size: 20px;
+        font-size: 19px;
         opacity: 0;
+        max-width: 80%;
+        color: white;
+        line-height: 1.5rem;
+        transition: margin 300ms ease-out;
+        text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
+        letter-spacing: -0.01em;
+      }
+
+      media-controller[mediapaused] .subtitles > div,
+      media-controller:not([userinactive]) .subtitles > div {
+        margin-bottom: 76px;
+      }
+
+      media-controller[mediaisfullscreen] .subtitles > div {
+        min-height: 44px;
+        padding: 14px 24px 12px 24px;
+        font-size: 44px;
+        line-height: 3.5rem;
+        max-width: 40%;
+        margin-bottom: 54px;
       }
 
       media-playback-rate-button {
@@ -288,10 +306,10 @@ export function build(name, LitElement, html, css) {
 
     render() {
       return html`
-        <div class="subtitles">
-          <div id="subtitles_text">subtitles</div>
-        </div>
         <media-controller novolumepref>
+          <div class="subtitles">
+            <div id="subtitles_text">subtitles</div>
+          </div>
           <slot name="media" slot="media"></slot>
           <media-time-range></media-time-range>
           <div slot="centered-chrome">
