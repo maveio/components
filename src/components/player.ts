@@ -184,6 +184,12 @@ export class Player extends MaveElement {
       font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
         sans-serif;
       font-weight: 500;
+      display: var(--subtitle-display, initial);
+      opacity: var(--subtitle-opacity, 1);
+    }
+
+    video::-webkit-media-text-track-display {
+      transform: var(--subtitle-transform, initial);
     }
 
     video:focus-visible {
@@ -345,6 +351,30 @@ export class Player extends MaveElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.loadTheme();
+    this.#applySubtitleStyles();
+  }
+
+  #applySubtitleStyles() {
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    switch (true) {
+      case userAgent.includes('firefox'):
+        this.style.setProperty('--subtitle-display', 'none');
+        this.style.setProperty('--subtitle-opacity', '0');
+        break;
+      case userAgent.includes('chrome'):
+      case userAgent.includes('safari'):
+        this.style.setProperty('--subtitle-transform', 'translateY(100em)');
+        break;
+    }
+
+    this._videoElement?.addEventListener('webkitbeginfullscreen', () => {
+      this.style.setProperty('--subtitle-transform', 'translateY(-1em)');
+    });
+
+    this._videoElement?.addEventListener('webkitendfullscreen', () => {
+      this.style.setProperty('--subtitle-transform', 'translateY(100em)');
+    });
   }
 
   disconnectedCallback() {
@@ -740,8 +770,6 @@ export class Player extends MaveElement {
     }
 
     if (!navigator.userAgent.includes('Mobi')) {
-      if (track.mode != 'hidden') track.mode = 'hidden';
-
       if (!this._subtitlesText) {
         const subtitleText = this.shadowRoot
           ?.querySelector(`theme-${this.theme}`)
@@ -843,7 +871,12 @@ export class Player extends MaveElement {
 
     style['--playbackrate-display'] = this.controls.includes('rate') ? 'flex' : 'none';
 
-    if (!this.subtitles && !this.active_subtitle) {
+    if (
+      (this.subtitles == 'none' ||
+        this.subtitles == 'off' ||
+        this._embedObj?.subtitles.length == 0) &&
+      !this.active_subtitle
+    ) {
       style['--captions-display'] = 'none';
     }
 
@@ -905,7 +938,8 @@ export class Player extends MaveElement {
           (this.active_subtitle && this.active_subtitle == track.language) ||
           this.subtitles == 'all' ||
           ((this.subtitles == 'original' || this.active_subtitle == 'original') &&
-            this._embedObj.video.language == track.language)
+            this._embedObj.video.language == track.language) ||
+          !this.subtitles
         ) {
           return html`
             <track mode="hidden" @cuechange=${this.#cuechange} label=${

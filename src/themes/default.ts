@@ -32,6 +32,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-controller {
+        --media-tooltip-display: none;
         overflow: hidden;
         display: flex;
         background: transparent;
@@ -410,6 +411,7 @@ export function build(name, LitElement, html, css) {
       }
 
       .subtitles {
+        opacity: 1;
         position: absolute;
         top: 0;
         left: 0;
@@ -436,13 +438,13 @@ export function build(name, LitElement, html, css) {
         max-width: 80%;
         color: white;
         line-height: 1.5rem;
-        transition: margin 200ms ease-out;
+        transition: margin 300ms ease-out;
         text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
         letter-spacing: -0.01em;
       }
 
-      media-controller[mediapaused] ~ .subtitles > div,
-      media-controller:not([userinactive]) ~ .subtitles > div {
+      media-controller[mediapaused] .subtitles > div,
+      media-controller:not([userinactive]) .subtitles > div {
         margin-bottom: 64px;
       }
 
@@ -724,10 +726,10 @@ export function build(name, LitElement, html, css) {
               </svg>
             </media-fullscreen-button>
           </media-control-bar>
+          <div class="subtitles">
+            <div id="subtitles_text"></div>
+          </div>
         </media-controller>
-        <div class="subtitles">
-          <div id="subtitles_text">subtitles</div>
-        </div>
       `;
     }
   }

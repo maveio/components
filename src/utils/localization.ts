@@ -6,8 +6,15 @@ export { localized, msg };
 export const localization = configureLocalization({
   sourceLocale: 'default',
   targetLocales: ['en', 'nl', 'de', 'fr'],
-  loadLocale: (locale) =>
-    import(`./${potentialDistFolder()}generated/locales/${locale}.js`),
+  loadLocale: async (locale) => {
+    try {
+      const localePath = `./${potentialDistFolder()}generated/locales/${locale}.js`;
+      return await import(localePath);
+    } catch (e) {
+      console.log('[mave-player]: locale not loaded', e);
+      return null;
+    }
+  },
 });
 
 let loaded = false;
@@ -28,7 +35,6 @@ export class LanguageController {
     }
     this.host.requestUpdate();
   };
-
 
   constructor(host: ReactiveControllerHost) {
     this.host = host;
