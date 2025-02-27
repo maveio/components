@@ -44,7 +44,8 @@ export class ThemeLoader {
         const { build } = await import(`${path}/${name}.js`);
         build(name, LitElement, html, css);
       } else {
-        const { build } = await import(`./${potentialDistFolder()}themes/${name}.js`);
+        const themePath = `./${potentialDistFolder()}themes/${name}.js`;
+        const { build } = await import(themePath);
         build(name, LitElement, html, css);
       }
     } catch (e) {
