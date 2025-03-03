@@ -287,7 +287,7 @@ export class Player extends MaveElement {
           }
         });
 
-        this._videoElement?.addEventListener('error', (event) => {
+        this._videoElement?.addEventListener('error', () => {
           reject(new Error('Failed to load video metadata.'));
         });
       };
@@ -780,18 +780,6 @@ export class Player extends MaveElement {
 
       if (this._currentTrackLanguage != track.language) return;
 
-      const option = this.shadowRoot
-        ?.querySelector(`theme-${this.theme}`)
-        ?.shadowRoot?.querySelector('media-captions-selectmenu')
-        ?.shadowRoot?.querySelector('media-captions-listbox')
-        ?.shadowRoot?.querySelector('media-chrome-option[part="option option-selected"]');
-
-      if (option && option.getAttribute('value') == 'off') {
-        this._subtitlesText.innerHTML = '';
-        this._subtitlesText.style.opacity = '0';
-        return;
-      }
-
       if (cues.length) {
         const cue = cues[0] as VTTCue;
         this._subtitlesText.style.opacity = '1';
@@ -935,6 +923,24 @@ export class Player extends MaveElement {
 
   get #subtitles() {
     if (this._embedObj.subtitles.length > 0) {
+      const option = this.shadowRoot
+        ?.querySelector(`theme-${this.theme}`)
+        ?.shadowRoot?.querySelector('media-captions-selectmenu')
+        ?.shadowRoot?.querySelector('media-captions-listbox')
+        ?.shadowRoot?.querySelector('media-chrome-option[part="option option-selected"]');
+
+      if (option) {
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach(() => {
+            if (this._subtitlesText && option.getAttribute('value') === 'off') {
+              this._subtitlesText.style.opacity = '0';
+            }
+          });
+        });
+
+        observer.observe(option, { attributes: true });
+      }
+
       return this._embedObj.subtitles.map((track) => {
         if (
           (this.subtitles && this.subtitles.includes(track.language)) ||
