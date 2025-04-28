@@ -28,7 +28,7 @@
   "scripts": {
     "ts-types": "tsc",
     "build": "tsup",
-    "dev": "tsup --watch --sourcemap",
+    "build:watch": "tsup --watch --sourcemap",
     "build:prod": "NODE_ENV=production npm run build --no-sourcemap",
     "localize": "lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",
@@ -36,7 +36,9 @@
     "test:watch": "jest --watchAll",
     "lint:fix": "eslint ./src --ext .ts,.tsx --quiet --fix --ixgnore-path ./.gitignore",
     "lint:format": "prettier  --loglevel warn --write \"./**/*.{ts,tsx,css,md,json}\" ",
-    "lint": "yarn lint:format && yarn lint:fix"
+    "lint": "yarn lint:format && yarn lint:fix",
+    "serve": "vite --open examples/index.html",
+    "start": "concurrently \"npm run build:watch\" \"npm run serve\""
   },
   "publishConfig": {
     "access": "public",
@@ -54,6 +56,7 @@
     "@types/react": "^18.0.31",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
     "@typescript-eslint/parser": "^8.25.0",
+    "concurrently": "^9.1.2",
     "dotenv": "^16.0.3",
     "esbuild-plugin-replace": "^1.3.0",
     "eslint": "^8.16.0",
@@ -65,7 +68,8 @@
     "prettier": "^2.8.4",
     "ts-jest": "^29.0.5",
     "tsup": "^8.4.0",
-    "typescript": "^5.2"
+    "typescript": "^5.2",
+    "vite": "^6.3.3"
   },
   "author": "mave.io",
   "license": "AGPL-3.0-or-later",
@@ -90,8 +94,8 @@
   "homepage": "https://github.com/maveio/components#readme",
   "dependencies": {
     "@lit-labs/observers": "^2.0.2",
-    "@lit/react": "^1.0.5",
     "@lit/localize": "^0.12.1",
+    "@lit/react": "^1.0.5",
     "@lit/task": "^1.0.0",
     "@lottiefiles/lottie-player": "^2.0.2",
     "@maveio/metrics": "^0.1.5",

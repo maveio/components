@@ -55,7 +55,9 @@ export default defineConfig({
       __MAVE_METRICS_SOCKET_ENDPOINT__: isProduction
         ? 'wss://metrics.video-dns.com/socket'
         : process.env.MAVE_METRICS_SOCKET_ENDPOINT,
-      __MAVE_CDN_ENDPOINT__: isProduction ? 'https://space-${this.spaceId}.video-dns.com' : process.env.MAVE_CDN_ENDPOINT,
+      __MAVE_CDN_ENDPOINT__: isProduction
+        ? 'https://space-${this.spaceId}.video-dns.com'
+        : process.env.MAVE_CDN_ENDPOINT,
     }),
   ],
 });

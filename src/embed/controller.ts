@@ -1,9 +1,8 @@
 import { StatusRenderer, Task } from '@lit/task';
 import { ReactiveControllerHost } from 'lit';
 
-import * as API from './api';
-
 import { Config } from '../config';
+import * as API from './api';
 
 export enum EmbedType {
   Collection,

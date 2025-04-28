@@ -112,6 +112,10 @@ A more complex example is `<mave-list>`, which can be useful to show a collectio
 
 ## Contributing
 
+### Local development
+
+`npm run start`
+
 ### Localization
 
 When defining `msg()` run the following command: `./node_modules/.bin/lit-localize extract && ./node_modules/.bin/lit-localize build`

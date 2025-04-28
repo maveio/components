@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html style="overflow: auto;">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1.0, minimum-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+  <script crossorigin type="module">
+    import { Player, Upload, List, Clip, setConfig } from "../dist/index.js";
+    setConfig({ enabled: false });
+  </script>
+    <h1 class="text-center mt-12">Regular mave-player:</h1>
+
+    <div class="max-w-2xl mx-auto mt-2">
+      <mave-player embed="ubg50SrEx9CqNZR" subtitles="en" style="display: block; width: 100%; background: center / contain no-repeat url(https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg?e=1745867906); aspect-ratio: 16 / 9;"></mave-player>
+    </div>
+
+
+    <h1 class="text-center mt-12">Using a mave-clip as preview to open up the full video as mave-player in x-mave-pop:</h1>
+
+    <div class="max-w-2xl mx-auto mt-2">
+      <div class="relative w-full aspect-video bg-white overflow-hidden rounded-3xl shadow-xl flex items-center">
+        <mave-clip
+          embed="ubg50SrEx9CqNZR"
+          class="h-96"
+          style="
+            aspect-ratio: 16 / 9;
+            background: center / contain no-repeat
+              url(https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg);
+          "
+          theme="dolphin"
+        ></mave-clip>
+        <div
+          class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-white cursor-pointer"
+          x-mave-pop="ubg50SrEx9CqNZR"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-20">
+            <path
+              fill-rule="evenodd"
+              d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- for the above mave-player (embed id is not required here) in the pop we can apply a custom pop with subtitles enabled -->
+    <mave-pop embed="ubg50SrEx9CqNZR">
+      <mave-player theme="dolphin" active-subtitle="en"></mave-player>
+    </mave-pop>
+
+  </body>
+</html>

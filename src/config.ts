@@ -12,7 +12,7 @@ export const Config = {
   },
   cdn: {
     endpoint: '__MAVE_CDN_ENDPOINT__',
-  }
+  },
 };
 
 export function setConfig(config: Partial<typeof Config>) {
