@@ -1,5 +1,5 @@
 import 'media-chrome';
-import 'media-chrome/dist/experimental/media-captions-selectmenu.js';
+import 'media-chrome/menu';
 
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
@@ -189,7 +189,7 @@ export class Player extends MaveElement {
         sans-serif;
       font-weight: 500;
       display: var(--subtitle-display, initial);
-      opacity: var(--subtitle-opacity, 1);
+      opacity: var(--subtitle-opacity, 0);
     }
 
     video::-webkit-media-text-track-display {
@@ -355,26 +355,20 @@ export class Player extends MaveElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.loadTheme();
-    this.#applySubtitleStyles();
+
+    this.addEventListener(
+      'mave:video_element_ready',
+      this.#applySubtitleStyles.bind(this),
+    );
   }
 
   #applySubtitleStyles() {
-    if (!navigator.userAgent.includes('Mobi')) {
-      this.style.setProperty('--subtitle-transform', 'translateY(100em)');
-      this.style.setProperty('--subtitle-display', 'none');
-      this.style.setProperty('--subtitle-opacity', '0');
-
-      this._videoElement?.style.setProperty('--subtitle-transform', 'translateY(100em)');
-      this._videoElement?.style.setProperty('--subtitle-display', 'none');
-      this._videoElement?.style.setProperty('--subtitle-opacity', '0');
-    }
-
     this._videoElement?.addEventListener('webkitbeginfullscreen', () => {
-      this.style.setProperty('--subtitle-transform', 'translateY(-1em)');
+      this.style.setProperty('--subtitle-opacity', '1');
     });
 
     this._videoElement?.addEventListener('webkitendfullscreen', () => {
-      this.style.setProperty('--subtitle-transform', 'translateY(100em)');
+      this.style.setProperty('--subtitle-opacity', '0');
     });
   }
 
@@ -462,6 +456,7 @@ export class Player extends MaveElement {
       (this.#hlsPath || this.#srcPath)
     ) {
       this._videoElement = videoElement as HTMLMediaElement;
+
       this.dispatchEvent(
         new CustomEvent('mave:video_element_ready', {
           detail: this._videoElement,
@@ -771,27 +766,23 @@ export class Player extends MaveElement {
       this._currentTrackLanguage = track.language;
     }
 
-    if (!navigator.userAgent.includes('Mobi')) {
-      // track.mode = 'hidden';
-
-      if (!this._subtitlesText) {
-        const subtitleText = this.shadowRoot
-          ?.querySelector(`theme-${this.theme}`)
-          ?.shadowRoot?.querySelector('#subtitles_text');
-        if (subtitleText) {
-          this._subtitlesText = subtitleText as HTMLElement;
-        }
+    if (!this._subtitlesText) {
+      const subtitleText = this.shadowRoot
+        ?.querySelector(`theme-${this.theme}`)
+        ?.shadowRoot?.querySelector('#subtitles_text');
+      if (subtitleText) {
+        this._subtitlesText = subtitleText as HTMLElement;
       }
+    }
 
-      if (this._currentTrackLanguage != track.language) return;
-
-      if (cues.length) {
-        const cue = cues[0] as VTTCue;
-        this._subtitlesText.style.opacity = '1';
-        this._subtitlesText.innerHTML = cue.text;
-      } else {
-        this._subtitlesText.style.opacity = '0';
-      }
+    if (cues.length) {
+      const cue = cues[0] as VTTCue;
+      this._subtitlesText.style.opacity = '1';
+      this._subtitlesText.style.transform = 'scale(1)';
+      this._subtitlesText.innerHTML = cue.text.replace(/\n/g, '<br>');
+    } else {
+      this._subtitlesText.style.opacity = '0';
+      this._subtitlesText.style.transform = 'scale(0.99)';
     }
   }
 
