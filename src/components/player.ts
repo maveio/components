@@ -144,7 +144,11 @@ export class Player extends MaveElement {
       this._poster &&
       (!Number.isNaN(parseFloat(this._poster)) || !Number.isNaN(parseInt(this._poster)))
     ) {
-      if (this._embedObj.poster.renditions.find((p) => p.type == 'custom_thumbnail')) {
+      if (
+        this._embedObj.poster &&
+        this._embedObj.poster.renditions &&
+        this._embedObj.poster.renditions.find((p) => p.type == 'custom_thumbnail')
+      ) {
         return this.embedController.embedFile(this.#posterRendition('custom_thumbnail'));
       } else {
         return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
@@ -389,6 +393,7 @@ export class Player extends MaveElement {
   #posterRendition(type: 'poster' | 'thumbnail' | 'custom_thumbnail') {
     const getImage = (container: 'webp' | 'avif' | 'jpg') => {
       return (
+        this._embedObj.poster &&
         this._embedObj.poster.renditions &&
         this._embedObj.poster.renditions.find(
           (rendition) => rendition.container === container && rendition.type === type,
