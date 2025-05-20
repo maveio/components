@@ -141,6 +141,10 @@ export class Upload extends LitElement {
   }
 
   upload(file: File) {
+    this.dispatchEvent(
+      new CustomEvent('upload', { bubbles: true, composed: true, detail: { file } }),
+    );
+
     const upload = new tus.Upload(file, {
       endpoint: Config.upload.endpoint,
       retryDelays: [0, 3000, 5000, 10000, 20000, 60000, 60000],
