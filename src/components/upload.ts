@@ -3,10 +3,10 @@ import { property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { Channel } from 'phoenix';
 import * as tus from 'tus-js-client';
-import Data from '../embed/socket';
-import { LanguageController, localized, msg } from '../utils/localization';
 
 import { Config } from '../config';
+import Data from '../embed/socket';
+import { LanguageController, localized, msg } from '../utils/localization';
 
 interface ErrorMessage {
   message: string;
@@ -152,13 +152,26 @@ export class Upload extends LitElement {
       },
       onError: (e) => {
         console.log(e);
+        this.dispatchEvent(
+          new CustomEvent('failed', { bubbles: true, composed: true, detail: e }),
+        );
       },
       onProgress: (uploaded, total) => {
         const progress = Math.round((uploaded / total) * 100);
         if (progress > this._progress) this._progress = progress;
+        this.dispatchEvent(
+          new CustomEvent('progress', {
+            bubbles: true,
+            composed: true,
+            detail: { progress },
+          }),
+        );
       },
       onSuccess: () => {
         this._progress = 100;
+        this.dispatchEvent(
+          new CustomEvent('processing', { bubbles: true, composed: true }),
+        );
       },
       removeFingerprintOnSuccess: true,
     });
