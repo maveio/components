@@ -124,7 +124,9 @@ export class EmbedController {
 
   embedFile(file: string, params = new URLSearchParams()): string {
     const url = new URL(
-      `${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`,
+      `${this.cdnRoot}/${this.embedId}${
+        file == 'manifest.json' ? '/' : this.version
+      }${file}`,
     );
 
     if (file.includes('?')) {
@@ -136,14 +138,14 @@ export class EmbedController {
     }
 
     if (this.token) params.append('token', this.token);
-    if (file == 'manifest') {
+    if (file == 'manifest.json') {
       if (params.has('e')) params.delete('e');
       params.append('e', new Date().getTime().toString());
     }
-    if (file !== 'manifest' && this._embedData?.created_at) {
-      const e = !this.caching ? new Date() : new Date(this._embedData.created_at);
+    if (file !== 'manifest.json' && !this.caching) {
+      // const e = !this.caching ? new Date() : new Date(this._embedData.created_at);
       if (!params.has('e')) {
-        params.append('e', e.getTime().toString());
+        params.append('e', new Date().getTime().toString());
       }
     }
     url.search = params.toString();

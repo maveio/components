@@ -8,8 +8,8 @@ import * as API from './api';
 // const regex = /(?<!\bwww\.\S+)(?<!@\S+)(?<!\.\d)(?<=[.!?])\s+/g;
 function splitText(text: string) {
   // Splitting by a period, exclamation mark, or question mark followed by a space.
-  let parts = text.split(/([.!?])\s+/);
-  let sentences = [];
+  const parts = text.split(/([.!?])\s+/);
+  const sentences = [];
   let currentSentence = '';
 
   for (let i = 0; i < parts.length; i++) {
@@ -216,7 +216,9 @@ export class CaptionController {
 
   embedFile(file: string, params = new URLSearchParams()): string {
     const url = new URL(
-      `${this.cdnRoot}/${this.embedId}${file == 'manifest' ? '/' : this.version}${file}`,
+      `${this.cdnRoot}/${this.embedId}${
+        file == 'manifest.json' ? '/' : this.version
+      }${file}`,
     );
     if (this.token) params.append('token', this.token);
     url.search = params.toString();
