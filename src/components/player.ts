@@ -919,22 +919,23 @@ export class Player extends MaveElement {
 
   get #subtitles() {
     if (this._embedObj.subtitles.length > 0) {
-      const option = this.shadowRoot
+      const captionMenu = this.shadowRoot
         ?.querySelector(`theme-${this.theme}`)
-        ?.shadowRoot?.querySelector('media-captions-selectmenu')
-        ?.shadowRoot?.querySelector('media-captions-listbox')
-        ?.shadowRoot?.querySelector('media-chrome-option[part="option option-selected"]');
+        ?.shadowRoot?.querySelector('media-captions-menu');
 
-      if (option) {
+      if (captionMenu) {
         const observer = new MutationObserver((mutations) => {
           mutations.forEach(() => {
-            if (this._subtitlesText && option.getAttribute('value') === 'off') {
+            if (
+              this._subtitlesText &&
+              captionMenu.getAttribute('mediasubtitlesshowing')
+            ) {
               this._subtitlesText.style.opacity = '0';
             }
           });
         });
 
-        observer.observe(option, { attributes: true });
+        observer.observe(captionMenu, { attributes: true });
       }
 
       return this._embedObj.subtitles.map((track) => {

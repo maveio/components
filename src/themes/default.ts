@@ -33,7 +33,6 @@ export function build(name, LitElement, html, css) {
 
       media-controller {
         --media-tooltip-display: none;
-        overflow: hidden;
         display: flex;
         background: transparent;
         --media-font-family: system-ui, sans-serif;
@@ -146,7 +145,6 @@ export function build(name, LitElement, html, css) {
 
       media-loading-indicator {
         flex: none;
-        display: none;
         height: 48px;
         width: 48px;
       }
@@ -173,27 +171,7 @@ export function build(name, LitElement, html, css) {
         height: 96px;
       }
 
-      media-loading-indicator[medialoading]:not([mediapaused]) {
-        display: flex;
-      }
-
-      media-controller:not([mediabuffered]):not([mediapaused]) media-play-button {
-        opacity: 0;
-      }
-
-      media-controller:not([mediacurrenttime]) media-play-button {
-        opacity: 0;
-      }
-
-      media-controller:not([mediaseekable]) media-play-button {
-        opacity: 0;
-      }
-
       media-controller[medialoading]:not([mediapaused]) media-play-button {
-        opacity: 0;
-      }
-
-      media-controller[medialoading]:not([mediahasplayed]) media-play-button {
         opacity: 0;
       }
 
@@ -344,47 +322,36 @@ export function build(name, LitElement, html, css) {
         display: none;
       }
 
-      media-captions-selectmenu {
-        z-index: 10;
-        margin-right: -48px;
-      }
-
-      media-captions-selectmenu::part(listbox) {
+      media-captions-menu {
         background: rgba(0, 0, 0, 0.5);
-        transform: scale(0.95);
-        margin-bottom: 2px;
-        margin-left: -24px;
         border-radius: 8px;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        min-width: 120px;
+        transform: scale(0.95);
+        transform-origin: bottom right;
       }
 
-      media-captions-selectmenu::part(button) {
-        opacity: 0;
-      }
-
-      media-captions-selectmenu::part(option) {
-        border-radius: 0;
-      }
-
-      media-captions-button {
+      media-captions-menu-button {
         margin-right: -2px;
       }
 
-      media-captions-button svg {
+      media-captions-menu-button svg {
       }
 
-      media-captions-button.small-button {
+      media-captions-menu-button.small-button {
         display: none;
       }
 
-      media-captions-button[mediacaptionlist].small-button {
+      media-captions-menu-button[mediacaptionlist].small-button {
         display: flex;
       }
 
-      media-captions-button[mediasubtitleslist].small-button {
+      media-captions-menu-button[mediasubtitleslist].small-button {
         display: flex;
       }
 
-      media-captions-button[mediasubtitleslist].small-button svg[slot='on'] {
+      media-captions-menu-button[mediasubtitleslist].small-button svg[slot='on'] {
         --media-icon-color: white;
       }
 
@@ -493,8 +460,8 @@ export function build(name, LitElement, html, css) {
         display: var(--playbackrate-display, flex);
       }
 
-      media-captions-selectmenu,
-      media-captions-button[mediasubtitleslist].small-button {
+      media-captions-menu,
+      media-captions-menu-button[mediasubtitleslist].small-button {
         display: var(--captions-display, flex);
       }
     `;
@@ -589,8 +556,8 @@ export function build(name, LitElement, html, css) {
               <media-preview-time-display slot="preview"></media-preview-time-display>
             </media-time-range>
             <media-playback-rate-button></media-playback-rate-button>
-            <media-captions-selectmenu></media-captions-selectmenu>
-            <media-captions-button disabled class="small-button">
+            <media-captions-menu hidden anchor="auto"></media-captions-menu>
+            <media-captions-menu-button class="small-button">
               <svg
                 slot="off"
                 xmlns="http://www.w3.org/2000/svg"
@@ -617,7 +584,7 @@ export function build(name, LitElement, html, css) {
                   clip-rule="evenodd"
                 />
               </svg>
-            </media-captions-button>
+            </media-captions-menu-button>
             <div class="media-volume-wrapper">
               <media-mute-button class="small-button">
                 <svg
