@@ -145,13 +145,18 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-menu {
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 8px;
         position: absolute;
         bottom: calc(100% + 8px);
         min-width: 120px;
-        transform: scale(0.95);
         transform-origin: bottom right;
+      }
+
+      media-captions-menu::part(menu-item) {
+        border-radius: 8px;
+      }
+
+      media-captions-menu::part(menu-item):hover {
+        background: rgba(0, 0, 0, 0.15);
       }
 
       media-controller[mediapaused] div[slot='centered-chrome'] media-play-button {

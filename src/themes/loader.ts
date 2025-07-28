@@ -34,6 +34,18 @@ export class ThemeLoader {
     ThemeLoader.instance.currentTheme = name;
 
     try {
+      if (!defaults.includes(name)) {
+        // Inject css for font (Chrome issue)
+        const fontCSS = document.createElement('link');
+        fontCSS.rel = 'stylesheet';
+        fontCSS.href = `${path}/${name}.css`;
+        document.head.appendChild(fontCSS);
+      }
+    } catch (e) {
+      console.log('[mave-player]: theme css not loaded', e);
+    }
+
+    try {
       if (path && !defaults.includes(name)) {
         const { build } = await import(`${path}/${name}.js`);
         build(name, LitElement, html, css);
@@ -56,6 +68,16 @@ export class ThemeLoader {
 
     // get name from path
     const name = path.split('/').pop()?.replace('.js', '') || '';
+
+    try {
+      // Inject css for font (Chrome issue)
+      const fontCSS = document.createElement('link');
+      fontCSS.rel = 'stylesheet';
+      fontCSS.href = `${path.replace('.js', '')}.css`;
+      document.head.appendChild(fontCSS);
+    } catch (e) {
+      console.log('[mave-player]: theme css not loaded', e);
+    }
 
     if (ThemeLoader.instance.themes.find((theme) => theme.name === name))
       return Promise.resolve(ThemeLoader.instance);
