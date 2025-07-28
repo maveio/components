@@ -35,7 +35,6 @@ export function build(name, LitElement, html, css) {
 
       media-controller {
         --media-tooltip-display: none;
-        overflow: hidden;
         display: flex;
         width: 100%;
         height: 100%;
@@ -65,6 +64,10 @@ export function build(name, LitElement, html, css) {
         left: 6px;
         pointer-events: none;
         padding-top: 3px;
+      }
+
+      media-controller[medialoading]:not([mediapaused]) media-play-button {
+        opacity: 0;
       }
 
       media-control-bar {
@@ -111,21 +114,17 @@ export function build(name, LitElement, html, css) {
       media-play-button,
       media-fullscreen-button,
       media-mute-button,
-      media-captions-button {
+      media-captions-menu-button {
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 100ms;
       }
 
-      media-controller[medialoading] media-play-button {
-        opacity: 0;
-      }
-
       media-play-button:hover,
       media-fullscreen-button:hover,
       media-mute-button:hover,
-      media-captions-button:hover {
+      media-captions-menu-button:hover {
         --media-primary-color: rgba(255, 255, 255, 1);
         transform: scale(1.3);
       }
@@ -137,49 +136,27 @@ export function build(name, LitElement, html, css) {
         padding-top: 7px;
       }
 
-      media-captions-button {
-        display: none;
-        margin-right: -7px;
-        pointer-events: none;
-      }
-
-      media-captions-button[mediacaptionlist] {
-        display: flex;
-      }
-
-      media-captions-button[mediasubtitleslist] {
-        display: flex;
-      }
-
-      media-captions-button div {
+      media-captions-menu-button div {
         width: 26px;
         padding-top: 6px;
       }
 
       media-play-button svg,
-      media-captions-button svg,
+      media-captions-menu-button svg,
       media-fullscreen-button svg,
       media-mute-button svg {
         width: 23px;
         height: 23px;
       }
 
-      media-captions-selectmenu {
-        z-index: 10;
-        margin-left: -35px;
-      }
-
-      media-captions-selectmenu::part(listbox) {
-        transform: scale(0.9);
-        margin-left: -8px;
-      }
-
-      media-captions-selectmenu::part(option) {
-        border-radius: 12px;
-      }
-
-      media-captions-selectmenu::part(button) {
-        opacity: 0;
+      media-captions-menu {
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        min-width: 120px;
+        transform: scale(0.95);
+        transform-origin: bottom right;
       }
 
       media-controller[mediapaused] div[slot='centered-chrome'] media-play-button {
@@ -279,8 +256,8 @@ export function build(name, LitElement, html, css) {
         display: var(--playbackrate-display, flex);
       }
 
-      media-captions-selectmenu,
-      media-captions-button[mediasubtitleslist] {
+      media-captions-menu,
+      media-captions-menu-button[mediasubtitleslist] {
         display: var(--captions-display, flex);
       }
 
@@ -442,7 +419,7 @@ export function build(name, LitElement, html, css) {
             <div style="flex-grow: 1;"></div>
             <media-time-display showduration></media-time-display>
             <media-playback-rate-button></media-playback-rate-button>
-            <media-captions-button>
+            <media-captions-menu-button>
               <div slot="off">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -471,8 +448,8 @@ export function build(name, LitElement, html, css) {
                   />
                 </svg>
               </div>
-            </media-captions-button>
-            <media-captions-selectmenu></media-captions-selectmenu>
+            </media-captions-menu-button>
+            <media-captions-menu hidden anchor="auto"></media-captions-menu>
             <media-fullscreen-button>
               <div slot="enter">
                 <svg
