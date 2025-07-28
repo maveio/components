@@ -379,8 +379,12 @@ export class Player extends MaveElement {
 
   loadTheme() {
     if (this.embed && this._themeLoaded != this.theme) {
-      ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
-      this._themeLoaded = this.theme;
+      if (this.theme && this.theme.endsWith('.js')) {
+        ThemeLoader.external(this.theme);
+      } else {
+        ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
+      }
+      this._themeLoaded = ThemeLoader.getTheme();
     }
   }
 
@@ -768,7 +772,7 @@ export class Player extends MaveElement {
 
     if (!this._subtitlesText) {
       const subtitleText = this.shadowRoot
-        ?.querySelector(`theme-${this.theme}`)
+        ?.querySelector(`theme-${this._themeLoaded}`)
         ?.shadowRoot?.querySelector('#subtitles_text');
       if (subtitleText) {
         this._subtitlesText = subtitleText as HTMLElement;
@@ -920,7 +924,7 @@ export class Player extends MaveElement {
   get #subtitles() {
     if (this._embedObj.subtitles.length > 0) {
       const captionMenu = this.shadowRoot
-        ?.querySelector(`theme-${this.theme}`)
+        ?.querySelector(`theme-${this._themeLoaded}`)
         ?.shadowRoot?.querySelector('media-captions-menu');
 
       if (captionMenu) {
@@ -984,7 +988,9 @@ export class Player extends MaveElement {
             }
             if (!data) return;
 
-            return staticHtml`<theme-${unsafeStatic(this.theme)} style=${this.styles}>
+            return staticHtml`<theme-${unsafeStatic(this._themeLoaded)} style=${
+              this.styles
+            }>
                 <video
                   @click=${this.#requestPlay}
                   playsinline
@@ -997,7 +1003,7 @@ export class Player extends MaveElement {
                   ${this.#storyboard}
                   ${this.#subtitles}
                 </video>
-            </theme-${unsafeStatic(this.theme)}>`;
+            </theme-${unsafeStatic(this._themeLoaded)}>`;
           },
         })}
       </slot>
