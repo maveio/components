@@ -6,6 +6,7 @@ import json from './package.json';
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
+const isDev = process.env.NODE_ENV === 'development';
 
 export default defineConfig({
   platform: 'browser',
@@ -20,6 +21,8 @@ export default defineConfig({
   dts: true,
   sourcemap: !isProduction,
   target: 'es2020',
+  watch: isDev,
+  onSuccess: isDev ? 'echo "Build complete - files updated"' : undefined,
   noExternal: [
     'lit',
     'lit-element/lit-element.js',
