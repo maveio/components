@@ -853,7 +853,9 @@ export class Player extends MaveElement {
       style['--fullscreen-display'] = this.controls.includes('fullscreen')
         ? 'flex'
         : 'none';
-      style['--captions-display'] = this.controls.includes('subtitles') ? 'flex' : 'none';
+      style['--media-captions-menu-button-display'] = this.controls.includes('subtitles')
+        ? 'flex'
+        : 'none';
     }
 
     style['--playbackrate-display'] = this.controls.includes('rate') ? 'flex' : 'none';
@@ -868,7 +870,7 @@ export class Player extends MaveElement {
         !this.subtitles &&
         !this.active_subtitle)
     ) {
-      style['--captions-display'] = 'none';
+      style['--media-captions-menu-button-display'] = 'none';
     }
 
     if (
@@ -894,9 +896,9 @@ export class Player extends MaveElement {
     }
 
     if (this._embedObj?.video.audio === false) {
-      style['--media-volume-display'] = 'none';
+      style['--media-mute-button-display'] = 'none';
     } else {
-      style['--media-volume-display'] = 'inline-flex';
+      style['--media-mute-button-display'] = 'flex';
     }
 
     return styleMap(style);
