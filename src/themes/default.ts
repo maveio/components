@@ -279,7 +279,7 @@ export function build(name, LitElement, html, css) {
       .media-volume-wrapper {
         position: relative;
         padding-left: 6px;
-        display: var(--media-volume-display, inline-flex);
+        display: var(--media-mute-button-display, inline-flex);
       }
 
       .media-volume-range-wrapper {
