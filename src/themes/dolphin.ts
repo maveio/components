@@ -149,11 +149,14 @@ export function build(name, LitElement, html, css) {
         bottom: calc(100% + 8px);
         min-width: 120px;
         transform-origin: bottom right;
+        background: var(--primary-color, rgba(0, 0, 0, 0.5));
+        border-radius: 8px;
+        backdrop-filter: blur(12px);
       }
 
-      media-captions-menu::part(menu-item) {
+      /* media-captions-menu::part(menu-item) {
         border-radius: 8px;
-      }
+      } */
 
       media-captions-menu::part(menu-item):hover {
         background: rgba(0, 0, 0, 0.15);
@@ -207,9 +210,15 @@ export function build(name, LitElement, html, css) {
         max-width: 80%;
         color: white;
         line-height: 1.5rem;
-        transition: margin 300ms ease-out;
-        text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 4px;
+        transition: margin 300ms ease-out, transform 200ms ease-in-out,
+          opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(12px);
+        border-radius: 6px;
+        padding: 4px 10px 6px 10px;
+        margin-left: 20px;
+        margin-right: 20px;
       }
 
       media-controller[mediapaused] .subtitles > div,
@@ -224,6 +233,9 @@ export function build(name, LitElement, html, css) {
         line-height: 2rem;
         max-width: 40%;
         margin-bottom: 54px;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(16px);
+        border-radius: 8px;
       }
 
       media-playback-rate-button {
