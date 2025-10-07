@@ -8,6 +8,42 @@ interface Theme {
 
 const defaults = ['default', 'synthwave', 'dolphin'];
 
+type ThemeModule = {
+  build: (
+    name: string,
+    element: typeof LitElement,
+    strings: typeof html,
+    styles: typeof css,
+  ) => void;
+};
+
+const bundledThemeLoaders: Record<string, () => Promise<ThemeModule>> = {
+  default: () => import('./default'),
+  synthwave: () => import('./synthwave'),
+  dolphin: () => import('./dolphin'),
+};
+
+async function loadBundledTheme(name: string): Promise<ThemeModule | undefined> {
+  if (!defaults.includes(name)) return undefined;
+
+  const useDistFolder = Boolean(potentialDistFolder());
+  if (useDistFolder) {
+    const themePath = `./dist/themes/${name}.js`;
+    return importExternalModule(themePath);
+  }
+
+  const loader = bundledThemeLoaders[name];
+  return loader ? loader() : undefined;
+}
+
+async function importExternalModule(modulePath: string): Promise<ThemeModule> {
+  return import(
+    /* webpackIgnore: true */
+    /* @vite-ignore */
+    modulePath
+  );
+}
+
 export class ThemeLoader {
   private static instance: ThemeLoader;
   private themes: Array<Theme> = [];
@@ -47,12 +83,18 @@ export class ThemeLoader {
 
     try {
       if (path && !defaults.includes(name)) {
-        const { build } = await import(`${path}/${name}.js`);
+        const { build } = await importExternalModule(`${path}/${name}.js`);
         build(name, LitElement, html, css);
       } else {
-        const themePath = `./${potentialDistFolder()}themes/${name}.js`;
-        const { build } = await import(themePath);
-        build(name, LitElement, html, css);
+        const bundledTheme = await loadBundledTheme(name);
+
+        if (bundledTheme) {
+          bundledTheme.build(name, LitElement, html, css);
+        } else {
+          const themePath = `./${potentialDistFolder()}themes/${name}.js`;
+          const { build } = await importExternalModule(themePath);
+          build(name, LitElement, html, css);
+        }
       }
     } catch (e) {
       console.log('[mave-player]: theme not loaded', e);
@@ -89,7 +131,7 @@ export class ThemeLoader {
     ThemeLoader.instance.currentTheme = name;
 
     try {
-      const { build } = await import(path);
+      const { build } = await importExternalModule(path);
       build(name, LitElement, html, css);
     } catch (e) {
       console.log('[mave-player]: theme not loaded', e);
