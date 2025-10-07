@@ -1,5 +1,6 @@
 import { configureLocalization, localized, msg } from '@lit/localize';
 import { ReactiveControllerHost } from 'lit';
+
 import { potentialDistFolder } from '../utils/origin';
 export { localized, msg };
 
@@ -8,8 +9,7 @@ export const localization = configureLocalization({
   targetLocales: ['en', 'nl', 'de', 'fr'],
   loadLocale: async (locale) => {
     try {
-      const localePath = `./${potentialDistFolder()}generated/locales/${locale}.js`;
-      return await import(localePath);
+      return await import(`./${potentialDistFolder()}generated/locales/${locale}.js`);
     } catch (e) {
       console.log('[mave-player]: locale not loaded', e);
       return null;
