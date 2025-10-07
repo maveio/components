@@ -266,7 +266,7 @@ export class Pop extends LitElement {
   }
 }
 
-if (window && window.customElements) {
+if (typeof window !== 'undefined' && window.customElements) {
   if (!window.customElements.get('mave-pop')) {
     window.customElements.define('mave-pop', Pop);
   }
@@ -290,7 +290,13 @@ function getAllAttributesAsObject(element?: Element): Record<string, string> {
   return attributesObject;
 }
 
+const getDocument = () => (typeof document !== 'undefined' ? document : undefined);
+
 export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => {
+  const doc = getDocument();
+  if (!doc) return;
+  const activeDoc = doc;
+
   function findOrCreatePop(embed: string): {
     pop: Pop;
     attributes?: Record<string, string>;
@@ -298,14 +304,14 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
     let pop: Pop;
     let attributes: Record<string, string> | undefined;
 
-    const existingPop = document.querySelector(`mave-pop[embed="${embed}"]`);
+    const existingPop = activeDoc.querySelector(`mave-pop[embed="${embed}"]`);
     if (existingPop) {
       attributes = getAllAttributesAsObject(existingPop.querySelector(`mave-player`)!);
       pop = existingPop as Pop;
       return { pop, attributes };
     }
 
-    const unnamedPop = document.querySelector('mave-pop:not([embed])');
+    const unnamedPop = activeDoc.querySelector('mave-pop:not([embed])');
     if (unnamedPop) {
       attributes = getAllAttributesAsObject(unnamedPop.querySelector('mave-player')!);
       pop = unnamedPop as Pop;
@@ -313,7 +319,7 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
     }
 
     pop = new Pop();
-    document.body.appendChild(pop as unknown as Node);
+    activeDoc.body.appendChild(pop as unknown as Node);
     return { pop };
   }
 
@@ -339,7 +345,7 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
 
       el.addEventListener('click', (e: Event) => {
         e.preventDefault();
-        const players = document.querySelectorAll('mave-player');
+        const players = activeDoc.querySelectorAll('mave-player');
         const popped = Array.from(players).find((player) => (player as Player).popped);
 
         if (!popped) {
@@ -371,13 +377,16 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
     }
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(activeDoc.body, { childList: true, subtree: true });
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    checkPop(document);
-  });
-} else {
-  setTimeout(() => checkPop(document), 500); // Adding a delay to ensure the document is truly loaded
+const docForInit = getDocument();
+if (docForInit) {
+  if (docForInit.readyState === 'loading') {
+    docForInit.addEventListener('DOMContentLoaded', () => {
+      checkPop(docForInit);
+    });
+  } else {
+    setTimeout(() => checkPop(docForInit), 500);
+  }
 }

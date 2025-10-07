@@ -1,3 +1,5 @@
+import '@lit-labs/ssr-dom-shim';
+
 export { Clip } from './components/clip.js';
 export { Files } from './components/files.js';
 export { Image } from './components/img.js';

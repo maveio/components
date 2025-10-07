@@ -164,20 +164,23 @@ export class Clip extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    if (this.autoplay === 'scroll')
+    if (typeof document !== 'undefined' && this.autoplay === 'scroll') {
       document.addEventListener('scroll', this.#handleScroll.bind(this));
+    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
 
-    if (this.autoplay === 'scroll')
+    if (typeof document !== 'undefined' && this.autoplay === 'scroll') {
       document.removeEventListener('scroll', this.#handleScroll.bind(this));
+    }
 
     this._metricsInstance?.demonitor();
   }
 
   #handleScroll() {
+    if (typeof window === 'undefined') return;
     const { height, top, bottom } = this.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
 
@@ -440,7 +443,7 @@ export class Clip extends LitElement {
   }
 }
 
-if (window && window.customElements) {
+if (typeof window !== 'undefined' && window.customElements) {
   if (!window.customElements.get('mave-clip')) {
     window.customElements.define('mave-clip', Clip);
   }

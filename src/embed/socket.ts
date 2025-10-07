@@ -18,21 +18,34 @@ export default class Socket {
   }
 
   public static connect(token: string): EmbedChannel {
+    if (typeof window === 'undefined') {
+      const noopChannel = {
+        on: () => noopChannel,
+        push: () => noopChannel,
+        join: () => noopChannel,
+        leave: () => Promise.resolve(),
+        off: () => undefined,
+      } as unknown as Channel;
+
+      return {
+        token,
+        channel: noopChannel,
+      };
+    }
+
     if (!Socket.instance) {
       Socket.instance = new Socket();
 
-      if (window) {
-        Socket.instance.socket = new Phoenix(Config.upload.socket, {
-          params: {
-            token,
-          },
-          reconnectAfterMs: (tries: number) => {
-            return [1000, 3000, 5000, 10000][tries - 1] || 10000;
-          },
-        });
+      Socket.instance.socket = new Phoenix(Config.upload.socket, {
+        params: {
+          token,
+        },
+        reconnectAfterMs: (tries: number) => {
+          return [1000, 3000, 5000, 10000][tries - 1] || 10000;
+        },
+      });
 
-        Socket.instance.socket.connect();
-      }
+      Socket.instance.socket.connect();
     }
     const embedChannel = Socket.instance.channels.find((c) => c.token === token);
     if (embedChannel) {

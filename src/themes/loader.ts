@@ -70,7 +70,7 @@ export class ThemeLoader {
     ThemeLoader.instance.currentTheme = name;
 
     try {
-      if (!defaults.includes(name)) {
+      if (typeof document !== 'undefined' && !defaults.includes(name)) {
         // Inject css for font (Chrome issue)
         const fontCSS = document.createElement('link');
         fontCSS.rel = 'stylesheet';
@@ -112,11 +112,13 @@ export class ThemeLoader {
     const name = path.split('/').pop()?.replace('.js', '') || '';
 
     try {
-      // Inject css for font (Chrome issue)
-      const fontCSS = document.createElement('link');
-      fontCSS.rel = 'stylesheet';
-      fontCSS.href = `${path.replace('.js', '')}.css`;
-      document.head.appendChild(fontCSS);
+      if (typeof document !== 'undefined') {
+        // Inject css for font (Chrome issue)
+        const fontCSS = document.createElement('link');
+        fontCSS.rel = 'stylesheet';
+        fontCSS.href = `${path.replace('.js', '')}.css`;
+        document.head.appendChild(fontCSS);
+      }
     } catch (e) {
       console.log('[mave-player]: theme css not loaded', e);
     }

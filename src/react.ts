@@ -1,5 +1,7 @@
 'use client';
 
+import '@lit-labs/ssr-dom-shim';
+
 import { createComponent } from '@lit/react';
 import React from 'react';
 
