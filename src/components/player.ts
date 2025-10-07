@@ -1016,7 +1016,7 @@ export class Player extends MaveElement {
   }
 }
 
-if (window && window.customElements) {
+if (typeof window !== 'undefined' && window.customElements) {
   if (!window.customElements.get('mave-player')) {
     window.customElements.define('mave-player', Player);
   }

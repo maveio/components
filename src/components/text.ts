@@ -154,6 +154,7 @@ export class Text extends LitElement {
   }
 
   reset() {
+    if (typeof document === 'undefined') return;
     this.loop = false;
     this.currentTime = 0;
     this.wordIndex = 0;
@@ -273,7 +274,7 @@ export class Text extends LitElement {
   }
 }
 
-if (window && window.customElements) {
+if (typeof window !== 'undefined' && window.customElements) {
   if (!window.customElements.get('mave-text')) {
     window.customElements.define('mave-text', Text);
   }

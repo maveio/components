@@ -95,10 +95,14 @@ export class LanguageController {
   }
 
   hostConnected() {
-    window.addEventListener('lit-localize-status', this._onLoad);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('lit-localize-status', this._onLoad);
+    }
   }
 
   hostDisconnected() {
-    window.removeEventListener('lit-localize-status', this._onLoad);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('lit-localize-status', this._onLoad);
+    }
   }
 }

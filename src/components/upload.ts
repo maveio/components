@@ -61,7 +61,7 @@ export class Upload extends LitElement {
     super.connectedCallback();
 
     // only import when lottie-player is not defined and upload component is called
-    if (!window.customElements.get('lottie-player')) {
+    if (typeof window !== 'undefined' && window.customElements && !window.customElements.get('lottie-player')) {
       import('@lottiefiles/lottie-player');
     }
 
@@ -326,7 +326,7 @@ export class Upload extends LitElement {
   }
 }
 
-if (window && window.customElements) {
+if (typeof window !== 'undefined' && window.customElements) {
   if (!window.customElements.get('mave-upload')) {
     window.customElements.define('mave-upload', Upload);
   }

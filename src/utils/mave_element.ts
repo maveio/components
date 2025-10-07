@@ -32,6 +32,9 @@ export class MaveElement extends LitElement {
   }
 
   get _stylesheets() {
+    if (typeof document === 'undefined') {
+      return html``;
+    }
     const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
     return html`${Array.from(styles).map((style) => style.cloneNode(true))}`;
   }

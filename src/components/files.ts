@@ -222,7 +222,7 @@ export class Files extends MaveElement {
   }
 }
 
-if (window && window.customElements) {
+if (typeof window !== 'undefined' && window.customElements) {
   if (!window.customElements.get('mave-files')) {
     window.customElements.define('mave-files', Files);
   }

@@ -249,7 +249,7 @@ export class List extends MaveElement {
   }
 }
 
-if (window && window.customElements) {
+if (typeof window !== 'undefined' && window.customElements) {
   if (!window.customElements.get('mave-list')) {
     window.customElements.define('mave-list', List);
   }
