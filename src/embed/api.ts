@@ -5,6 +5,7 @@ export type Rendition = {
   codec: 'h264' | 'hevc' | 'av1';
   container: 'webm' | 'mp4' | 'hls';
   type?: 'video' | 'clip_keyframes';
+  file_size?: number;
 };
 
 export type Poster = {
