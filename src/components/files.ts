@@ -1,6 +1,7 @@
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
-import { Embed } from '../embed/api';
+
+import { Embed, Rendition } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { MaveElement } from '../utils/mave_element';
 
@@ -92,20 +93,22 @@ export class Files extends MaveElement {
               if (filetype) this.#setTextContent(template, '[slot="filetype"]', filetype);
 
               // size
-              const size = this._data.video.size; // in bytes
-              const sizeInMb = size / 1000000;
+              const videoRendition = this.#getPrimaryVideoRendition();
+              const videoSizeBytes = videoRendition?.file_size || this._data.video.size;
 
-              if (size)
+              if (videoSizeBytes)
                 this.#setTextContent(
                   template,
                   '[slot="size"]',
-                  `${sizeInMb.toFixed(1)} MB`,
+                  this.#formatMegabytes(videoSizeBytes),
                 );
 
               // download
+              const downloadUrl = this.#buildVideoDownloadUrl(videoRendition);
+              const downloadExtension = videoRendition?.container || 'mp4';
               const link = this.#createDownloadLink(
-                `${this.cdn_root}/${this.embedId}/h264_hd.mp4`,
-                `${this._data.name}.mp4`,
+                downloadUrl,
+                `${this._data.name}.${downloadExtension}`,
               );
               link.setAttribute('aria-label', 'Download video');
               link.appendChild(template);
@@ -122,10 +125,8 @@ export class Files extends MaveElement {
               this.#setTextContent(template, '[slot="filetype"]', 'mp3');
 
               // download
-              const link = this.#createDownloadLink(
-                `${this.cdn_root}/${this.embedId}/audio.mp3`,
-                `${this._data.name}.mp3`,
-              );
+              const audioUrl = this.#buildAudioDownloadUrl();
+              const link = this.#createDownloadLink(audioUrl, `${this._data.name}.mp3`);
               link.setAttribute('aria-label', 'Download audio');
               link.appendChild(template);
 
@@ -219,6 +220,51 @@ export class Files extends MaveElement {
     });
 
     return link;
+  }
+
+  #formatMegabytes(bytes: number): string {
+    const megabytes = bytes / 1_000_000;
+    return megabytes >= 10 ? `${megabytes.toFixed(0)} MB` : `${megabytes.toFixed(1)} MB`;
+  }
+
+  #buildAssetUrl(filename: string): string {
+    const versionSegment =
+      this._data?.video?.version && this._data.video.version > 0
+        ? `v${this._data.video.version}/`
+        : '';
+    return `${this.cdn_root}/${this.embedId}/${versionSegment}${filename}`;
+  }
+
+  #buildVideoDownloadUrl(rendition?: Rendition): string {
+    const codec = rendition?.codec || 'h264';
+    const size = rendition?.size || 'hd';
+    const container = rendition?.container || 'mp4';
+    return this.#buildAssetUrl(`${codec}_${size}.${container}`);
+  }
+
+  #buildAudioDownloadUrl(): string {
+    return this.#buildAssetUrl('audio.mp3');
+  }
+
+  #getPrimaryVideoRendition(): Rendition | undefined {
+    const renditions = this._data?.video?.renditions;
+    if (!renditions) return undefined;
+
+    const mp4Renditions = renditions.filter(
+      (rendition) =>
+        rendition.container === 'mp4' &&
+        rendition.codec === 'h264' &&
+        (!rendition.type || rendition.type === 'video'),
+    );
+
+    const preferredOrder: Rendition['size'][] = ['hd', 'fhd', 'sd', 'qhd', 'uhd'];
+
+    for (const size of preferredOrder) {
+      const match = mp4Renditions.find((rendition) => rendition.size === size);
+      if (match) return match;
+    }
+
+    return mp4Renditions[0];
   }
 }
 
