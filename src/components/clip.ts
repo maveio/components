@@ -98,7 +98,7 @@ export class Clip extends LitElement {
         return {
           media,
           src: this.embedController.embedFile(file),
-          codec: this.#codecDescription[r.codec],
+          codec: this.#codecDescription[r.codec] ?? r.codec,
         };
       });
 
@@ -123,7 +123,7 @@ export class Clip extends LitElement {
       const fallbackSource = {
         media: undefined,
         src: this.embedController.embedFile(file),
-        codec: this.#codecDescription[fallbackRendition.codec],
+        codec: this.#codecDescription[fallbackRendition.codec] ?? fallbackRendition.codec,
       };
 
       renditions.push(fallbackSource);
@@ -297,7 +297,7 @@ export class Clip extends LitElement {
     return ['av1', 'h264'];
   }
 
-  get #codecDescription() {
+  get #codecDescription(): Record<string, string> {
     return {
       av1: 'av01.0.08M.08.0.110.01.01.01.0,opus',
       hevc: 'hevc.01.00.78,mp4a.40.2',
