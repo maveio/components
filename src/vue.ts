@@ -1,5 +1,3 @@
-import '@lit-labs/ssr-dom-shim';
-
 import type { App, SetupContext, Slots, VNode } from 'vue';
 import { cloneVNode, defineComponent, h, ref } from 'vue';
 

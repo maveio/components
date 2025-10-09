@@ -23,10 +23,6 @@
       "default": "./dist/vue.cjs"
     }
   },
-  "sideEffects": [
-    "dist/*",
-    "src/ssr-shim.ts"
-  ],
   "type": "module",
   "files": [
     "dist"
