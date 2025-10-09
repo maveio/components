@@ -54,6 +54,9 @@ export class Files extends MaveElement {
           this._data = data as Embed;
           if (!data) return;
 
+          const primaryVideoRendition = this.#getPrimaryVideoRendition();
+          const primaryAudioRendition = this.#getPrimaryAudioRendition();
+
           const templates = this._slottedChildren.map((item: any) => {
             function createClone() {
               let clone: DocumentFragment;
@@ -68,15 +71,20 @@ export class Files extends MaveElement {
             }
 
             if (item.getAttribute('name') == 'mave-files-video') {
+              if (!primaryVideoRendition) return;
               const template = createClone();
 
               // created_at
-              const createdAt = new Date(this._data.created_at);
-              if (createdAt)
+              const createdAtValue = Number(this._data.created_at);
+              const createdAtTimestamp =
+                createdAtValue && createdAtValue < 1_000_000_000_000
+                  ? createdAtValue * 1000
+                  : createdAtValue;
+              if (Number.isFinite(createdAtTimestamp))
                 this.#setTextContent(
                   template,
                   '[slot="date"]',
-                  createdAt.toLocaleDateString().replaceAll('/', '-'),
+                  new Date(createdAtTimestamp).toLocaleDateString().replaceAll('/', '-'),
                 );
 
               // duration
@@ -93,8 +101,8 @@ export class Files extends MaveElement {
               if (filetype) this.#setTextContent(template, '[slot="filetype"]', filetype);
 
               // size
-              const videoRendition = this.#getPrimaryVideoRendition();
-              const videoSizeBytes = videoRendition?.file_size || this._data.video.size;
+              const videoSizeBytes =
+                primaryVideoRendition.file_size || this._data.video.size;
 
               if (videoSizeBytes)
                 this.#setTextContent(
@@ -104,8 +112,8 @@ export class Files extends MaveElement {
                 );
 
               // download
-              const downloadUrl = this.#buildVideoDownloadUrl(videoRendition);
-              const downloadExtension = videoRendition?.container || 'mp4';
+              const downloadUrl = this.#buildVideoDownloadUrl(primaryVideoRendition);
+              const downloadExtension = primaryVideoRendition.container || 'mp4';
               const link = this.#createDownloadLink(
                 downloadUrl,
                 `${this._data.name}.${downloadExtension}`,
@@ -117,16 +125,29 @@ export class Files extends MaveElement {
             }
 
             if (
+              primaryAudioRendition &&
               this._data.video.audio &&
               item.getAttribute('name') == 'mave-files-audio'
             ) {
               const template = createClone();
 
-              this.#setTextContent(template, '[slot="filetype"]', 'mp3');
+              const audioFiletype = primaryAudioRendition.container || 'mp3';
+              this.#setTextContent(template, '[slot="filetype"]', audioFiletype);
+
+              const audioSizeBytes = primaryAudioRendition.file_size;
+              if (audioSizeBytes)
+                this.#setTextContent(
+                  template,
+                  '[slot="size"]',
+                  this.#formatMegabytes(audioSizeBytes),
+                );
 
               // download
-              const audioUrl = this.#buildAudioDownloadUrl();
-              const link = this.#createDownloadLink(audioUrl, `${this._data.name}.mp3`);
+              const audioUrl = this.#buildAudioDownloadUrl(primaryAudioRendition);
+              const link = this.#createDownloadLink(
+                audioUrl,
+                `${this._data.name}.${audioFiletype}`,
+              );
               link.setAttribute('aria-label', 'Download audio');
               link.appendChild(template);
 
@@ -242,13 +263,14 @@ export class Files extends MaveElement {
     return this.#buildAssetUrl(`${codec}_${size}.${container}`);
   }
 
-  #buildAudioDownloadUrl(): string {
-    return this.#buildAssetUrl('audio.mp3');
+  #buildAudioDownloadUrl(rendition?: Rendition): string {
+    const extension = rendition?.container || 'mp3';
+    return this.#buildAssetUrl(`audio.${extension}`);
   }
 
   #getPrimaryVideoRendition(): Rendition | undefined {
-    const renditions = this._data?.video?.renditions;
-    if (!renditions) return undefined;
+    const renditions = (this._data?.video?.renditions || []) as Rendition[];
+    if (!renditions.length) return undefined;
 
     const mp4Renditions = renditions.filter(
       (rendition) =>
@@ -264,8 +286,21 @@ export class Files extends MaveElement {
       if (match) return match;
     }
 
-    return mp4Renditions[0];
+    return mp4Renditions[0] || renditions.find((rendition) => rendition.type === 'video');
   }
+
+  #getPrimaryAudioRendition(): Rendition | undefined {
+    const renditions = (this._data?.video?.renditions || []) as Rendition[];
+    if (!renditions.length) return undefined;
+
+    return renditions.find(
+      (rendition) =>
+        rendition.type === 'audio' ||
+        rendition.container === 'mp3' ||
+        rendition.codec === 'mp3',
+    );
+  }
+
 }
 
 if (typeof window !== 'undefined' && window.customElements) {
