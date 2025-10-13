@@ -50,5 +50,101 @@
       <mave-player theme="dolphin" active-subtitle="en"></mave-player>
     </mave-pop>
 
+
+    <h1 class="text-center mt-12">Customizing mave-upload:</h1>
+    
+    <div class="max-w-2xl mx-auto mt-6">
+      <mave-upload
+        class="block w-full"
+        token="token"
+      >
+        <div
+          slot="initial"
+          class="flex h-full w-full flex-col items-center justify-center gap-4 rounded-3xl bg-slate-50 text-slate-600"
+        >
+          <div class="text-2xl font-light">Drop your media here</div>
+          <p class="max-w-sm text-center text-sm opacity-70">
+            Drag a video or audio file onto this card or use the button below to browse your device.
+          </p>
+          <button
+            type="button"
+            data-mave-upload-select
+            class="rounded-full bg-indigo-500 px-6 py-2 text-white shadow hover:bg-indigo-400 focus:outline-none focus:ring focus:ring-indigo-200"
+          >
+            Choose a file
+          </button>
+        </div>
+
+        <div
+          slot="uploading"
+          class="flex h-full w-full flex-col items-center justify-center gap-6 bg-indigo-50 text-indigo-900 rounded-3xl"
+        >
+          <div class="h-3 w-3/4 max-w-md overflow-hidden rounded-full bg-indigo-100">
+            <div
+              data-role="progress-bar"
+              class="h-full bg-indigo-500 transition-all duration-200 ease-out"
+              style="width: 0%;"
+            ></div>
+          </div>
+          <div class="text-sm text-indigo-700">
+            Uploading… <span data-role="progress-value">0%</span>
+          </div>
+        </div>
+
+        <div
+          slot="processing"
+          class="flex h-full w-full flex-col items-center justify-center gap-2 bg-white text-slate-600 rounded-3xl"
+        >
+          <div class="text-lg font-medium">Processing your upload</div>
+          <div class="text-xs opacity-70">Hang tight while we prepare the video.</div>
+        </div>
+
+        <div
+          slot="done"
+          class="flex h-full w-full flex-col items-center justify-center gap-4 bg-emerald-50 text-emerald-600 rounded-3xl"
+        >
+          <div class="text-lg font-semibold">Upload complete!</div>
+          <button
+            type="button"
+            data-role="reset"
+            class="rounded-full border border-emerald-500 px-4 py-2 text-emerald-600 transition hover:bg-emerald-100"
+          >
+            Upload another file
+          </button>
+        </div>
+      </mave-upload>
+    </div>
+
+    <style>
+      mave-upload {
+        margin-bottom: 50px;
+      }
+
+      mave-upload[drag-over] [slot="initial"] {
+        box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0.5);
+      }
+    </style>
+
+    <script type="module">
+      const customUpload = document.getElementById('mave-upload');
+      if (customUpload) {
+        const progressValue = customUpload.querySelector('[data-role="progress-value"]');
+        const progressBar = customUpload.querySelector('[data-role="progress-bar"]');
+        const resetButton = customUpload.querySelector('[data-role="reset"]');
+
+        customUpload.addEventListener('statechange', (event) => {
+          const { progress } = event.detail;
+          if (progressValue) {
+            progressValue.textContent = `${progress}%`;
+          }
+          if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+          }
+        });
+
+        resetButton?.addEventListener('click', () => customUpload.reset());
+      }
+    </script>
+
   </body>
 </html>

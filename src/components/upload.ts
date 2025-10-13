@@ -1,5 +1,5 @@
-import { css, html, LitElement } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { css, html, LitElement, PropertyValues } from 'lit';
+import { property, query, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { Channel } from 'phoenix';
 import * as tus from 'tus-js-client';
@@ -18,6 +18,8 @@ interface EmbedChannel {
   upload_id?: string;
 }
 
+type UploadState = 'initial' | 'uploading' | 'processing' | 'done';
+
 @localized()
 export class Upload extends LitElement {
   @property() token: string;
@@ -27,12 +29,16 @@ export class Upload extends LitElement {
   @property() radius: string;
   @property({ type: Boolean }) disableCompletion = false;
 
-  @state() _progress: number;
+  @state() _progress = 0;
   @state() _upload_id: string;
   @state() _completed = false;
+  @state() _dragging = false;
   private embedChannel: EmbedChannel;
+  @query('#mave-upload-input') private fileInput?: HTMLInputElement;
 
   private languageController = new LanguageController(this);
+  private lastState: UploadState = 'initial';
+  private lastProgress = -1;
 
   static styles = css`
     :host {
@@ -40,10 +46,7 @@ export class Upload extends LitElement {
       display: block;
       width: 100%;
       aspect-ratio: 16 / 9;
-      overflow: hidden;
       position: relative;
-      background: white;
-      box-shadow: inset 0 0 0 1px #eee;
     }
 
     .state {
@@ -55,10 +58,94 @@ export class Upload extends LitElement {
       width: 100%;
       height: 100%;
     }
+
+    .state--initial {
+      transition: box-shadow 160ms ease;
+      gap: 12px;
+    }
+
+    .upload-default-title {
+      font-size: 32px;
+      padding-bottom: 2px;
+      font-weight: 300;
+      opacity: 0.9;
+      text-align: center;
+    }
+
+    .upload-default-subtitle {
+      opacity: 0.5;
+      padding-bottom: 16px;
+      text-align: center;
+    }
+
+    .upload-default-button {
+      position: relative;
+      width: 150px;
+      height: 40px;
+      overflow: hidden;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      border: none;
+      font: inherit;
+      text-transform: none;
+      background: #1997ff;
+      border-radius: 16px;
+      transition: opacity 160ms ease;
+    }
+
+    .upload-default-button:hover,
+    .upload-default-button:focus {
+      opacity: 0.9;
+      outline: none;
+    }
+
+    .upload-default-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .upload-default-progress {
+      width: 70%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .upload-default-progress-bar {
+      width: 100%;
+      height: 4px;
+      border-radius: 999px;
+      background: #e6e6e6;
+      overflow: hidden;
+    }
+
+    .upload-default-progress-value {
+      height: 100%;
+      background: #1997ff;
+      transition: width 200ms cubic-bezier(0, 0, 0.2, 1);
+    }
+
+    .upload-default-progress-label {
+      opacity: 0.6;
+    }
+
+    .upload-default-status {
+      opacity: 0.6;
+      padding-bottom: 24px;
+      text-align: center;
+    }
   `;
 
   connectedCallback() {
     super.connectedCallback();
+
+    this.addEventListener('click', this.handleActionClick);
+    this.addEventListener('keydown', this.handleActionKeyDown);
 
     this.languageController.locale = this.locale || 'en';
 
@@ -91,11 +178,14 @@ export class Upload extends LitElement {
   disconnectedCallback() {
     // TODO: implement a disconnect method
     // Data.disconnect(this.embedChannel);
+    this.removeEventListener('click', this.handleActionClick);
+    this.removeEventListener('keydown', this.handleActionKeyDown);
     super.disconnectedCallback();
   }
 
   handleDrop(event: DragEvent) {
     event.preventDefault();
+    this._dragging = false;
     if (event.dataTransfer && event.dataTransfer.items) {
       for (const item of event.dataTransfer.items) {
         if (item.kind === 'file') {
@@ -204,7 +294,16 @@ export class Upload extends LitElement {
   }
 
   render() {
-    return html` ${this._progress ? this.renderProgress() : this.renderUpload()} `;
+    switch (this.currentState) {
+      case 'uploading':
+        return this.renderUploading();
+      case 'processing':
+        return this.renderProcessing();
+      case 'done':
+        return this.renderDone();
+      default:
+        return this.renderInitial();
+    }
   }
 
   styleOpacity() {
@@ -225,75 +324,185 @@ export class Upload extends LitElement {
     }
   }
 
-  renderUpload() {
+  get currentState(): UploadState {
+    if (this._completed) {
+      return 'done';
+    }
+    if (this._progress >= 100 && this._progress > 0) {
+      return 'processing';
+    }
+    if (this._progress > 0) {
+      return 'uploading';
+    }
+    return 'initial';
+  }
+
+  private openFileDialog() {
+    if (this.fileInput && !this.fileInput.disabled) {
+      this.fileInput.click();
+    }
+  }
+
+  private findActionTarget(event: Event): HTMLElement | null {
+    for (const node of event.composedPath()) {
+      if (node instanceof HTMLElement && node.hasAttribute('data-mave-upload-select')) {
+        return node;
+      }
+    }
+    return null;
+  }
+
+  private handleActionClick = (event: Event) => {
+    const target = this.findActionTarget(event);
+    if (target) {
+      event.preventDefault();
+      this.openFileDialog();
+    }
+  };
+
+  private handleActionKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    const target = this.findActionTarget(event);
+    if (target) {
+      event.preventDefault();
+      this.openFileDialog();
+    }
+  };
+
+  private blockSubmit = (event: Event) => {
+    event.preventDefault();
+  };
+
+  private handleDragEnter = (event: DragEvent) => {
+    event.preventDefault();
+    this._dragging = true;
+  };
+
+  private handleDragOver = (event: DragEvent) => {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    this._dragging = true;
+  };
+
+  private handleDragLeave = (event: DragEvent) => {
+    event.preventDefault();
+    const container = event.currentTarget as HTMLElement | null;
+    const related = event.relatedTarget;
+
+    if (!container) {
+      this._dragging = false;
+      return;
+    }
+
+    if (!related || !(related instanceof Node) || !container.contains(related)) {
+      this._dragging = false;
+    }
+  };
+
+  protected updated(changedProperties: PropertyValues<Upload>) {
+    super.updated(changedProperties);
+    const progress = this._progress || 0;
+    const state = this.currentState;
+
+    this.setAttribute('state', state);
+    this.setAttribute('progress', `${progress}`);
+    this.toggleAttribute('drag-over', this._dragging);
+    this.toggleAttribute('ready', !!this._upload_id && this.languageController.loaded);
+
+    const stateChanged = state !== this.lastState;
+    const progressChanged = progress !== this.lastProgress;
+    const draggingChanged = changedProperties.has('_dragging');
+
+    if (stateChanged || progressChanged || draggingChanged) {
+      this.dispatchEvent(
+        new CustomEvent('statechange', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            state,
+            progress,
+            dragging: this._dragging,
+          },
+        }),
+      );
+    }
+
+    this.lastState = state;
+    this.lastProgress = progress;
+  }
+
+  renderInitial() {
+    const buttonColor = this.color ? this.color : '#1997FF';
+    const radius = this.radius ? this.radius : '16px';
     return html`<form
-      class="state"
+      class="state state--initial"
       style=${styleMap({ ...this.styleOpacity(), ...this.styleFont() })}
-      @dragover=${(e: DragEvent) => e.preventDefault()}
+      @submit=${this.blockSubmit}
+      @dragenter=${this.handleDragEnter}
+      @dragover=${this.handleDragOver}
+      @dragleave=${this.handleDragLeave}
       @drop=${this.handleDrop}
-      onDragOver="this.style.boxShadow='inset 0 0 0 2px blue'"
-      onDragLeave="this.style.boxShadow='inset 0 0 0 2px transparent'"
     >
-      <div style="font-size: 32px; padding-bottom: 14px; font-weight: 300; opacity: 0.9;">
-        ${msg('drop video here')}
-      </div>
-      <div style="padding-bottom: 40px; opacity: 0.5;">
-        ${msg('or browse your files')}
-      </div>
-      <div
-        style="position: relative; background: ${this.color
-          ? this.color
-          : '#1997FF'}; width: 150px; height: 40px; overflow: hidden; border-radius: ${this
-          .radius
-          ? this.radius
-          : '16px'}; color: white;"
-        onMouseOver="this.style.opacity='0.9'"
-        onMouseOut="this.style.opacity='1'"
-      >
-        <input
-          .disabled=${!this._upload_id}
-          type="file"
-          accept="video/*, audio/*"
-          @change=${this.handleForm}
-          style="position: absolute; top: 0; left: -150px; display: block; width: 500px; height: 100%; opacity: 0; cursor: pointer;"
-        />
-        <div
-          style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; text-align: center;"
+      <slot name="initial">
+        <div class="upload-default-title">${msg('drop video here')}</div>
+        <div class="upload-default-subtitle">${msg('or browse your files')}</div>
+        <button
+          type="button"
+          data-mave-upload-select
+          class="upload-default-button"
+          style=${styleMap({ background: buttonColor, borderRadius: radius })}
         >
-          <div style="padding-bottom: 2px;">${msg('select file')}</div>
-        </div>
-      </div>
+          ${msg('select file')}
+        </button>
+      </slot>
+      <input
+        id="mave-upload-input"
+        .disabled=${!this._upload_id}
+        type="file"
+        accept="video/*, audio/*"
+        @change=${this.handleForm}
+        hidden
+      />
     </form>`;
   }
 
-  renderProgress() {
-    return html`
-      ${this._progress == 100
-        ? this.renderProcessing()
-        : html`
-            <div class="state">
-              <div
-                style="width: 40%; height: 3px; border-radius: 3px; background: #ccc; overflow: hidden;"
-              >
-                <div
-                  style="width: ${this
-                    ._progress}%; height: 3px; background: #1997FF; transition-property: width; transition-duration: 200ms; transition-timing-function: cubic-bezier(0, 0, 0.2, 1);"
-                ></div>
-              </div>
-              <div style="margin-top: 16px; opacity: 0.6; padding-bottom: 24px;">
-                ${msg('uploading...')}
-              </div>
-            </div>
-          `}
-    `;
+  renderUploading() {
+    const progress = Math.max(0, Math.min(100, this._progress || 0));
+    return html`<div class="state state--uploading" style=${styleMap(this.styleFont())}>
+      <slot name="uploading">
+        <div class="upload-default-progress" role="status">
+          <div
+            class="upload-default-progress-bar"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow=${progress}
+          >
+            <div class="upload-default-progress-value" style="width: ${progress}%;"></div>
+          </div>
+          <div class="upload-default-progress-label">${msg('uploading...')}</div>
+        </div>
+      </slot>
+    </div>`;
   }
 
   renderProcessing() {
-    return html`<div class="state">
-      <div style="width: 100%; height: 3px;"></div>
-      <div style="margin-top: 16px; opacity: 0.6; padding-bottom: 24px;">
-        ${this._completed ? msg('done') : msg('just a minute...')}
-      </div>
+    return html`<div class="state state--processing" style=${styleMap(this.styleFont())}>
+      <slot name="processing">
+        <div class="upload-default-status" role="status">${msg('just a minute...')}</div>
+      </slot>
+    </div>`;
+  }
+
+  renderDone() {
+    return html`<div class="state state--done" style=${styleMap(this.styleFont())}>
+      <slot name="done">
+        <div class="upload-default-status" role="status">${msg('done')}</div>
+      </slot>
     </div>`;
   }
 }
