@@ -40,7 +40,6 @@ export default defineConfig({
     'hls.js',
     'phoenix',
     'tus-js-client',
-    '@lottiefiles/lottie-player',
     '@maveio/metrics',
   ],
   esbuildPlugins: [
