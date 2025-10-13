@@ -114,7 +114,6 @@
     "@lit/localize": "^0.12.1",
     "@lit/react": "^1.0.5",
     "@lit/task": "^1.0.0",
-    "@lottiefiles/lottie-player": "^2.0.2",
     "@maveio/metrics": "^0.1.5",
     "hls.js": "^1.6.7",
     "lit": "^3.1.2",

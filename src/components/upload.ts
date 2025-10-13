@@ -60,11 +60,6 @@ export class Upload extends LitElement {
   connectedCallback() {
     super.connectedCallback();
 
-    // only import when lottie-player is not defined and upload component is called
-    if (typeof window !== 'undefined' && window.customElements && !window.customElements.get('lottie-player')) {
-      import('@lottiefiles/lottie-player');
-    }
-
     this.languageController.locale = this.locale || 'en';
 
     this.embedChannel = Data.connect(this.token);
@@ -277,14 +272,6 @@ export class Upload extends LitElement {
         ? this.renderProcessing()
         : html`
             <div class="state">
-              <lottie-player
-                src="https://assets1.lottiefiles.com/packages/lf20_z7DhMX.json"
-                background="transparent"
-                speed="1"
-                style="width: 200px; height: 200px; padding-bottom: 20px;"
-                loop
-                autoplay
-              ></lottie-player>
               <div
                 style="width: 40%; height: 3px; border-radius: 3px; background: #ccc; overflow: hidden;"
               >
@@ -303,21 +290,6 @@ export class Upload extends LitElement {
 
   renderProcessing() {
     return html`<div class="state">
-      ${this._completed
-        ? html` <lottie-player
-            src="https://assets1.lottiefiles.com/packages/lf20_tnlxlkom.json"
-            background="transparent"
-            style="width: 200px; height: 200px; padding-bottom: 20px;"
-            autoplay
-          ></lottie-player>`
-        : html` <lottie-player
-            src="https://assets10.lottiefiles.com/private_files/lf30_4kmk2efh.json"
-            background="transparent"
-            speed="2"
-            style="width: 200px; height: 200px; padding-bottom: 20px;"
-            loop
-            autoplay
-          ></lottie-player>`}
       <div style="width: 100%; height: 3px;"></div>
       <div style="margin-top: 16px; opacity: 0.6; padding-bottom: 24px;">
         ${this._completed ? msg('done') : msg('just a minute...')}
