@@ -69,6 +69,18 @@ function App() {
 export default App;
 ```
 
+or Vue:
+
+```js
+<template>
+  <Player embed="{embed id}"></Player>
+</template>
+
+<script setup lang="ts">
+  import { Player } from '@maveio/components/vue';
+</script>
+```
+
 ## Usage
 
 ### Player
