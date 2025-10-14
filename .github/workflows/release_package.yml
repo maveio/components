@@ -119,8 +119,7 @@ jobs:
           url: |
             https://cdn.jsdelivr.net/npm/@maveio/components/+esm
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/react.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/index.global.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/react.global.js
+            https://cdn.jsdelivr.net/npm/@maveio/components/dist/vue.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/default.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/dolphin.js
             https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/synthwave.js
