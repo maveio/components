@@ -36,6 +36,34 @@ export class Upload extends LitElement {
   private embedChannel: EmbedChannel;
   @query('#mave-upload-input') private fileInput?: HTMLInputElement;
 
+  private static readonly SUPPORTED_VIDEO_EXTENSIONS = new Set([
+    '3g2',
+    '3gp',
+    'avi',
+    'mov',
+    'mp4',
+    'm4v',
+    'mkv',
+    'qt',
+    'ts',
+    'mts',
+    'm2t',
+    'm2ts',
+    'webm',
+  ]);
+
+  private static readonly SUPPORTED_AUDIO_EXTENSIONS = new Set([
+    'aac',
+    'amr',
+    'flac',
+    'm4a',
+    'm4b',
+    'm4p',
+    'mp3',
+    'ogg',
+    'wav',
+  ]);
+
   private languageController = new LanguageController(this);
   private lastState: UploadState = 'initial';
   private lastProgress = -1;
@@ -186,27 +214,37 @@ export class Upload extends LitElement {
   handleDrop(event: DragEvent) {
     event.preventDefault();
     this._dragging = false;
-    if (event.dataTransfer && event.dataTransfer.items) {
-      for (const item of event.dataTransfer.items) {
+    const dataTransfer = event.dataTransfer;
+    if (!dataTransfer) {
+      return;
+    }
+
+    const files: File[] = [];
+    if (dataTransfer.items) {
+      for (const item of dataTransfer.items) {
         if (item.kind === 'file') {
           const file = item.getAsFile();
-          if (
-            file &&
-            (file.type.startsWith('video/') || file.type.startsWith('audio/'))
-          ) {
-            this._progress = 1;
-            this.upload(file);
+          if (file) {
+            files.push(file);
           }
         }
       }
-    } else {
-      if (event.dataTransfer && event.dataTransfer.files) {
-        for (const file of event.dataTransfer.files) {
-          if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
-            this._progress = 1;
-            this.upload(file);
-          }
+    } else if (dataTransfer.files) {
+      for (const file of dataTransfer.files) {
+        files.push(file);
+      }
+    }
+
+    let hasValidFile = false;
+    for (const file of files) {
+      if (this.isSupportedFile(file)) {
+        if (!hasValidFile) {
+          this._progress = 1;
+          hasValidFile = true;
         }
+        this.upload(file);
+      } else {
+        this.handleUnsupportedFile(file);
       }
     }
   }
@@ -214,14 +252,21 @@ export class Upload extends LitElement {
   handleForm(event: InputEvent) {
     // TODO:
     // split progress into multiple files
-    this._progress = 1;
     const target = event.target as HTMLInputElement;
     if (target.files) {
+      let hasValidFile = false;
       for (const file of target.files) {
-        if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+        if (this.isSupportedFile(file)) {
+          if (!hasValidFile) {
+            this._progress = 1;
+            hasValidFile = true;
+          }
           this.upload(file);
+        } else {
+          this.handleUnsupportedFile(file);
         }
       }
+      target.value = '';
     }
   }
 
@@ -337,13 +382,13 @@ export class Upload extends LitElement {
     return 'initial';
   }
 
-  private openFileDialog() {
+  openFileDialog() {
     if (this.fileInput && !this.fileInput.disabled) {
       this.fileInput.click();
     }
   }
 
-  private findActionTarget(event: Event): HTMLElement | null {
+  findActionTarget(event: Event): HTMLElement | null {
     for (const node of event.composedPath()) {
       if (node instanceof HTMLElement && node.hasAttribute('data-mave-upload-select')) {
         return node;
@@ -352,15 +397,15 @@ export class Upload extends LitElement {
     return null;
   }
 
-  private handleActionClick = (event: Event) => {
+  handleActionClick(event: Event) {
     const target = this.findActionTarget(event);
     if (target) {
       event.preventDefault();
       this.openFileDialog();
     }
-  };
+  }
 
-  private handleActionKeyDown = (event: KeyboardEvent) => {
+  handleActionKeyDown(event: KeyboardEvent) {
     if (event.key !== 'Enter' && event.key !== ' ') {
       return;
     }
@@ -369,26 +414,26 @@ export class Upload extends LitElement {
       event.preventDefault();
       this.openFileDialog();
     }
-  };
+  }
 
-  private blockSubmit = (event: Event) => {
+  blockSubmit(event: Event) {
     event.preventDefault();
-  };
+  }
 
-  private handleDragEnter = (event: DragEvent) => {
+  handleDragEnter(event: DragEvent) {
     event.preventDefault();
     this._dragging = true;
-  };
+  }
 
-  private handleDragOver = (event: DragEvent) => {
+  handleDragOver(event: DragEvent) {
     event.preventDefault();
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'copy';
     }
     this._dragging = true;
-  };
+  }
 
-  private handleDragLeave = (event: DragEvent) => {
+  handleDragLeave(event: DragEvent) {
     event.preventDefault();
     const container = event.currentTarget as HTMLElement | null;
     const related = event.relatedTarget;
@@ -401,7 +446,60 @@ export class Upload extends LitElement {
     if (!related || !(related instanceof Node) || !container.contains(related)) {
       this._dragging = false;
     }
-  };
+  }
+
+  isSupportedFile(file: File): boolean {
+    const type = (file.type || '').toLowerCase();
+    const extension = Upload.getFileExtension(file);
+
+    if (type.startsWith('video/')) {
+      return !extension || Upload.SUPPORTED_VIDEO_EXTENSIONS.has(extension);
+    }
+
+    if (type.startsWith('audio/')) {
+      return !extension || Upload.SUPPORTED_AUDIO_EXTENSIONS.has(extension);
+    }
+
+    if (!extension) {
+      return false;
+    }
+
+    if (Upload.SUPPORTED_VIDEO_EXTENSIONS.has(extension)) {
+      return true;
+    }
+
+    if (Upload.SUPPORTED_AUDIO_EXTENSIONS.has(extension)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  static getFileExtension(file: File): string | undefined {
+    const name = file.name || '';
+    const dotIndex = name.lastIndexOf('.');
+    if (dotIndex === -1 || dotIndex === name.length - 1) {
+      return undefined;
+    }
+    return name.slice(dotIndex + 1).toLowerCase();
+  }
+
+  handleUnsupportedFile(file: File) {
+    this.dispatchEvent(
+      new CustomEvent('invalid', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          file,
+          reason: 'unsupported type',
+          allowedExtensions: {
+            video: Array.from(Upload.SUPPORTED_VIDEO_EXTENSIONS),
+            audio: Array.from(Upload.SUPPORTED_AUDIO_EXTENSIONS),
+          },
+        },
+      }),
+    );
+  }
 
   protected updated(changedProperties: PropertyValues<Upload>) {
     super.updated(changedProperties);
