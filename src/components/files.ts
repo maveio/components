@@ -83,22 +83,18 @@ export class Files extends MaveElement {
               if (Number.isFinite(createdAtTimestamp))
                 this.#setTextContent(
                   template,
-                  '[slot="date"]',
+                  'date',
                   new Date(createdAtTimestamp).toLocaleDateString().replaceAll('/', '-'),
                 );
 
               // duration
               const duration = this._data.video.duration;
               if (duration)
-                this.#setTextContent(
-                  template,
-                  '[slot="duration"]',
-                  this.durationToTime(duration),
-                );
+                this.#setTextContent(template, 'duration', this.durationToTime(duration));
 
               // format
               const filetype = this._data.video.filetype;
-              if (filetype) this.#setTextContent(template, '[slot="filetype"]', filetype);
+              if (filetype) this.#setTextContent(template, 'filetype', filetype);
 
               // size
               const videoSizeBytes =
@@ -107,7 +103,7 @@ export class Files extends MaveElement {
               if (videoSizeBytes)
                 this.#setTextContent(
                   template,
-                  '[slot="size"]',
+                  'size',
                   this.#formatMegabytes(videoSizeBytes),
                 );
 
@@ -132,13 +128,13 @@ export class Files extends MaveElement {
               const template = createClone();
 
               const audioFiletype = primaryAudioRendition.container || 'mp3';
-              this.#setTextContent(template, '[slot="filetype"]', audioFiletype);
+              this.#setTextContent(template, 'filetype', audioFiletype);
 
               const audioSizeBytes = primaryAudioRendition.file_size;
               if (audioSizeBytes)
                 this.#setTextContent(
                   template,
-                  '[slot="size"]',
+                  'size',
                   this.#formatMegabytes(audioSizeBytes),
                 );
 
@@ -161,7 +157,7 @@ export class Files extends MaveElement {
             if (subtitle && item.getAttribute('name') == 'mave-files-subtitles') {
               const template = createClone();
 
-              this.#setTextContent(template, '[slot="filetype"]', 'vtt');
+              this.#setTextContent(template, 'filetype', 'vtt');
 
               // download
               const link = this.#createDownloadLink(
@@ -185,11 +181,14 @@ export class Files extends MaveElement {
     return html`<slot style="display: none"></slot>`;
   }
 
-  #setTextContent(template: DocumentFragment, selector: string, text: string) {
-    const element = template.querySelector(selector);
+  #setTextContent(template: DocumentFragment, slotName: string, text: string) {
+    const element = template.querySelector(
+      `[slot="${slotName}"], [data-slot="${slotName}"]`,
+    ) as Element | null;
     if (!element) return;
     element.textContent = text;
     element.removeAttribute('slot');
+    element.removeAttribute('data-slot');
   }
 
   #downloadBlob(blob: Blob, filename: string): void {
@@ -300,7 +299,6 @@ export class Files extends MaveElement {
         rendition.codec === 'mp3',
     );
   }
-
 }
 
 if (typeof window !== 'undefined' && window.customElements) {

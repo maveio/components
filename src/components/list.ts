@@ -95,14 +95,14 @@ export class List extends MaveElement {
                 this.embedController.embed
               ) {
                 const template = createClone();
-                const link = template.querySelector('[slot="root-link"]');
+                const link = this.#querySlotElement(template, 'root-link');
                 if (link) {
                   link.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.emit(this.EVENT_TYPES.CLICK, { action: 'back', embedId: '' });
                     this.embedController.embed = '';
                   });
-                  link.removeAttribute('slot');
+                  this.#clearSlotAttributes(link);
                 }
                 return html`${template}`;
               }
@@ -111,10 +111,10 @@ export class List extends MaveElement {
                 const result = this._collection.collections?.map((collection) => {
                   const template = createClone();
 
-                  const link = template.querySelector('[slot="folder-link"]');
+                  const link = this.#querySlotElement(template, 'folder-link');
 
                   [item, link].forEach((element) => {
-                    if (element) {
+                    if (element instanceof Element) {
                       element.addEventListener('click', (e) => {
                         e.preventDefault();
                         this.emit(this.EVENT_TYPES.CLICK, {
@@ -123,19 +123,15 @@ export class List extends MaveElement {
                         });
                         this.embedController.embed = collection.id;
                       });
-                      element.removeAttribute('slot');
+                      this.#clearSlotAttributes(element);
                     }
                   });
 
-                  this.#setTextContent(
-                    template,
-                    '[slot="folder-title"]',
-                    collection.name,
-                  );
+                  this.#setTextContent(template, 'folder-title', collection.name);
                   if (typeof collection.video_count == 'number') {
                     this.#setTextContent(
                       template,
-                      '[slot="folder-count"]',
+                      'folder-count',
                       collection.video_count.toString(),
                     );
                   }
@@ -160,15 +156,11 @@ export class List extends MaveElement {
                   const template = createClone();
                   const position = index + 1;
 
-                  this.#setTextContent(template, '[slot="item-title"]', video.name);
+                  this.#setTextContent(template, 'item-title', video.name);
+                  this.#setTextContent(template, 'item-position', position.toString());
                   this.#setTextContent(
                     template,
-                    '[slot="item-position"]',
-                    position.toString(),
-                  );
-                  this.#setTextContent(
-                    template,
-                    '[slot="item-duration"]',
+                    'item-duration',
                     this.durationToTime(video.duration),
                   );
                   this.#setEmbedAttribute(template, 'mave-clip', video.id);
@@ -176,7 +168,7 @@ export class List extends MaveElement {
                   this.#setEmbedAttribute(template, 'mave-img', video.id);
 
                   const clip = template.querySelector('mave-clip');
-                  const title = template.querySelector('[slot="item-title"]');
+                  const title = this.#querySlotElement(template, 'item-title');
                   const img = template.querySelector('mave-img');
 
                   [clip, title, img, template].forEach(
@@ -234,14 +226,24 @@ export class List extends MaveElement {
     const element = template.querySelector(selector);
     if (!element) return;
     element.setAttribute('embed', embed);
-    element.removeAttribute('slot');
+    this.#clearSlotAttributes(element);
   }
 
-  #setTextContent(template: DocumentFragment, selector: string, text: string) {
-    const element = template.querySelector(selector);
+  #setTextContent(template: DocumentFragment, slotName: string, text: string) {
+    const element = this.#querySlotElement(template, slotName);
     if (!element) return;
     element.textContent = text;
+    this.#clearSlotAttributes(element);
+  }
+
+  #querySlotElement(root: DocumentFragment | Element, slotName: string) {
+    return root.querySelector(`[slot="${slotName}"], [data-slot="${slotName}"]`);
+  }
+
+  #clearSlotAttributes(element?: Element | null) {
+    if (!element) return;
     element.removeAttribute('slot');
+    element.removeAttribute('data-slot');
   }
 
   renderPending() {

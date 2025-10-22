@@ -1,5 +1,5 @@
 import type { App, SetupContext, Slots, VNode } from 'vue';
-import { cloneVNode, defineComponent, h, ref } from 'vue';
+import { cloneVNode, defineComponent, h, onMounted, onUpdated, ref } from 'vue';
 
 import { Clip as ClipElement } from './components/clip.js';
 import { Files as FilesElement } from './components/files.js';
@@ -52,6 +52,58 @@ function projectSlots(slots: Slots): VNode[] | undefined {
   return content.length ? content : undefined;
 }
 
+function syncSlotAttributes(root: HTMLElement | null) {
+  if (!root || typeof window === 'undefined' || !root.ownerDocument) return;
+
+  const visit = (element: Element) => {
+    const dataSlot = element.getAttribute('data-slot');
+    if (dataSlot && element.getAttribute('slot') !== dataSlot) {
+      element.setAttribute('slot', dataSlot);
+    }
+  };
+
+  visit(root);
+  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  while (walker.nextNode()) {
+    visit(walker.currentNode as Element);
+  }
+}
+
+function normalizeAttributes(attrs: Record<string, unknown>) {
+  const forwarded: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === 'class' || key === 'style' || key === 'key') {
+      forwarded[key] = value;
+      continue;
+    }
+
+    if (key.startsWith('on') && key.length > 2) {
+      forwarded[key] = value;
+      continue;
+    }
+
+    if (value === false || value === undefined || value === null) {
+      forwarded[`^${key}`] = null;
+      continue;
+    }
+
+    if (value === true) {
+      forwarded[`^${key}`] = '';
+      continue;
+    }
+
+    if (typeof value === 'object' && value !== null) {
+      forwarded[key] = value;
+      continue;
+    }
+
+    forwarded[`^${key}`] = value;
+  }
+
+  return forwarded;
+}
+
 function createVueWrapper(
   componentName: string,
   tag: string,
@@ -66,7 +118,18 @@ function createVueWrapper(
       const elementRef = ref<HTMLElement | null>(null);
       expose({ element: elementRef });
 
-      return () => h(tag, { ref: elementRef, ...attrs }, projectSlots(slots));
+      onMounted(() => {
+        syncSlotAttributes(elementRef.value);
+      });
+
+      onUpdated(() => {
+        syncSlotAttributes(elementRef.value);
+      });
+
+      return () => {
+        const forwardedAttrs = normalizeAttributes(attrs);
+        return h(tag, { ref: elementRef, ...forwardedAttrs }, projectSlots(slots));
+      };
     },
   });
 
