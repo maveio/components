@@ -821,6 +821,11 @@ export class Player extends MaveElement {
 
   get styles() {
     const style: { [key: string]: string } = {};
+    const embedHasSubtitles = !!this._embedObj?.subtitles?.length;
+    const subtitlesDisabled =
+      this.subtitles === 'none' || this.subtitles === 'off' || !embedHasSubtitles;
+    const volumeControlEnabled =
+      this.controls.includes('volume') || this.controls.includes('full');
 
     if (this.color || this._embedObj?.settings.color) {
       style['--primary-color'] = `${this.color || this._embedObj?.settings.color}${
@@ -869,10 +874,7 @@ export class Player extends MaveElement {
     style['--playbackrate-display'] = this.controls.includes('rate') ? 'flex' : 'none';
 
     if (
-      ((this.subtitles == 'none' ||
-        this.subtitles == 'off' ||
-        this._embedObj?.subtitles.length == 0) &&
-        !this.active_subtitle) ||
+      subtitlesDisabled ||
       // Don't change behaviour of older videos:
       (this._embedObj?.created_at < 1740674988 &&
         !this.subtitles &&
@@ -904,6 +906,8 @@ export class Player extends MaveElement {
     }
 
     if (this._embedObj?.video.audio === false) {
+      style['--media-mute-button-display'] = 'none';
+    } else if (!volumeControlEnabled) {
       style['--media-mute-button-display'] = 'none';
     } else {
       style['--media-mute-button-display'] = 'flex';
