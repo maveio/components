@@ -479,7 +479,9 @@ export class Player extends MaveElement {
             this._videoElement &&
             this._videoElement.duration - this._videoElement.currentTime < 5
           ) {
-            const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+            const endScreen = this.querySelector(
+              '[slot="end-screen"], [data-slot="end-screen"]',
+            ) as HTMLElement;
             if (endScreen && endScreen.getAttribute('x-mave-end-shows') == 'near_end') {
               this.#showEndscreen();
 
@@ -629,7 +631,9 @@ export class Player extends MaveElement {
       this._previousControls = undefined;
     }
 
-    const startScreen = this.querySelector('[slot="start-screen"]') as HTMLElement;
+    const startScreen = this.querySelector(
+      '[slot="start-screen"], [data-slot="start-screen"]',
+    ) as HTMLElement;
     if (startScreen) {
       (
         this.shadowRoot?.querySelector("slot[name='video']") as HTMLElement
@@ -640,7 +644,9 @@ export class Player extends MaveElement {
   }
 
   #showEndscreen() {
-    const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+    const endScreen = this.querySelector(
+      '[slot="end-screen"], [data-slot="end-screen"]',
+    ) as HTMLElement;
 
     if (endScreen) {
       if (endScreen.tagName === 'TEMPLATE') {
@@ -665,7 +671,9 @@ export class Player extends MaveElement {
   }
 
   #hideEndscreen() {
-    const endScreen = this.querySelector('[slot="end-screen"]') as HTMLElement;
+    const endScreen = this.querySelector(
+      '[slot="end-screen"], [data-slot="end-screen"]',
+    ) as HTMLElement;
     if (endScreen) {
       this.endScreenElement.style.display = 'none';
       endScreen.style.display = 'none';
@@ -973,7 +981,9 @@ export class Player extends MaveElement {
 
   render() {
     if (!this.embed) return;
-    const startScreen = this.querySelector('[slot="start-screen"]') as HTMLElement;
+    const startScreen = this.querySelector(
+      '[slot="start-screen"], [data-slot="start-screen"]',
+    ) as HTMLElement;
 
     return html`
       <slot
