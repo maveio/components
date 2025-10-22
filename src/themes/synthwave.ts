@@ -108,7 +108,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-mute-button {
-        display: var(--media-mute-button-display, inline-flex);
+        display: var(--media-mute-button-display, var(--volume-display, inline-flex));
       }
 
       media-play-button,
@@ -262,7 +262,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-mute-button {
-        display: var(--volume-display, flex);
+        display: var(--media-mute-button-display, var(--volume-display, flex));
       }
 
       media-fullscreen-button {
