@@ -70,6 +70,7 @@ export type Embed = {
     src: string;
   };
   subtitles: Subtitle[];
+  audio_tracks?: AudioTrack[];
   metrics_key: string;
 };
 
@@ -77,6 +78,16 @@ export type Subtitle = {
   language: string;
   path: string;
   label: string;
+};
+
+export type AudioTrack = {
+  filename: string;
+  path: string;
+  label: string;
+  language?: string | null;
+  default: boolean;
+  codec?: 'mp3' | 'aac' | 'wav' | 'flac' | 'ogg';
+  file_size?: number;
 };
 
 export type Collection = {

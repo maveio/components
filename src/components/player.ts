@@ -11,7 +11,7 @@ import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 
 import { Config } from '../config';
-import { Embed } from '../embed/api';
+import { AudioTrack, Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
 import { MaveElement } from '../utils/mave_element';
@@ -70,6 +70,7 @@ export class Player extends MaveElement {
     'time',
     'seek',
     'volume',
+    'audio-tracks',
     'fullscreen',
     'subtitles',
   ];
@@ -177,6 +178,7 @@ export class Player extends MaveElement {
   private _themeLoaded: string;
 
   private _subtitlesText: HTMLElement;
+  private _audioTracks: AudioTrack[] = [];
 
   static styles = css`
     :host {
@@ -728,6 +730,7 @@ export class Player extends MaveElement {
   // Used for updating the embed settings
   updateEmbed(embed: Embed) {
     this._embedObj = embed;
+    this._audioTracks = embed.audio_tracks ?? [];
     this.updateStylePoster();
 
     this.poster = this._embedObj.settings.poster;
@@ -912,6 +915,13 @@ export class Player extends MaveElement {
     } else {
       style['--media-mute-button-display'] = 'flex';
     }
+
+    const audioTrackCount = this._audioTracks?.length ?? 0;
+    const audioTracksControlEnabled =
+      this.controls.includes('audio-tracks') || this.controls.includes('full');
+
+    style['--media-audio-track-menu-button-display'] =
+      audioTrackCount > 1 && audioTracksControlEnabled ? 'flex' : 'none';
 
     return styleMap(style);
   }
