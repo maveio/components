@@ -360,6 +360,14 @@ export function build(name, LitElement, html, css) {
         display: flex;
       }
 
+      media-audio-track-menu-button.small-button {
+        display: var(--media-audio-track-menu-button-display, none);
+      }
+
+      media-audio-track-menu {
+        display: none;
+      }
+
       media-captions-menu-button[mediasubtitleslist].small-button svg[slot='on'] {
         --media-icon-color: white;
       }
@@ -603,6 +611,24 @@ export function build(name, LitElement, html, css) {
                 />
               </svg>
             </media-captions-menu-button>
+            <media-audio-track-menu hidden anchor="auto"></media-audio-track-menu>
+            <media-audio-track-menu-button class="small-button">
+              <svg
+                slot="icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 22 22"
+                fill="none"
+                stroke="#fff"
+                stroke-width="1.1"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="9"></circle>
+                <path d="M8 15v-5"></path>
+                <path d="M11 17V8"></path>
+                <path d="M14 15v-3"></path>
+              </svg>
+            </media-audio-track-menu-button>
             <div class="media-volume-wrapper">
               <media-mute-button class="small-button">
                 <svg
