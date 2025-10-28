@@ -634,8 +634,11 @@ export function build(name, LitElement, html, css) {
                 />
               </svg>
             </media-captions-menu-button>
-            <mave-audio-track-menu hidden anchor="auto"></mave-audio-track-menu>
-            <mave-audio-track-menu-button class="small-button">
+            <mave-audio-track-menu
+              hidden
+              anchor="mave-audio-tracks"
+            ></mave-audio-track-menu>
+            <mave-audio-track-menu-button id="mave-audio-tracks" class="small-button">
               <svg
                 slot="icon"
                 xmlns="http://www.w3.org/2000/svg"
