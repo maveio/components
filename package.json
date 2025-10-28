@@ -115,9 +115,9 @@
     "@lit/react": "^1.0.5",
     "@lit/task": "^1.0.0",
     "@maveio/metrics": "^0.1.5",
-    "hls.js": "^1.6.7",
+    "hls.js": "^1.6.13",
     "lit": "^3.1.2",
-    "media-chrome": "^4.12.0",
+    "media-chrome": "^4.15.0",
     "phoenix": "^1.7.21",
     "tus-js-client": "^4.2.3"
   },
