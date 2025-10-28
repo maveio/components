@@ -1,12 +1,12 @@
 import { MediaUIEvents } from 'media-chrome/dist/constants.js';
-import { t } from 'media-chrome/dist/utils/i18n.js';
-import { globalThis } from 'media-chrome/dist/utils/server-safe-globals.js';
 import {
-  MediaChromeMenu,
   createIndicator,
   createMenuItem,
+  MediaChromeMenu,
 } from 'media-chrome/dist/menu/media-chrome-menu.js';
 import { MediaChromeMenuButton } from 'media-chrome/dist/menu/media-chrome-menu-button.js';
+import { t } from 'media-chrome/dist/utils/i18n.js';
+import { globalThis } from 'media-chrome/dist/utils/server-safe-globals.js';
 
 type AudioTrackOption = {
   id: string;
@@ -88,7 +88,7 @@ export class MaveAudioTrackMenu extends MediaChromeMenu {
 
     for (const item of Array.from(items)) {
       if ('checked' in item && 'value' in item) {
-        (item as any).checked = (item as any).value === nextSelectedId;
+        item.checked = item.value === nextSelectedId;
       }
     }
 
@@ -105,6 +105,7 @@ export class MaveAudioTrackMenu extends MediaChromeMenu {
     if (selectedValue == null) return;
 
     this.#selectedId = String(selectedValue);
+
     this.dispatchEvent(
       new globalThis.CustomEvent(MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST, {
         detail: this.#selectedId,
