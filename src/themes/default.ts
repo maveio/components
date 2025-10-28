@@ -360,7 +360,8 @@ export function build(name, LitElement, html, css) {
         display: flex;
       }
 
-      media-audio-track-menu {
+      media-audio-track-menu,
+      mave-audio-track-menu {
         position: absolute;
         bottom: calc(100% + 4px);
         min-width: 120px;
@@ -370,19 +371,23 @@ export function build(name, LitElement, html, css) {
         backdrop-filter: blur(12px);
       }
 
-      media-audio-track-menu::part(menu-item):hover {
+      media-audio-track-menu::part(menu-item):hover,
+      mave-audio-track-menu::part(menu-item):hover {
         background: rgba(0, 0, 0, 0.15);
       }
 
-      media-audio-track-menu[hidden] {
+      media-audio-track-menu[hidden],
+      mave-audio-track-menu[hidden] {
         display: none;
       }
 
-      media-audio-track-menu-button {
+      media-audio-track-menu-button,
+      mave-audio-track-menu-button {
         margin-right: -2px;
       }
 
-      media-audio-track-menu-button.small-button {
+      media-audio-track-menu-button.small-button,
+      mave-audio-track-menu-button.small-button {
         display: var(--media-audio-track-menu-button-display, none);
       }
 
@@ -629,8 +634,8 @@ export function build(name, LitElement, html, css) {
                 />
               </svg>
             </media-captions-menu-button>
-            <media-audio-track-menu hidden anchor="auto"></media-audio-track-menu>
-            <media-audio-track-menu-button class="small-button">
+            <mave-audio-track-menu hidden anchor="auto"></mave-audio-track-menu>
+            <mave-audio-track-menu-button class="small-button">
               <svg
                 slot="icon"
                 xmlns="http://www.w3.org/2000/svg"
@@ -646,7 +651,7 @@ export function build(name, LitElement, html, css) {
                 <path d="M11 17V8"></path>
                 <path d="M14 15v-3"></path>
               </svg>
-            </media-audio-track-menu-button>
+            </mave-audio-track-menu-button>
             <div class="media-volume-wrapper">
               <media-mute-button class="small-button">
                 <svg

@@ -1,17 +1,24 @@
 import 'media-chrome';
 import 'media-chrome/menu';
+import './audio-track-menu';
 
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/metrics';
+import type {
+  AudioTracksUpdatedData,
+  AudioTrackSwitchedData,
+  MediaPlaylist,
+} from 'hls.js';
 import Hls from 'hls.js';
 import { css, html } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
+import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 
 import { Config } from '../config';
-import { AudioTrack, Embed } from '../embed/api';
+import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
 import { MaveElement } from '../utils/mave_element';
@@ -178,7 +185,14 @@ export class Player extends MaveElement {
   private _themeLoaded: string;
 
   private _subtitlesText: HTMLElement;
-  private _audioTracks: AudioTrack[] = [];
+  private _audioTrackCount = 0;
+  private _cleanupHlsAudioTracks?: () => void;
+  private _hlsAudioTracks: MediaPlaylist[] = [];
+  private _hlsAudioTrackIdMap = new Map<string, number>();
+  private _pendingAudioTrackSetup?: number;
+  private _currentAudioTrackMenu?: Element | null;
+  private _themeMutationObserver?: MutationObserver;
+  private _themeMutationObserverRoot?: Node;
 
   static styles = css`
     :host {
@@ -377,6 +391,18 @@ export class Player extends MaveElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._metricsInstance?.demonitor();
+    this._cleanupHlsAudioTracks?.();
+    this._cleanupHlsAudioTracks = undefined;
+    if (this._pendingAudioTrackSetup != null) {
+      cancelAnimationFrame(this._pendingAudioTrackSetup);
+      this._pendingAudioTrackSetup = undefined;
+    }
+    this._hlsAudioTrackIdMap.clear();
+    this._hlsAudioTracks = [];
+    this._currentAudioTrackMenu = undefined;
+    this._themeMutationObserver?.disconnect();
+    this._themeMutationObserver = undefined;
+    this._themeMutationObserverRoot = undefined;
   }
 
   loadTheme() {
@@ -556,6 +582,15 @@ export class Player extends MaveElement {
       const isIOS = /iPhone|iPad/.test(navigator.userAgent);
 
       if (Hls.isSupported() && this.#hlsPath && !isIOS) {
+        this._cleanupHlsAudioTracks?.();
+        this._cleanupHlsAudioTracks = undefined;
+        if (this._pendingAudioTrackSetup != null) {
+          cancelAnimationFrame(this._pendingAudioTrackSetup);
+          this._pendingAudioTrackSetup = undefined;
+        }
+        this._hlsAudioTrackIdMap.clear();
+        this._hlsAudioTracks = [];
+
         this.hls = new Hls({
           startLevel: this.#getStartLevel(),
           capLevelToPlayerSize: true,
@@ -567,16 +602,33 @@ export class Player extends MaveElement {
 
         this.hls?.loadSource(this.#hlsPath);
         this.hls?.attachMedia(this._videoElement);
+        this.#setupHlsAudioTracks();
         if (Config.metrics.enabled)
           this._metricsInstance = new Metrics(this.hls, this.embed, metadata);
       } else if (
         this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
         this.#hlsPath
       ) {
+        this._cleanupHlsAudioTracks?.();
+        this._cleanupHlsAudioTracks = undefined;
+        if (this._pendingAudioTrackSetup != null) {
+          cancelAnimationFrame(this._pendingAudioTrackSetup);
+          this._pendingAudioTrackSetup = undefined;
+        }
+        this._hlsAudioTrackIdMap.clear();
+        this._hlsAudioTracks = [];
         this._videoElement.src = this.#hlsPath;
         if (Config.metrics.enabled)
           this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       } else {
+        this._cleanupHlsAudioTracks?.();
+        this._cleanupHlsAudioTracks = undefined;
+        if (this._pendingAudioTrackSetup != null) {
+          cancelAnimationFrame(this._pendingAudioTrackSetup);
+          this._pendingAudioTrackSetup = undefined;
+        }
+        this._hlsAudioTrackIdMap.clear();
+        this._hlsAudioTracks = [];
         this._videoElement.src = this.#srcPath;
         if (Config.metrics.enabled)
           this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
@@ -730,7 +782,7 @@ export class Player extends MaveElement {
   // Used for updating the embed settings
   updateEmbed(embed: Embed) {
     this._embedObj = embed;
-    this._audioTracks = embed.audio_tracks ?? [];
+    this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.updateStylePoster();
 
     this.poster = this._embedObj.settings.poster;
@@ -820,6 +872,190 @@ export class Player extends MaveElement {
     });
 
     return rendition;
+  }
+
+  get #mediaChromeRoot(): ShadowRoot | null {
+    if (!this._themeLoaded) return null;
+    const theme = this.shadowRoot?.querySelector(
+      `theme-${this._themeLoaded}`,
+    ) as HTMLElement & { shadowRoot?: ShadowRoot };
+    return theme?.shadowRoot ?? null;
+  }
+
+  #observeThemeRoot(root: ShadowRoot) {
+    if (this._themeMutationObserverRoot === root) return;
+
+    this._themeMutationObserver?.disconnect();
+
+    const observer = new MutationObserver(() => {
+      this.#queueHlsAudioTrackSetup();
+    });
+    observer.observe(root, { childList: true, subtree: true });
+
+    this._themeMutationObserver = observer;
+    this._themeMutationObserverRoot = root;
+  }
+
+  #getAudioTrackElements(): {
+    menu: (Element & { tracks?: any; selected?: string }) | null;
+    button: Element | null;
+  } {
+    const root = this.#mediaChromeRoot;
+    if (!root) {
+      return { menu: null, button: null };
+    }
+
+    return {
+      menu: root.querySelector('mave-audio-track-menu') as Element & {
+        tracks?: any;
+        selected?: string;
+      },
+      button: root.querySelector('mave-audio-track-menu-button'),
+    };
+  }
+
+  #queueHlsAudioTrackSetup() {
+    if (this._pendingAudioTrackSetup != null) return;
+    this._pendingAudioTrackSetup = requestAnimationFrame(() => {
+      this._pendingAudioTrackSetup = undefined;
+      this.#setupHlsAudioTracks();
+    });
+  }
+
+  #setupHlsAudioTracks() {
+    if (!this.hls) return;
+
+    const root = this.#mediaChromeRoot;
+    if (root) {
+      this.#observeThemeRoot(root);
+    }
+
+    const { menu, button } = this.#getAudioTrackElements();
+    if (!menu || !button) {
+      this.#queueHlsAudioTrackSetup();
+      return;
+    }
+
+    if (menu !== this._currentAudioTrackMenu || !this._cleanupHlsAudioTracks) {
+      this._cleanupHlsAudioTracks?.();
+
+      const onAudioTracksUpdated = (
+        _event: typeof Hls.Events.AUDIO_TRACKS_UPDATED,
+        data: AudioTracksUpdatedData,
+      ) => {
+        this._hlsAudioTracks = data?.audioTracks ?? [];
+        this.#updateAudioTrackMenuFromHls(this._hlsAudioTracks, this.hls?.audioTrack);
+      };
+
+      const onAudioTrackSwitched = (
+        _event: typeof Hls.Events.AUDIO_TRACK_SWITCHED,
+        data: AudioTrackSwitchedData,
+      ) => {
+        const activeId =
+          data?.id ??
+          (typeof this.hls?.audioTrack === 'number' ? this.hls.audioTrack : undefined);
+        this.#updateAudioTrackMenuFromHls(this._hlsAudioTracks, activeId);
+      };
+
+      const onAudioTrackRequest = (event: Event) => {
+        if (event.type !== MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST) return;
+        const detail = (event as CustomEvent<string>).detail;
+        if (detail == null) return;
+
+        const trackId = this._hlsAudioTrackIdMap.get(String(detail));
+        if (trackId == null || !this.hls) return;
+
+        if (this.hls.audioTrack !== trackId) {
+          this.hls.audioTrack = trackId;
+          this.#updateAudioTrackMenuFromHls(this._hlsAudioTracks, trackId);
+        }
+      };
+
+      menu.addEventListener(
+        MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST,
+        onAudioTrackRequest as EventListener,
+      );
+      this.hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, onAudioTracksUpdated);
+      this.hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, onAudioTrackSwitched);
+
+      this._cleanupHlsAudioTracks = () => {
+        menu.removeEventListener(
+          MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST,
+          onAudioTrackRequest as EventListener,
+        );
+        this.hls?.off(Hls.Events.AUDIO_TRACKS_UPDATED, onAudioTracksUpdated);
+        this.hls?.off(Hls.Events.AUDIO_TRACK_SWITCHED, onAudioTrackSwitched);
+      };
+
+      this._currentAudioTrackMenu = menu;
+
+      if (this.hls.audioTracks?.length) {
+        this._hlsAudioTracks = this.hls.audioTracks;
+      }
+    }
+
+    const tracks =
+      (this._hlsAudioTracks && this._hlsAudioTracks.length
+        ? this._hlsAudioTracks
+        : this.hls.audioTracks) ?? [];
+    const activeId =
+      typeof this.hls.audioTrack === 'number' ? this.hls.audioTrack : undefined;
+    this.#updateAudioTrackMenuFromHls(tracks, activeId);
+  }
+
+  #updateAudioTrackMenuFromHls(tracks: MediaPlaylist[], activeId?: number) {
+    const { menu, button } = this.#getAudioTrackElements();
+    if (!menu || !button) {
+      this.#queueHlsAudioTrackSetup();
+      return;
+    }
+
+    this._hlsAudioTracks = tracks ?? [];
+    this._hlsAudioTrackIdMap.clear();
+
+    if (!tracks?.length) {
+      if ('tracks' in menu) {
+        (menu as any).tracks = [];
+        (menu as any).selected = undefined;
+      }
+
+      this._audioTrackCount = 0;
+      this.requestUpdate();
+      return;
+    }
+
+    const list = tracks.map((track: MediaPlaylist, index: number) => {
+      const rawId = track?.id ?? index;
+      const id = String(rawId);
+      this._hlsAudioTrackIdMap.set(id, rawId);
+      const language = track?.lang ?? track?.attrs?.LANGUAGE;
+      const labelCandidate = (track?.name ?? '').trim();
+      const label =
+        labelCandidate ||
+        (typeof language === 'string' && language.trim()) ||
+        `Track ${index + 1}`;
+      const isEnabled =
+        activeId != null ? rawId === activeId : track?.default ?? index === 0;
+
+      return {
+        id,
+        language,
+        label,
+        enabled: isEnabled,
+      };
+    });
+
+    if (!list.some((track) => track.enabled) && list.length) {
+      list[0].enabled = true;
+    }
+
+    const enabledTrack = list.find((track) => track.enabled) ?? list[0];
+    if ('tracks' in menu) {
+      (menu as any).tracks = list;
+      (menu as any).selected = enabledTrack?.id;
+    }
+    this._audioTrackCount = list.length;
+    this.requestUpdate();
   }
 
   get styles() {
@@ -916,7 +1152,7 @@ export class Player extends MaveElement {
       style['--media-mute-button-display'] = 'flex';
     }
 
-    const audioTrackCount = this._audioTracks?.length ?? 0;
+    const audioTrackCount = this._audioTrackCount ?? 0;
     const audioTracksControlEnabled =
       this.controls.includes('audio-tracks') || this.controls.includes('full');
 
