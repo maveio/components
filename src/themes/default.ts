@@ -360,12 +360,30 @@ export function build(name, LitElement, html, css) {
         display: flex;
       }
 
-      media-audio-track-menu-button.small-button {
-        display: var(--media-audio-track-menu-button-display, none);
+      media-audio-track-menu {
+        position: absolute;
+        bottom: calc(100% + 4px);
+        min-width: 120px;
+        transform-origin: bottom right;
+        background: var(--primary-color, rgba(0, 0, 0, 0.25));
+        border-radius: 8px;
+        backdrop-filter: blur(12px);
       }
 
-      media-audio-track-menu {
+      media-audio-track-menu::part(menu-item):hover {
+        background: rgba(0, 0, 0, 0.15);
+      }
+
+      media-audio-track-menu[hidden] {
         display: none;
+      }
+
+      media-audio-track-menu-button {
+        margin-right: -2px;
+      }
+
+      media-audio-track-menu-button.small-button {
+        display: var(--media-audio-track-menu-button-display, none);
       }
 
       media-captions-menu-button[mediasubtitleslist].small-button svg[slot='on'] {
