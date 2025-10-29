@@ -50,13 +50,11 @@
       <mave-player theme="dolphin" active-subtitle="en"></mave-player>
     </mave-pop>
 
-
     <h1 class="text-center mt-12">Customizing mave-upload:</h1>
-    
     <div class="max-w-2xl mx-auto mt-6">
       <mave-upload
         class="block w-full"
-        token="token"
+        token="<<<< TOKEN HERE >>>>"
       >
         <div
           slot="initial"
@@ -112,7 +110,29 @@
             Upload another file
           </button>
         </div>
+
+        <div
+          slot="error"
+          class="flex h-full w-full flex-col items-center justify-center gap-4 rounded-3xl bg-rose-50 text-rose-700"
+        >
+          <div class="text-2xl font-light" data-role="error-title">Unsupported file type</div>
+          <p class="max-w-sm text-center text-sm opacity-80" data-role="error-message">
+            Please choose a video or audio file in a supported format.
+          </p>
+          <div class="text-xs font-medium text-rose-500" data-role="error-filename"></div>
+          <button
+            type="button"
+            data-mave-upload-select
+            class="rounded-full bg-rose-500 px-6 py-2 text-white shadow hover:bg-rose-400 focus:outline-none focus:ring focus:ring-rose-200"
+          >
+            Choose a different file
+          </button>
+        </div>
       </mave-upload>
+    </div>
+
+    <div class="max-w-2xl mx-auto mt-8">
+      <div id="uploaded-players" class="flex flex-col gap-6"></div>
     </div>
 
     <style>
@@ -131,6 +151,7 @@
         const progressValue = customUpload.querySelector('[data-role="progress-value"]');
         const progressBar = customUpload.querySelector('[data-role="progress-bar"]');
         const resetButton = customUpload.querySelector('[data-role="reset"]');
+        const uploadedPlayers = document.querySelector('#uploaded-players');
 
         customUpload.addEventListener('statechange', (event) => {
           const { progress } = event.detail;
@@ -142,9 +163,22 @@
           }
         });
 
+        customUpload.addEventListener('playable', (event) => {
+          const embed = event.detail?.embed;
+          const wrapper = document.createElement('div');
+          wrapper.className = 'rounded-3xl overflow-hidden shadow-lg';
+          const player = document.createElement('mave-player');
+          player.setAttribute('embed', embed);
+          player.style.display = 'block';
+          player.style.width = '100%';
+          wrapper.appendChild(player);
+          uploadedPlayers.prepend(wrapper);
+        });
+
         resetButton?.addEventListener('click', () => customUpload.reset());
       }
     </script>
 
   </body>
 </html>
+
