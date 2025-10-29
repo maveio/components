@@ -46,6 +46,8 @@ export class Upload extends LitElement {
   @state() _error: UploadErrorDetail | null = null;
   private embedChannel: EmbedChannel;
   @query('#mave-upload-input') private fileInput?: HTMLInputElement;
+  private playableEmitted = false;
+  private currentEmbed?: string;
 
   private static readonly SUPPORTED_VIDEO_EXTENSIONS = new Set([
     '3g2',
@@ -229,6 +231,7 @@ export class Upload extends LitElement {
     this.embedChannel.channel.on('initiate', ({ upload_id }) => {
       this._upload_id = upload_id;
       this.embedChannel.upload_id = upload_id;
+      this.playableEmitted = false;
     });
     this.embedChannel.channel.on('completed', this.completed.bind(this));
     this.embedChannel.channel.on('rendition', this.rendition.bind(this));
@@ -246,6 +249,8 @@ export class Upload extends LitElement {
     this._progress = 0;
     this._completed = false;
     this._error = null;
+    this.playableEmitted = false;
+    this.currentEmbed = undefined;
     this.embedChannel.channel.push('reset', {});
   }
 
@@ -376,6 +381,7 @@ export class Upload extends LitElement {
   }
 
   completed(data: { embed: string }) {
+    this.currentEmbed = data?.embed;
     if (!this.disableCompletion) this._completed = true;
     this.dispatchEvent(
       new CustomEvent('completed', { bubbles: true, composed: true, detail: data }),
@@ -383,6 +389,16 @@ export class Upload extends LitElement {
   }
 
   rendition(data: any) {
+    if (!this.playableEmitted && this.isPlayableRendition(data)) {
+      this.playableEmitted = true;
+      this.dispatchEvent(
+        new CustomEvent('playable', {
+          bubbles: true,
+          composed: true,
+          detail: { embed: this.currentEmbed },
+        }),
+      );
+    }
     this.dispatchEvent(
       new CustomEvent('rendition', { bubbles: true, composed: true, detail: data }),
     );
@@ -398,6 +414,14 @@ export class Upload extends LitElement {
     this._progress = 0;
     this._completed = false;
     this.dispatchEvent(new CustomEvent('error', { bubbles: true, detail: error }));
+  }
+
+  private isPlayableRendition(rendition: { container?: string; type?: string }) {
+    return (
+      typeof rendition?.container === 'string' &&
+      rendition.container === 'hls' &&
+      rendition?.type === 'video'
+    );
   }
 
   render() {
