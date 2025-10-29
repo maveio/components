@@ -12,13 +12,23 @@ interface ErrorMessage {
   message: string;
 }
 
+interface UploadErrorDetail {
+  file?: File;
+  reason: string;
+  message?: string;
+  allowedExtensions?: {
+    video: string[];
+    audio: string[];
+  };
+}
+
 interface EmbedChannel {
   token: string;
   channel: Channel;
   upload_id?: string;
 }
 
-type UploadState = 'initial' | 'uploading' | 'processing' | 'done';
+type UploadState = 'initial' | 'uploading' | 'processing' | 'done' | 'error';
 
 @localized()
 export class Upload extends LitElement {
@@ -33,6 +43,7 @@ export class Upload extends LitElement {
   @state() _upload_id: string;
   @state() _completed = false;
   @state() _dragging = false;
+  @state() _error: UploadErrorDetail | null = null;
   private embedChannel: EmbedChannel;
   @query('#mave-upload-input') private fileInput?: HTMLInputElement;
 
@@ -90,6 +101,40 @@ export class Upload extends LitElement {
     .state--initial {
       transition: box-shadow 160ms ease;
       gap: 12px;
+    }
+
+    .state--error {
+      transition: box-shadow 160ms ease;
+      gap: 12px;
+    }
+
+    .upload-default-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      width: 100%;
+      padding: 0 24px;
+    }
+
+    .upload-default-error-filename {
+      font-size: 14px;
+      font-weight: 500;
+      color: #111;
+      max-width: 320px;
+      overflow-wrap: anywhere;
+    }
+
+    .upload-default-error-title {
+      font-size: 24px;
+      font-weight: 400;
+      color: #e5484d;
+    }
+
+    .upload-default-error-subtitle {
+      opacity: 0.6;
+      max-width: 320px;
     }
 
     .upload-default-title {
@@ -200,6 +245,7 @@ export class Upload extends LitElement {
   reset() {
     this._progress = 0;
     this._completed = false;
+    this._error = null;
     this.embedChannel.channel.push('reset', {});
   }
 
@@ -235,6 +281,12 @@ export class Upload extends LitElement {
       }
     }
 
+    if (!files.length) {
+      return;
+    }
+
+    this._error = null;
+
     let hasValidFile = false;
     for (const file of files) {
       if (this.isSupportedFile(file)) {
@@ -254,6 +306,9 @@ export class Upload extends LitElement {
     // split progress into multiple files
     const target = event.target as HTMLInputElement;
     if (target.files) {
+      if (target.files.length) {
+        this._error = null;
+      }
       let hasValidFile = false;
       for (const file of target.files) {
         if (this.isSupportedFile(file)) {
@@ -274,6 +329,7 @@ export class Upload extends LitElement {
     this.dispatchEvent(
       new CustomEvent('upload', { bubbles: true, composed: true, detail: { file } }),
     );
+    this._error = null;
 
     const upload = new tus.Upload(file, {
       endpoint: Config.upload.endpoint,
@@ -335,11 +391,19 @@ export class Upload extends LitElement {
   // registry call
   error(error: ErrorMessage) {
     console.warn(`[mave-upload] ${error.message}`);
+    this._error = {
+      reason: 'upload error',
+      message: error.message,
+    };
+    this._progress = 0;
+    this._completed = false;
     this.dispatchEvent(new CustomEvent('error', { bubbles: true, detail: error }));
   }
 
   render() {
     switch (this.currentState) {
+      case 'error':
+        return this.renderError();
       case 'uploading':
         return this.renderUploading();
       case 'processing':
@@ -370,6 +434,9 @@ export class Upload extends LitElement {
   }
 
   get currentState(): UploadState {
+    if (this._error) {
+      return 'error';
+    }
     if (this._completed) {
       return 'done';
     }
@@ -485,17 +552,26 @@ export class Upload extends LitElement {
   }
 
   handleUnsupportedFile(file: File) {
+    const detail: UploadErrorDetail = {
+      file,
+      reason: 'unsupported type',
+      allowedExtensions: {
+        video: Array.from(Upload.SUPPORTED_VIDEO_EXTENSIONS),
+        audio: Array.from(Upload.SUPPORTED_AUDIO_EXTENSIONS),
+      },
+    };
+
+    this._error = detail;
+    this._progress = 0;
+    this._completed = false;
+
     this.dispatchEvent(
       new CustomEvent('invalid', {
         bubbles: true,
         composed: true,
         detail: {
-          file,
-          reason: 'unsupported type',
-          allowedExtensions: {
-            video: Array.from(Upload.SUPPORTED_VIDEO_EXTENSIONS),
-            audio: Array.from(Upload.SUPPORTED_AUDIO_EXTENSIONS),
-          },
+          ...detail,
+          message: msg('unsupported file type'),
         },
       }),
     );
@@ -524,6 +600,7 @@ export class Upload extends LitElement {
             state,
             progress,
             dragging: this._dragging,
+            error: this._error,
           },
         }),
       );
@@ -556,6 +633,57 @@ export class Upload extends LitElement {
         >
           ${msg('select file')}
         </button>
+      </slot>
+      <input
+        id="mave-upload-input"
+        .disabled=${!this._upload_id}
+        type="file"
+        accept="video/*, audio/*"
+        @change=${this.handleForm}
+        hidden
+      />
+    </form>`;
+  }
+
+  renderError() {
+    const buttonColor = this.color ? this.color : '#1997FF';
+    const radius = this.radius ? this.radius : '16px';
+    const fileName = this._error?.file?.name;
+    const message =
+      this._error?.message ??
+      (this._error?.reason === 'unsupported type'
+        ? msg('please choose a video or audio file in a supported format.')
+        : msg('something went wrong. please try again.'));
+    const showFileName = this._error?.reason === 'unsupported type' && fileName;
+    return html`<form
+      class="state state--error"
+      style=${styleMap({ ...this.styleOpacity(), ...this.styleFont() })}
+      @submit=${this.blockSubmit}
+      @dragenter=${this.handleDragEnter}
+      @dragover=${this.handleDragOver}
+      @dragleave=${this.handleDragLeave}
+      @drop=${this.handleDrop}
+    >
+      <slot name="error">
+        <div class="upload-default-error" role="alert">
+          ${showFileName
+            ? html`<div class="upload-default-error-filename">${fileName}</div>`
+            : null}
+          <div class="upload-default-error-title">
+            ${this._error?.reason === 'unsupported type'
+              ? msg('unsupported file type')
+              : msg('upload failed')}
+          </div>
+          <div class="upload-default-error-subtitle">${message}</div>
+          <button
+            type="button"
+            data-mave-upload-select
+            class="upload-default-button"
+            style=${styleMap({ background: buttonColor, borderRadius: radius })}
+          >
+            ${msg('try again')}
+          </button>
+        </div>
       </slot>
       <input
         id="mave-upload-input"

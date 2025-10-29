@@ -2,6 +2,10 @@
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
 <file target-language="de" source-language="en" original="lit-localize-inputs" datatype="plaintext">
 <body>
+<trans-unit id="s3377775e4a0566a2">
+  <source>unsupported file type</source>
+  <target>Dateityp wird nicht unterstützt</target>
+</trans-unit>
 <trans-unit id="s7b43d4f7b98adae3">
   <source>drop video here</source>
   <target>Video hier ablegen</target>
@@ -14,17 +18,33 @@
   <source>select file</source>
   <target>Datei auswählen</target>
 </trans-unit>
+<trans-unit id="sf12a5103628a9670">
+  <source>please choose a video or audio file in a supported format.</source>
+  <target>Bitte wählen Sie eine Video- oder Audiodatei in einem unterstützten Format aus.</target>
+</trans-unit>
+<trans-unit id="sbe89d2c461986bef">
+  <source>something went wrong. please try again.</source>
+  <target>Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.</target>
+</trans-unit>
+<trans-unit id="s62a293bba74d7d29">
+  <source>upload failed</source>
+  <target>Upload fehlgeschlagen</target>
+</trans-unit>
+<trans-unit id="s8030578146a104ba">
+  <source>try again</source>
+  <target>Erneut versuchen</target>
+</trans-unit>
 <trans-unit id="sc5fcbf75e4030312">
   <source>uploading...</source>
   <target>Hochladen...</target>
 </trans-unit>
-<trans-unit id="sdc51fb6761fd6e91">
-  <source>done</source>
-  <target>Fertig</target>
-</trans-unit>
 <trans-unit id="s422bb6dceefc6f42">
   <source>just a minute...</source>
   <target>Bitte warten...</target>
+</trans-unit>
+<trans-unit id="sdc51fb6761fd6e91">
+  <source>done</source>
+  <target>Fertig</target>
 </trans-unit>
 </body>
 </file>
