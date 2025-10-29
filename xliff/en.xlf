@@ -2,29 +2,49 @@
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
 <file target-language="en" source-language="en" original="lit-localize-inputs" datatype="plaintext">
 <body>
+<trans-unit id="s3377775e4a0566a2">
+  <source>unsupported file type</source>
+  <target>Unsupported file type</target>
+</trans-unit>
 <trans-unit id="s7b43d4f7b98adae3">
-  <target>drop video here</target>
   <source>drop video here</source>
+  <target>Drop video here</target>
 </trans-unit>
 <trans-unit id="sf81e3c69132c6256">
-  <target>or browse your files</target>
   <source>or browse your files</source>
+  <target>Or browse your files</target>
 </trans-unit>
 <trans-unit id="s1a2236b3e9a624e9">
-  <target>select file</target>
   <source>select file</source>
+  <target>Select file</target>
+</trans-unit>
+<trans-unit id="sf12a5103628a9670">
+  <source>please choose a video or audio file in a supported format.</source>
+  <target>Please choose a video or audio file in a supported format.</target>
+</trans-unit>
+<trans-unit id="sbe89d2c461986bef">
+  <source>something went wrong. please try again.</source>
+  <target>Something went wrong. Please try again.</target>
+</trans-unit>
+<trans-unit id="s62a293bba74d7d29">
+  <source>upload failed</source>
+  <target>Upload failed</target>
+</trans-unit>
+<trans-unit id="s8030578146a104ba">
+  <source>try again</source>
+  <target>Try again</target>
 </trans-unit>
 <trans-unit id="sc5fcbf75e4030312">
-  <target>uploading...</target>
   <source>uploading...</source>
-</trans-unit>
-<trans-unit id="sdc51fb6761fd6e91">
-  <target>done</target>
-  <source>done</source>
+  <target>Uploading...</target>
 </trans-unit>
 <trans-unit id="s422bb6dceefc6f42">
-  <target>just a minute...</target>
   <source>just a minute...</source>
+  <target>Just a minute...</target>
+</trans-unit>
+<trans-unit id="sdc51fb6761fd6e91">
+  <source>done</source>
+  <target>Done</target>
 </trans-unit>
 </body>
 </file>
