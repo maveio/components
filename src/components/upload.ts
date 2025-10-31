@@ -44,10 +44,12 @@ export class Upload extends LitElement {
   @state() _completed = false;
   @state() _dragging = false;
   @state() _error: UploadErrorDetail | null = null;
+  @state() private _hasErrorSlot = false;
   private embedChannel: EmbedChannel;
   @query('#mave-upload-input') private fileInput?: HTMLInputElement;
   private playableEmitted = false;
   private currentEmbed?: string;
+  private slotObserver?: MutationObserver;
 
   private static readonly SUPPORTED_VIDEO_EXTENSIONS = new Set([
     '3g2',
@@ -223,6 +225,18 @@ export class Upload extends LitElement {
     this.addEventListener('keydown', this.handleActionKeyDown);
 
     this.languageController.locale = this.locale || 'en';
+    this.updateHasErrorSlot();
+    if (typeof MutationObserver !== 'undefined') {
+      this.slotObserver = new MutationObserver(() => {
+        this.updateHasErrorSlot();
+      });
+      this.slotObserver.observe(this, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['slot'],
+      });
+    }
 
     this.embedChannel = Data.connect(this.token);
     if (this.embedChannel.upload_id) {
@@ -259,6 +273,8 @@ export class Upload extends LitElement {
     // Data.disconnect(this.embedChannel);
     this.removeEventListener('click', this.handleActionClick);
     this.removeEventListener('keydown', this.handleActionKeyDown);
+    this.slotObserver?.disconnect();
+    this.slotObserver = undefined;
     super.disconnectedCallback();
   }
 
@@ -422,6 +438,13 @@ export class Upload extends LitElement {
       rendition.container === 'hls' &&
       rendition?.type === 'video'
     );
+  }
+
+  private updateHasErrorSlot(_event?: Event) {
+    const hasSlot = !!this.querySelector('[slot="error"]');
+    if (this._hasErrorSlot !== hasSlot) {
+      this._hasErrorSlot = hasSlot;
+    }
   }
 
   render() {
@@ -670,15 +693,9 @@ export class Upload extends LitElement {
   }
 
   renderError() {
-    const buttonColor = this.color ? this.color : '#1997FF';
-    const radius = this.radius ? this.radius : '16px';
-    const fileName = this._error?.file?.name;
-    const message =
-      this._error?.message ??
-      (this._error?.reason === 'unsupported type'
-        ? msg('please choose a video or audio file in a supported format.')
-        : msg('something went wrong. please try again.'));
-    const showFileName = this._error?.reason === 'unsupported type' && fileName;
+    if (!this._hasErrorSlot) {
+      return this.renderInitial();
+    }
     return html`<form
       class="state state--error"
       style=${styleMap({ ...this.styleOpacity(), ...this.styleFont() })}
@@ -688,27 +705,7 @@ export class Upload extends LitElement {
       @dragleave=${this.handleDragLeave}
       @drop=${this.handleDrop}
     >
-      <slot name="error">
-        <div class="upload-default-error" role="alert">
-          ${showFileName
-            ? html`<div class="upload-default-error-filename">${fileName}</div>`
-            : null}
-          <div class="upload-default-error-title">
-            ${this._error?.reason === 'unsupported type'
-              ? msg('unsupported file type')
-              : msg('upload failed')}
-          </div>
-          <div class="upload-default-error-subtitle">${message}</div>
-          <button
-            type="button"
-            data-mave-upload-select
-            class="upload-default-button"
-            style=${styleMap({ background: buttonColor, borderRadius: radius })}
-          >
-            ${msg('try again')}
-          </button>
-        </div>
-      </slot>
+      <slot name="error" @slotchange=${this.updateHasErrorSlot}></slot>
       <input
         id="mave-upload-input"
         .disabled=${!this._upload_id}
