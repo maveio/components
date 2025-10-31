@@ -3,7 +3,16 @@
 import { createComponent } from '@lit/react';
 import React from 'react';
 
+function ensureDefined(tag: string, element: CustomElementConstructor) {
+  if (typeof window === 'undefined') return;
+  if (!window.customElements) return;
+  if (!window.customElements.get(tag)) {
+    window.customElements.define(tag, element);
+  }
+}
+
 import { Clip as ClipComponent } from './components/clip.js';
+ensureDefined('mave-clip', ClipComponent);
 export const Clip = createComponent({
   tagName: 'mave-clip',
   elementClass: ClipComponent,
@@ -11,6 +20,7 @@ export const Clip = createComponent({
 });
 
 import { List as ListComponent } from './components/list.js';
+ensureDefined('mave-list', ListComponent);
 export const List = createComponent({
   tagName: 'mave-list',
   elementClass: ListComponent,
@@ -18,6 +28,7 @@ export const List = createComponent({
 });
 
 import { Player as PlayerComponent } from './components/player.js';
+ensureDefined('mave-player', PlayerComponent);
 export const Player = createComponent({
   tagName: 'mave-player',
   elementClass: PlayerComponent,
@@ -25,6 +36,7 @@ export const Player = createComponent({
 });
 
 import { Upload as UploadComponent } from './components/upload.js';
+ensureDefined('mave-upload', UploadComponent);
 export const Upload = createComponent({
   tagName: 'mave-upload',
   elementClass: UploadComponent,
@@ -32,6 +44,7 @@ export const Upload = createComponent({
 });
 
 import { Files as FilesComponent } from './components/files.js';
+ensureDefined('mave-files', FilesComponent);
 export const Files = createComponent({
   tagName: 'mave-files',
   elementClass: FilesComponent,
@@ -39,6 +52,7 @@ export const Files = createComponent({
 });
 
 import { Image as ImageComponent } from './components/img.js';
+ensureDefined('mave-img', ImageComponent);
 export const Image = createComponent({
   tagName: 'mave-img',
   elementClass: ImageComponent,
@@ -46,6 +60,7 @@ export const Image = createComponent({
 });
 
 import { Text as TextComponent } from './components/text.js';
+ensureDefined('mave-text', TextComponent);
 export const Text = createComponent({
   tagName: 'mave-text',
   elementClass: TextComponent,
@@ -53,6 +68,7 @@ export const Text = createComponent({
 });
 
 import { Pop as PopComponent } from './components/pop.js';
+ensureDefined('mave-pop', PopComponent);
 export const Pop = createComponent({
   tagName: 'mave-pop',
   elementClass: PopComponent,
