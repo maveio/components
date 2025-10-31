@@ -269,8 +269,7 @@ export class Upload extends LitElement {
   }
 
   disconnectedCallback() {
-    // TODO: implement a disconnect method
-    // Data.disconnect(this.embedChannel);
+    Data.disconnect(this.embedChannel);
     this.removeEventListener('click', this.handleActionClick);
     this.removeEventListener('keydown', this.handleActionKeyDown);
     this.slotObserver?.disconnect();
