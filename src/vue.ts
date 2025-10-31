@@ -1,4 +1,4 @@
-import type { App, SetupContext, Slots, VNode } from 'vue';
+import type { App, Ref, SetupContext, Slots, VNode } from 'vue';
 import { cloneVNode, defineComponent, h, onMounted, onUpdated, ref } from 'vue';
 
 import { Clip as ClipElement } from './components/clip.js';
@@ -104,6 +104,123 @@ function normalizeAttributes(attrs: Record<string, unknown>) {
   return forwarded;
 }
 
+type ElementProxy<T extends HTMLElement> = {
+  element: Ref<T | null>;
+} & T;
+
+type ElementRecord = Record<string, unknown> & { [key: symbol]: unknown };
+
+function createElementProxy<T extends HTMLElement>(elementRef: Ref<T | null>) {
+  const pendingProperties = new Map<string | symbol, unknown>();
+
+  const proxyTarget = { element: elementRef } as ElementProxy<T>;
+
+  const proxy = new Proxy(proxyTarget, {
+    get(_target, property) {
+      if (property === 'element') {
+        return elementRef;
+      }
+
+      const element = elementRef.value;
+      if (element && property in element) {
+        const record = element as unknown as ElementRecord;
+        const value = record[property as keyof ElementRecord];
+        if (typeof value === 'function') {
+          return value.bind(element);
+        }
+        return value;
+      }
+
+      if (pendingProperties.has(property)) {
+        return pendingProperties.get(property);
+      }
+
+      return undefined;
+    },
+    set(_target, property, value) {
+      const element = elementRef.value;
+      if (element) {
+        const record = element as unknown as ElementRecord;
+        record[property as keyof ElementRecord] = value;
+      } else {
+        pendingProperties.set(property, value);
+      }
+      return true;
+    },
+    has(_target, property) {
+      if (property === 'element') {
+        return true;
+      }
+      const element = elementRef.value;
+      if (element && property in element) {
+        return true;
+      }
+      return pendingProperties.has(property);
+    },
+    ownKeys() {
+      const element = elementRef.value;
+      const elementKeys = element
+        ? (Reflect.ownKeys(element) as Array<string | symbol>)
+        : [];
+      const pendingKeys = Array.from(pendingProperties.keys());
+      return Array.from(
+        new Set<string | symbol>(['element', ...elementKeys, ...pendingKeys]),
+      );
+    },
+    getOwnPropertyDescriptor(_target, property) {
+      if (property === 'element') {
+        return {
+          configurable: true,
+          enumerable: true,
+          value: elementRef,
+          writable: false,
+        };
+      }
+
+      const element = elementRef.value;
+      if (element) {
+        const descriptor = Object.getOwnPropertyDescriptor(element, property);
+        if (descriptor) {
+          return descriptor;
+        }
+        const record = element as unknown as ElementRecord;
+        const value = record[property as keyof ElementRecord];
+        if (value !== undefined) {
+          return {
+            configurable: true,
+            enumerable: typeof property === 'string',
+            writable: true,
+            value,
+          };
+        }
+      }
+
+      if (pendingProperties.has(property)) {
+        return {
+          configurable: true,
+          enumerable: typeof property === 'string',
+          writable: true,
+          value: pendingProperties.get(property),
+        };
+      }
+
+      return undefined;
+    },
+  });
+
+  const syncPendingProperties = () => {
+    const element = elementRef.value;
+    if (!element || pendingProperties.size === 0) return;
+    const record = element as unknown as ElementRecord;
+    for (const [key, value] of pendingProperties) {
+      record[key as keyof ElementRecord] = value;
+    }
+    pendingProperties.clear();
+  };
+
+  return { proxy: proxy as unknown as ElementProxy<T>, syncPendingProperties };
+}
+
 function createVueWrapper(
   componentName: string,
   tag: string,
@@ -115,14 +232,19 @@ function createVueWrapper(
     name: `Mave${componentName}`,
     inheritAttrs: false,
     setup(_props: Record<string, unknown>, { attrs, slots, expose }: SetupContext) {
-      const elementRef = ref<HTMLElement | null>(null);
-      expose({ element: elementRef });
+      type ElementInstance = InstanceType<typeof element>;
+      const elementRef = ref<ElementInstance | null>(null);
+      const { proxy: elementProxy, syncPendingProperties } =
+        createElementProxy<ElementInstance>(elementRef);
+      expose(elementProxy);
 
       onMounted(() => {
+        syncPendingProperties();
         syncSlotAttributes(elementRef.value);
       });
 
       onUpdated(() => {
+        syncPendingProperties();
         syncSlotAttributes(elementRef.value);
       });
 

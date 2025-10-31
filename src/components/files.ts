@@ -244,7 +244,9 @@ export class Files extends MaveElement {
 
   #formatMegabytes(bytes: number): string {
     const megabytes = bytes / 1_000_000;
-    return megabytes >= 10 ? `${megabytes.toFixed(0)} MB` : `${megabytes.toFixed(1)} MB`;
+    if (megabytes < 10) return `${megabytes.toFixed(1)} MB`;
+    const hasFraction = megabytes % 1 !== 0;
+    return `${megabytes.toFixed(hasFraction ? 1 : 0)} MB`;
   }
 
   #buildAssetUrl(filename: string): string {
