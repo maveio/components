@@ -551,6 +551,14 @@ export class Upload extends LitElement {
       return files.some((file) => this.isSupportedFile(file));
     }
 
+    const isSafari =
+      typeof navigator !== 'undefined' &&
+      /^((?!chrome|crios|chromium|android).)*safari/i.test(navigator.userAgent);
+
+    if (isSafari) {
+      return true;
+    }
+
     if (dataTransfer.items && dataTransfer.items.length) {
       for (const item of dataTransfer.items) {
         if (item.kind !== 'file') {
