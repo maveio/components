@@ -285,21 +285,7 @@ export class Upload extends LitElement {
       return;
     }
 
-    const files: File[] = [];
-    if (dataTransfer.items) {
-      for (const item of dataTransfer.items) {
-        if (item.kind === 'file') {
-          const file = item.getAsFile();
-          if (file) {
-            files.push(file);
-          }
-        }
-      }
-    } else if (dataTransfer.files) {
-      for (const file of dataTransfer.files) {
-        files.push(file);
-      }
-    }
+    const files = this.collectFilesFromDataTransfer(dataTransfer);
 
     if (!files.length) {
       return;
@@ -533,17 +519,79 @@ export class Upload extends LitElement {
     event.preventDefault();
   }
 
+  collectFilesFromDataTransfer(dataTransfer: DataTransfer): File[] {
+    const files: File[] = [];
+    if (dataTransfer.items && dataTransfer.items.length) {
+      for (const item of dataTransfer.items) {
+        if (item.kind !== 'file') {
+          continue;
+        }
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+      if (files.length) {
+        return files;
+      }
+    }
+
+    if (dataTransfer.files && dataTransfer.files.length) {
+      for (const file of dataTransfer.files) {
+        files.push(file);
+      }
+    }
+
+    return files;
+  }
+
+  hasSupportedFiles(dataTransfer: DataTransfer): boolean {
+    const files = this.collectFilesFromDataTransfer(dataTransfer);
+    if (files.length) {
+      return files.some((file) => this.isSupportedFile(file));
+    }
+
+    if (dataTransfer.items && dataTransfer.items.length) {
+      for (const item of dataTransfer.items) {
+        if (item.kind !== 'file') {
+          continue;
+        }
+        const type = (item.type || '').toLowerCase();
+        if (type.startsWith('video/') || type.startsWith('audio/')) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   handleDragEnter(event: DragEvent) {
     event.preventDefault();
-    this._dragging = true;
+
+    const dataTransfer = event.dataTransfer;
+    if (!dataTransfer) {
+      this._dragging = false;
+      return;
+    }
+
+    const hasSupported = this.hasSupportedFiles(dataTransfer);
+    dataTransfer.dropEffect = hasSupported ? 'copy' : 'none';
+    this._dragging = hasSupported;
   }
 
   handleDragOver(event: DragEvent) {
     event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'copy';
+
+    const dataTransfer = event.dataTransfer;
+    if (!dataTransfer) {
+      this._dragging = false;
+      return;
     }
-    this._dragging = true;
+
+    const hasSupported = this.hasSupportedFiles(dataTransfer);
+    dataTransfer.dropEffect = hasSupported ? 'copy' : 'none';
+    this._dragging = hasSupported;
   }
 
   handleDragLeave(event: DragEvent) {
