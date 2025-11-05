@@ -141,8 +141,9 @@ export class Player extends MaveElement {
 
   private _poster?: string;
   @property()
-  get poster(): string {
-    if (!this.embed || !this._embedObj) return '';
+  get poster(): string | null {
+    if (!this.embed || !this._embedObj || !this.#getImageRendition('thumbnail', 'jpg'))
+      return null;
 
     if (this._poster && this._poster == 'custom') {
       return this.embedController.embedFile(this.#posterRendition('custom_thumbnail'));
@@ -416,19 +417,22 @@ export class Player extends MaveElement {
     }
   }
 
-  #posterRendition(type: 'poster' | 'thumbnail' | 'custom_thumbnail') {
-    const getImage = (container: 'webp' | 'avif' | 'jpg') => {
-      return (
-        this._embedObj.poster &&
-        this._embedObj.poster.renditions &&
-        this._embedObj.poster.renditions.find(
-          (rendition) => rendition.container === container && rendition.type === type,
-        )
-      );
-    };
+  #getImageRendition(
+    type: 'poster' | 'thumbnail' | 'custom_thumbnail',
+    container: 'webp' | 'avif' | 'jpg',
+  ) {
+    return (
+      this._embedObj.poster &&
+      this._embedObj.poster.renditions &&
+      this._embedObj.poster.renditions.find(
+        (rendition) => rendition.container === container && rendition.type === type,
+      )
+    );
+  }
 
-    const jpg = getImage('jpg');
+  #posterRendition(type: 'poster' | 'thumbnail' | 'custom_thumbnail') {
     const t = type == 'custom_thumbnail' ? 'thumbnail' : type;
+    const jpg = this.#getImageRendition(t, 'jpg');
 
     if (jpg) {
       // get avif first, then webp, then jpg
