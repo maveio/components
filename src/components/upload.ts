@@ -383,22 +383,28 @@ export class Upload extends LitElement {
 
   completed(data: { embed: string }) {
     this.currentEmbed = data?.embed;
-    if (!this.disableCompletion) this._completed = true;
-    this.dispatchEvent(
-      new CustomEvent('completed', { bubbles: true, composed: true, detail: data }),
-    );
+    // small delay to allow data to propagate
+    setTimeout(() => {
+      if (!this.disableCompletion) this._completed = true;
+      this.dispatchEvent(
+        new CustomEvent('completed', { bubbles: true, composed: true, detail: data }),
+      );
+    }, 250);
   }
 
   rendition(data: any) {
     if (!this.playableEmitted && this.isPlayableRendition(data)) {
       this.playableEmitted = true;
-      this.dispatchEvent(
-        new CustomEvent('playable', {
-          bubbles: true,
-          composed: true,
-          detail: { embed: this.currentEmbed },
-        }),
-      );
+      // small delay to allow data to propagate
+      setTimeout(() => {
+        this.dispatchEvent(
+          new CustomEvent('playable', {
+            bubbles: true,
+            composed: true,
+            detail: { embed: this.currentEmbed },
+          }),
+        );
+      }, 250);
     }
     this.dispatchEvent(
       new CustomEvent('rendition', { bubbles: true, composed: true, detail: data }),
