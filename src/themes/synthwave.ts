@@ -133,6 +133,18 @@ export function build(name, LitElement, html, css) {
         transform: scale(1.3);
       }
 
+      media-captions-menu-button:hover,
+      media-audio-track-menu-button:hover,
+      mave-audio-track-menu-button:hover {
+        transform: scale(1);
+      }
+
+      media-captions-menu-button[aria-expanded='true'],
+      media-audio-track-menu-button[aria-expanded='true'],
+      mave-audio-track-menu-button[aria-expanded='true'] {
+        transform: scale(1);
+      }
+
       media-play-button div,
       media-fullscreen-button div,
       media-mute-button div {
@@ -155,6 +167,19 @@ export function build(name, LitElement, html, css) {
       mave-audio-track-menu-button svg {
         width: 23px;
         height: 23px;
+        transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      media-captions-menu-button:hover svg,
+      media-audio-track-menu-button:hover svg,
+      mave-audio-track-menu-button:hover svg {
+        transform: scale(1.3);
+      }
+
+      media-captions-menu-button[aria-expanded='true'] svg,
+      media-audio-track-menu-button[aria-expanded='true'] svg,
+      mave-audio-track-menu-button[aria-expanded='true'] svg {
+        transform: scale(1);
       }
 
       media-captions-menu {
