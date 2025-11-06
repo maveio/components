@@ -97,7 +97,9 @@ export function build(name, LitElement, html, css) {
       media-play-button,
       media-fullscreen-button,
       media-mute-button,
-      media-captions-menu-button {
+      media-captions-menu-button,
+      media-audio-track-menu-button,
+      mave-audio-track-menu-button {
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -107,7 +109,9 @@ export function build(name, LitElement, html, css) {
       media-play-button:hover,
       media-fullscreen-button:hover,
       media-mute-button:hover,
-      media-captions-menu-button:hover {
+      media-captions-menu-button:hover,
+      media-audio-track-menu-button:hover,
+      mave-audio-track-menu-button:hover {
         --media-primary-color: rgba(255, 255, 255, 1);
         transform: scale(1.3);
       }
@@ -119,7 +123,9 @@ export function build(name, LitElement, html, css) {
         padding-top: 7px;
       }
 
-      media-captions-menu-button div {
+      media-captions-menu-button div,
+      media-audio-track-menu-button div,
+      mave-audio-track-menu-button div {
         width: 26px;
         padding-top: 6px;
       }
@@ -127,7 +133,9 @@ export function build(name, LitElement, html, css) {
       media-play-button svg,
       media-captions-menu-button svg,
       media-fullscreen-button svg,
-      media-mute-button svg {
+      media-mute-button svg,
+      media-audio-track-menu-button svg,
+      mave-audio-track-menu-button svg {
         width: 23px;
         height: 23px;
       }
@@ -160,6 +168,32 @@ export function build(name, LitElement, html, css) {
 
       media-captions-menu::part(menu-item):hover {
         background: rgba(0, 0, 0, 0.15);
+      }
+
+      media-audio-track-menu,
+      mave-audio-track-menu {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        min-width: 120px;
+        transform-origin: bottom right;
+        background: var(--primary-color, rgba(0, 0, 0, 0.5));
+        border-radius: 8px;
+        backdrop-filter: blur(12px);
+      }
+
+      media-audio-track-menu::part(menu-item):hover,
+      mave-audio-track-menu::part(menu-item):hover {
+        background: rgba(0, 0, 0, 0.15);
+      }
+
+      media-audio-track-menu[hidden],
+      mave-audio-track-menu[hidden] {
+        display: none;
+      }
+
+      media-audio-track-menu-button,
+      mave-audio-track-menu-button {
+        display: var(--media-audio-track-menu-button-display, none);
       }
 
       media-controller[mediapaused] div[slot='centered-chrome'] media-play-button {
@@ -379,6 +413,28 @@ export function build(name, LitElement, html, css) {
                 </div>
               </media-captions-menu-button>
               <media-captions-menu hidden anchor="auto"></media-captions-menu>
+              <mave-audio-track-menu
+                hidden
+                anchor="mave-audio-tracks"
+              ></mave-audio-track-menu>
+              <mave-audio-track-menu-button id="mave-audio-tracks">
+                <div slot="icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 22 22"
+                    fill="none"
+                    stroke="#fff"
+                    stroke-width="1.1"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="9"></circle>
+                    <path d="M8 15v-5"></path>
+                    <path d="M11 17V8"></path>
+                    <path d="M14 15v-3"></path>
+                  </svg>
+                </div>
+              </mave-audio-track-menu-button>
               <media-mute-button>
                 <div slot="high">
                   <svg
