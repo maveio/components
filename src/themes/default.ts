@@ -114,11 +114,6 @@ export function build(name, LitElement, html, css) {
         transition-duration: 100ms;
       }
 
-      .small-button:hover {
-        opacity: 1;
-        transform: scale(1.25);
-      }
-
       .small-button svg {
         position: absolute;
         overflow: hidden;
@@ -127,7 +122,21 @@ export function build(name, LitElement, html, css) {
         margin: 0 !important;
         padding: 0 !important;
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+        transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
         --media-icon-color: transparent;
+      }
+
+      .small-button:hover {
+        opacity: 1;
+      }
+
+      .small-button:hover svg {
+        transform: scale(1.25);
+      }
+
+      .small-button[aria-expanded='true'],
+      .small-button[aria-expanded='true'] svg {
+        transform: scale(1);
       }
 
       media-play-button.small-button svg {
