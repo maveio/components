@@ -72,28 +72,33 @@ export class Player extends MaveElement {
     return this._loop;
   }
 
-  private _controls: string[] | string = [
+  private _controls: string[] = [
     'play',
     'time',
     'seek',
     'volume',
-    'audio-tracks',
+    'audiotracks',
     'fullscreen',
     'subtitles',
   ];
   @property()
-  get controls(): string[] | string {
+  get controls(): string[] {
     return this._controls;
   }
   set controls(value: string | string[]) {
     if (typeof value === 'string') {
       this._controls = value.split(' ');
-    } else {
+    } else if (Array.isArray(value)) {
       this._controls = value;
+    } else {
+      this._controls = [];
     }
+    this.requestUpdate('controls');
   }
 
-  _previousControls?: string[] | string;
+  _previousControls?: string[];
+
+  @property({ attribute: 'audiotracks' }) audioTracks?: 'auto' | 'on' | 'off';
 
   private _cache: boolean;
   @property()
@@ -1158,10 +1163,20 @@ export class Player extends MaveElement {
 
     const audioTrackCount = this._audioTrackCount ?? 0;
     const audioTracksControlEnabled =
-      this.controls.includes('audio-tracks') || this.controls.includes('full');
+      this.controls.includes('audiotracks') || this.controls.includes('full');
 
-    style['--media-audio-track-menu-button-display'] =
-      audioTrackCount > 1 && audioTracksControlEnabled ? 'flex' : 'none';
+    const audioTracksPreference = this.audioTracks ?? 'auto';
+    let audioTracksVisible = audioTracksControlEnabled && audioTrackCount > 1;
+
+    if (audioTracksPreference === 'off') {
+      audioTracksVisible = false;
+    } else if (audioTracksPreference === 'on') {
+      audioTracksVisible = audioTracksControlEnabled && audioTrackCount > 0;
+    }
+
+    style['--media-audio-track-menu-button-display'] = audioTracksVisible
+      ? 'flex'
+      : 'none';
 
     return styleMap(style);
   }
