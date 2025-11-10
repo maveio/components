@@ -60,6 +60,8 @@ export type Embed = {
     size: number;
     duration: number;
     language: string;
+    status?: 'waiting' | 'playable' | 'uploading' | 'preparing' | 'ready' | 'errored';
+    ready?: boolean;
     sources: {
       mp4: {
         '480p': string;
