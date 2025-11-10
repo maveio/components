@@ -21,9 +21,11 @@ import { Config } from '../config';
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
+import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
 import { videoEvents } from '../utils/video_events';
 
+@localized()
 export class Player extends MaveElement {
   private _embedId: string;
   @property()
@@ -52,6 +54,8 @@ export class Player extends MaveElement {
       this.embedController.token = this._token;
     }
   }
+
+  @property() locale?: string;
 
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
 
@@ -314,6 +318,7 @@ export class Player extends MaveElement {
 
   private _queue: { (): void }[] = [];
   private _processingRefreshHandle?: number;
+  private languageController = new LanguageController(this);
 
   private _currentTrackLanguage: string;
 
@@ -439,12 +444,20 @@ export class Player extends MaveElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    this.languageController.locale = this.locale || 'en';
     this.loadTheme();
 
     this.addEventListener(
       'mave:video_element_ready',
       this.#applySubtitleStyles.bind(this),
     );
+  }
+
+  requestUpdate(name?: PropertyKey, oldValue?: unknown) {
+    if (name === 'locale') {
+      this.languageController.locale = this.locale || 'en';
+    }
+    super.requestUpdate(name, oldValue);
   }
 
   #applySubtitleStyles() {
@@ -578,18 +591,17 @@ export class Player extends MaveElement {
   }
 
   #processingMessage(status?: Embed['video']['status']) {
-    switch (status) {
-      case 'waiting':
-        return 'Waiting for video upload…';
-      case 'uploading':
-      case 'preparing':
-      case 'playable':
-        return 'Processing video…';
-      case 'errored':
-        return 'Video failed to process';
-      default:
-        return 'Preparing your video…';
-    }
+    const messages = {
+      waiting: () => msg('waiting for video upload...'),
+      uploading: () => msg('processing video...'),
+      preparing: () => msg('processing video...'),
+      playable: () => msg('processing video...'),
+      ready: () => msg('preparing your video...'),
+      errored: () => msg('video failed to process'),
+      default: () => msg('preparing your video...'),
+    };
+
+    return (status && messages[status] ? messages[status]() : null) ?? messages.default();
   }
 
   #destroyHlsInstance() {
@@ -1472,11 +1484,13 @@ export class Player extends MaveElement {
   }
 
   #renderPendingPlaceholder() {
-    return this.#renderPlaceholder('Loading video…');
+    return this.#renderPlaceholder(msg('loading video...'));
   }
 
   #renderErrorPlaceholder() {
-    return this.#renderPlaceholder('Unable to load this video', { showSpinner: false });
+    return this.#renderPlaceholder(msg('unable to load this video'), {
+      showSpinner: false,
+    });
   }
 
   #renderVideoTemplate() {
@@ -1507,11 +1521,6 @@ export class Player extends MaveElement {
   }
 
   get #srcPath() {
-    const duration = this._embedObj?.video?.duration;
-    if (typeof duration === 'number' && duration <= 0) {
-      return this._embedObj.video.original;
-    }
-
     const highestRendition = this.#highestRendition('mp4');
     const src = highestRendition
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)

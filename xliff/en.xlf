@@ -18,22 +18,6 @@
   <source>select file</source>
   <target>Select file</target>
 </trans-unit>
-<trans-unit id="sf12a5103628a9670">
-  <source>please choose a video or audio file in a supported format.</source>
-  <target>Please choose a video or audio file in a supported format.</target>
-</trans-unit>
-<trans-unit id="sbe89d2c461986bef">
-  <source>something went wrong. please try again.</source>
-  <target>Something went wrong. Please try again.</target>
-</trans-unit>
-<trans-unit id="s62a293bba74d7d29">
-  <source>upload failed</source>
-  <target>Upload failed</target>
-</trans-unit>
-<trans-unit id="s8030578146a104ba">
-  <source>try again</source>
-  <target>Try again</target>
-</trans-unit>
 <trans-unit id="sc5fcbf75e4030312">
   <source>uploading...</source>
   <target>Uploading...</target>
@@ -45,6 +29,30 @@
 <trans-unit id="sdc51fb6761fd6e91">
   <source>done</source>
   <target>Done</target>
+</trans-unit>
+<trans-unit id="s72727be0c6714699">
+  <source>waiting for video upload...</source>
+  <target>waiting for video upload...</target>
+</trans-unit>
+<trans-unit id="s793e20d967a669bd">
+  <source>processing video...</source>
+  <target>Processing video...</target>
+</trans-unit>
+<trans-unit id="s7c1686227ffb99e9">
+  <source>preparing your video...</source>
+  <target>Preparing your video...</target>
+</trans-unit>
+<trans-unit id="sea5f88da17c5f8af">
+  <source>video failed to process</source>
+  <target>Video failed to process</target>
+</trans-unit>
+<trans-unit id="s3468c5fda66950d2">
+  <source>loading video...</source>
+  <target>Loading video...</target>
+</trans-unit>
+<trans-unit id="scdf6717ee939dc80">
+  <source>unable to load this video</source>
+  <target>Unable to load this video</target>
 </trans-unit>
 </body>
 </file>
