@@ -305,6 +305,9 @@ export class Player extends MaveElement {
 
   private _queue: { (): void }[] = [];
   private _processingRefreshHandle?: number;
+  private _statusProcessing = false;
+  private _sourceProcessing = false;
+  private _sourceCheckToken?: symbol;
 
   private _currentTrackLanguage: string;
 
@@ -458,6 +461,7 @@ export class Player extends MaveElement {
     this._themeMutationObserver?.disconnect();
     this._themeMutationObserver = undefined;
     this._themeMutationObserverRoot = undefined;
+    this._sourceCheckToken = undefined;
   }
 
   loadTheme() {
@@ -471,7 +475,7 @@ export class Player extends MaveElement {
     }
   }
 
-  #isVideoReady(embed: Embed | undefined = this._embedObj) {
+  #isManifestReady(embed: Embed | undefined = this._embedObj) {
     if (!embed) return false;
     if (typeof embed.video?.ready === 'boolean') {
       return embed.video.ready;
@@ -487,15 +491,30 @@ export class Player extends MaveElement {
   }
 
   #applyProcessingState(embed: Embed) {
-    const shouldProcess = !this.#isVideoReady(embed);
-    if (this._isProcessing === shouldProcess) {
-      if (shouldProcess) this.#scheduleProcessingRefresh();
-      return;
+    this._statusProcessing = !this.#isManifestReady(embed);
+    if (this._statusProcessing) {
+      this._sourceCheckToken = undefined;
+      this.#setSourceProcessing(false);
     }
+    this.#updateProcessingState();
+  }
 
+  #setSourceProcessing(value: boolean) {
+    if (this._sourceProcessing === value) return;
+    this._sourceProcessing = value;
+    this.#updateProcessingState();
+  }
+
+  #updateProcessingState() {
+    const shouldProcess = this._statusProcessing || this._sourceProcessing;
+    const wasProcessing = this._isProcessing;
     this._isProcessing = shouldProcess;
+
     if (shouldProcess) {
       this.#scheduleProcessingRefresh();
+      if (!wasProcessing) {
+        this.#teardownPlayback();
+      }
     } else {
       this.#clearProcessingRefresh();
     }
@@ -531,6 +550,129 @@ export class Player extends MaveElement {
         return 'Video failed to process';
       default:
         return 'Preparing your video…';
+    }
+  }
+
+  async #verifySourceAvailability(embed: Embed) {
+    if (typeof window === 'undefined' || typeof fetch !== 'function') {
+      this.#setSourceProcessing(false);
+      return;
+    }
+
+    if (!this.#isManifestReady(embed)) {
+      this._sourceCheckToken = undefined;
+      this.#setSourceProcessing(false);
+      return;
+    }
+
+    const urls = this.#candidateSources();
+    if (!urls.length) {
+      this.#setSourceProcessing(true);
+      return;
+    }
+
+    const token = Symbol();
+    this._sourceCheckToken = token;
+
+    for (const url of urls) {
+      const accessible = await this.#checkUrlAccessible(url);
+      if (this._sourceCheckToken !== token) return;
+      if (accessible) {
+        this.#setSourceProcessing(false);
+        return;
+      }
+    }
+
+    if (this._sourceCheckToken !== token) return;
+    this.#setSourceProcessing(true);
+  }
+
+  #candidateSources() {
+    if (!this._embedObj) return [];
+
+    const urls: string[] = [];
+    const hls = this.#hlsPath;
+    if (hls) urls.push(hls);
+
+    const src = this.#srcPath;
+    if (src) {
+      if (!urls.includes(src)) {
+        urls.push(src);
+      }
+    }
+
+    return urls;
+  }
+
+  async #checkUrlAccessible(url: string) {
+    try {
+      const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+      if (headResponse.ok) {
+        return true;
+      }
+
+      if (![405, 501].includes(headResponse.status)) {
+        return false;
+      }
+    } catch {
+      // continue to GET fallback
+    }
+
+    try {
+      const headers: Record<string, string> = {};
+      if (this.#shouldUseRangeRequest(url)) {
+        headers.Range = 'bytes=0-0';
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+        headers,
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  #shouldUseRangeRequest(url: string) {
+    return /\.(mp4|mov|m4v)(\?|$)/i.test(url);
+  }
+
+  #destroyHlsInstance() {
+    if (!this.hls) return;
+    try {
+      this.hls.destroy();
+    } catch {
+      // no-op
+    }
+    this.hls = undefined;
+  }
+
+  #teardownPlayback() {
+    this._metricsInstance?.demonitor();
+    this._metricsInstance = undefined;
+
+    this.#destroyHlsInstance();
+
+    this._cleanupHlsAudioTracks?.();
+    this._cleanupHlsAudioTracks = undefined;
+
+    if (this._pendingAudioTrackSetup != null) {
+      cancelAnimationFrame(this._pendingAudioTrackSetup);
+      this._pendingAudioTrackSetup = undefined;
+    }
+
+    this._hlsAudioTrackIdMap.clear();
+    this._hlsAudioTracks = [];
+    this._currentAudioTrackMenu = undefined;
+
+    if (this._videoElement) {
+      this._videoElement.pause();
+      this._videoElement.removeAttribute('src');
+      this._videoElement.load();
+      this._videoElement = undefined;
     }
   }
 
@@ -701,6 +843,8 @@ export class Player extends MaveElement {
       };
 
       const isIOS = /iPhone|iPad/.test(navigator.userAgent);
+
+      this.#destroyHlsInstance();
 
       if (Hls.isSupported() && this.#hlsPath && !isIOS) {
         this._cleanupHlsAudioTracks?.();
@@ -1392,7 +1536,7 @@ export class Player extends MaveElement {
   }
 
   get #hlsPath() {
-    if (!this.#isVideoReady()) return;
+    if (!this.#isManifestReady()) return;
     const highestRendition = this.#highestRendition('hls');
     if (highestRendition) {
       const params = new URLSearchParams();
@@ -1403,7 +1547,7 @@ export class Player extends MaveElement {
   }
 
   get #srcPath() {
-    if (!this.#isVideoReady()) return;
+    if (!this.#isManifestReady()) return;
     const highestRendition = this.#highestRendition('mp4');
     const src = highestRendition
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
@@ -1485,6 +1629,7 @@ export class Player extends MaveElement {
             const embedData = data as Embed;
             this._embedObj = embedData;
             this.updateEmbed(embedData);
+            void this.#verifySourceAvailability(embedData);
 
             return this._isProcessing
               ? this.#renderProcessingPlaceholder(embedData.video?.status)
