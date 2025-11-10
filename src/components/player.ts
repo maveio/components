@@ -579,10 +579,9 @@ export class Player extends MaveElement {
 
   #processingMessage(status?: Embed['video']['status']) {
     switch (status) {
-      case 'uploading':
-        return 'Uploading video…';
       case 'waiting':
         return 'Waiting for video upload…';
+      case 'uploading':
       case 'preparing':
       case 'playable':
         return 'Processing video…';
