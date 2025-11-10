@@ -10,7 +10,7 @@ import type {
   MediaPlaylist,
 } from 'hls.js';
 import Hls from 'hls.js';
-import { css, html } from 'lit';
+import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
@@ -183,12 +183,14 @@ export class Player extends MaveElement {
   }
 
   @state() popped = false;
+  @state() private _isProcessing = false;
 
   @query("slot[name='end-screen']") endScreenElement: HTMLElement;
   @query("slot[name='start-screen']") startScreenElement: HTMLElement;
 
   private _startedPlaying = false;
   private _themeLoaded: string;
+  private static readonly PROCESSING_REFRESH_INTERVAL = 5000;
 
   private _subtitlesText: HTMLElement;
   private _audioTrackCount = 0;
@@ -243,6 +245,49 @@ export class Player extends MaveElement {
     slot[name='end-screen'] {
       display: none;
     }
+
+    .processing-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .processing-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 32px 16px;
+      text-align: center;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: inherit;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .processing-state__spinner {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #fff;
+      animation: processing-spin 1s linear infinite;
+    }
+
+    .processing-state__text {
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    @keyframes processing-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   `;
 
   private _intersectionObserver = new IntersectionController(this, {
@@ -259,6 +304,7 @@ export class Player extends MaveElement {
   private _intersected = false;
 
   private _queue: { (): void }[] = [];
+  private _processingRefreshHandle?: number;
 
   private _currentTrackLanguage: string;
 
@@ -358,10 +404,12 @@ export class Player extends MaveElement {
   }
 
   updateStylePoster() {
-    this.style.setProperty(
-      'background',
-      `center / contain no-repeat url(${this.poster})`,
-    );
+    if (this.poster) {
+      this.style.setProperty(
+        'background',
+        `center / contain no-repeat url(${this.poster})`,
+      );
+    }
   }
 
   #xhrHLSSetup(xhr: XMLHttpRequest, url: string) {
@@ -397,6 +445,7 @@ export class Player extends MaveElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._metricsInstance?.demonitor();
+    this.#clearProcessingRefresh();
     this._cleanupHlsAudioTracks?.();
     this._cleanupHlsAudioTracks = undefined;
     if (this._pendingAudioTrackSetup != null) {
@@ -419,6 +468,69 @@ export class Player extends MaveElement {
         ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
       }
       this._themeLoaded = ThemeLoader.getTheme();
+    }
+  }
+
+  #isVideoReady(embed: Embed | undefined = this._embedObj) {
+    if (!embed) return false;
+    if (typeof embed.video?.ready === 'boolean') {
+      return embed.video.ready;
+    }
+
+    const status = embed.video?.status;
+    if (typeof status === 'string') {
+      return status === 'ready' || status === 'playable';
+    }
+
+    // Older manifests did not expose status/ready. Assume ready so legacy videos play immediately.
+    return true;
+  }
+
+  #applyProcessingState(embed: Embed) {
+    const shouldProcess = !this.#isVideoReady(embed);
+    if (this._isProcessing === shouldProcess) {
+      if (shouldProcess) this.#scheduleProcessingRefresh();
+      return;
+    }
+
+    this._isProcessing = shouldProcess;
+    if (shouldProcess) {
+      this.#scheduleProcessingRefresh();
+    } else {
+      this.#clearProcessingRefresh();
+    }
+  }
+
+  #scheduleProcessingRefresh() {
+    if (typeof window === 'undefined') return;
+    if (this._processingRefreshHandle != null) return;
+
+    this._processingRefreshHandle = window.setTimeout(() => {
+      this._processingRefreshHandle = undefined;
+      this.embedController.refresh().catch(() => undefined);
+    }, Player.PROCESSING_REFRESH_INTERVAL);
+  }
+
+  #clearProcessingRefresh() {
+    if (this._processingRefreshHandle != null && typeof window !== 'undefined') {
+      window.clearTimeout(this._processingRefreshHandle);
+      this._processingRefreshHandle = undefined;
+    }
+  }
+
+  #processingMessage(status?: Embed['video']['status']) {
+    switch (status) {
+      case 'uploading':
+        return 'Uploading video…';
+      case 'waiting':
+        return 'Waiting for video upload…';
+      case 'preparing':
+      case 'playable':
+        return 'Processing video…';
+      case 'errored':
+        return 'Video failed to process';
+      default:
+        return 'Preparing your video…';
     }
   }
 
@@ -638,7 +750,7 @@ export class Player extends MaveElement {
         }
         this._hlsAudioTrackIdMap.clear();
         this._hlsAudioTracks = [];
-        this._videoElement.src = this.#srcPath;
+        if (this.#srcPath) this._videoElement.src = this.#srcPath;
         if (Config.metrics.enabled)
           this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
       }
@@ -791,6 +903,7 @@ export class Player extends MaveElement {
   // Used for updating the embed settings
   updateEmbed(embed: Embed) {
     this._embedObj = embed;
+    this.#applyProcessingState(embed);
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.updateStylePoster();
 
@@ -1181,7 +1294,105 @@ export class Player extends MaveElement {
     return styleMap(style);
   }
 
+  #renderPlaceholder(message: string, { showSpinner = true } = {}) {
+    return html`
+      <div class="processing-wrapper" style=${styleMap(this.#placeholderWrapperStyle())}>
+        <div
+          class="processing-state"
+          style=${styleMap(this.#placeholderBackgroundStyle())}
+        >
+          ${showSpinner
+            ? html`<div class="processing-state__spinner" aria-hidden="true"></div>`
+            : nothing}
+          <span class="processing-state__text">${message}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  #placeholderBackgroundStyle() {
+    const style: { [key: string]: string } = {};
+    const poster = this.poster;
+    if (poster) {
+      style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url(${poster})`;
+    }
+    return style;
+  }
+
+  #placeholderWrapperStyle() {
+    const style: { [key: string]: string } = { width: '100%' };
+    const explicitWidth = this.width ?? this._embedObj?.settings.width;
+    const explicitHeight = this.height ?? this._embedObj?.settings.height;
+
+    if (explicitWidth && explicitWidth !== 'auto') {
+      style.width = explicitWidth;
+    }
+
+    if (explicitHeight && explicitHeight !== 'auto') {
+      style.height = explicitHeight;
+    } else {
+      style.minHeight = '200px';
+    }
+
+    const aspectRatio = this.#placeholderAspectRatio();
+    if (aspectRatio) {
+      style['aspect-ratio'] = aspectRatio;
+    }
+
+    return style;
+  }
+
+  #placeholderAspectRatio() {
+    if (this.aspect_ratio && this.aspect_ratio !== 'auto') {
+      return this.aspect_ratio;
+    }
+
+    if (
+      this._embedObj?.settings.aspect_ratio &&
+      this._embedObj.settings.aspect_ratio !== 'auto'
+    ) {
+      return this._embedObj.settings.aspect_ratio;
+    }
+
+    if (this._embedObj?.video?.aspect_ratio) {
+      return this._embedObj.video.aspect_ratio;
+    }
+
+    return '16 / 9';
+  }
+
+  #renderProcessingPlaceholder(status?: Embed['video']['status']) {
+    const showSpinner = status !== 'errored';
+    return this.#renderPlaceholder(this.#processingMessage(status), { showSpinner });
+  }
+
+  #renderPendingPlaceholder() {
+    return this.#renderPlaceholder('Loading video…');
+  }
+
+  #renderErrorPlaceholder() {
+    return this.#renderPlaceholder('Unable to load this video', { showSpinner: false });
+  }
+
+  #renderVideoTemplate() {
+    if (!this._embedObj) return nothing;
+    return staticHtml`<theme-${unsafeStatic(this._themeLoaded)} style=${this.styles}>
+      <video
+        @click=${this.#requestPlay}
+        playsinline
+        ?loop=${this.loop || this._embedObj.settings.loop}
+        poster=${this.poster}
+        ${ref(this.#handleVideo)}
+        slot="media"
+        crossorigin="anonymous"
+      >
+        ${this.#storyboard} ${this.#subtitles}
+      </video>
+    </theme-${unsafeStatic(this._themeLoaded)}>`;
+  }
+
   get #hlsPath() {
+    if (!this.#isVideoReady()) return;
     const highestRendition = this.#highestRendition('hls');
     if (highestRendition) {
       const params = new URLSearchParams();
@@ -1192,6 +1403,7 @@ export class Player extends MaveElement {
   }
 
   get #srcPath() {
+    if (!this.#isVideoReady()) return;
     const highestRendition = this.#highestRendition('mp4');
     const src = highestRendition
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
@@ -1258,33 +1470,25 @@ export class Player extends MaveElement {
       <slot
         name="video"
         style=${styleMap({
-          display: startScreen && !this._startedPlaying ? 'none' : 'block',
+          display:
+            startScreen && !this._startedPlaying && !this._isProcessing
+              ? 'none'
+              : 'block',
         })}
       >
         ${this.embedController.render({
+          pending: () => this.#renderPendingPlaceholder(),
+          error: () => this.#renderErrorPlaceholder(),
           complete: (data) => {
-            if (!this._embed) {
-              this._embedObj = data as Embed;
-              this.updateEmbed(this._embedObj);
-            }
-            if (!data) return;
+            if (!data) return this.#renderPendingPlaceholder();
 
-            return staticHtml`<theme-${unsafeStatic(this._themeLoaded)} style=${
-              this.styles
-            }>
-                <video
-                  @click=${this.#requestPlay}
-                  playsinline
-                  ?loop=${this.loop || this._embedObj.settings.loop}
-                  poster=${this.poster}
-                  ${ref(this.#handleVideo)}
-                  slot="media"
-                  crossorigin="anonymous"
-                >
-                  ${this.#storyboard}
-                  ${this.#subtitles}
-                </video>
-            </theme-${unsafeStatic(this._themeLoaded)}>`;
+            const embedData = data as Embed;
+            this._embedObj = embedData;
+            this.updateEmbed(embedData);
+
+            return this._isProcessing
+              ? this.#renderProcessingPlaceholder(embedData.video?.status)
+              : this.#renderVideoTemplate();
           },
         })}
       </slot>
