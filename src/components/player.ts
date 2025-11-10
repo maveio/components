@@ -252,6 +252,15 @@ export class Player extends MaveElement {
       height: 100%;
     }
 
+    .processing-wrapper--overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: auto;
+      z-index: 60;
+    }
+
     .processing-state {
       position: absolute;
       inset: 0;
@@ -305,13 +314,16 @@ export class Player extends MaveElement {
 
   private _queue: { (): void }[] = [];
   private _processingRefreshHandle?: number;
-  private _statusProcessing = false;
-  private _sourceProcessing = false;
-  private _sourceCheckToken?: symbol;
 
   private _currentTrackLanguage: string;
 
   private hls?: Hls;
+  private static readonly METADATA_READY_STATES = {
+    HAVE_NOTHING:
+      typeof HTMLMediaElement !== 'undefined' ? HTMLMediaElement.HAVE_NOTHING : 0,
+    HAVE_METADATA:
+      typeof HTMLMediaElement !== 'undefined' ? HTMLMediaElement.HAVE_METADATA : 1,
+  };
 
   pop() {
     this.popped = true;
@@ -461,7 +473,6 @@ export class Player extends MaveElement {
     this._themeMutationObserver?.disconnect();
     this._themeMutationObserver = undefined;
     this._themeMutationObserverRoot = undefined;
-    this._sourceCheckToken = undefined;
   }
 
   loadTheme() {
@@ -475,49 +486,77 @@ export class Player extends MaveElement {
     }
   }
 
-  #isManifestReady(embed: Embed | undefined = this._embedObj) {
-    if (!embed) return false;
-    if (typeof embed.video?.ready === 'boolean') {
-      return embed.video.ready;
-    }
+  #updateLoadingState() {
+    if (!this._embedObj) return;
 
-    const status = embed.video?.status;
-    if (typeof status === 'string') {
-      return status === 'ready' || status === 'playable';
-    }
+    const status = this.#manifestStatus();
+    const hasStatus = typeof status === 'string';
+    const lacksSource = !this.#hasPlayableSource();
+    const needsProcessing = this.#manifestNeedsProcessing(status);
+    const awaitingMetadata = hasStatus && this.#awaitingMetadata();
 
-    // Older manifests did not expose status/ready. Assume ready so legacy videos play immediately.
-    return true;
-  }
-
-  #applyProcessingState(embed: Embed) {
-    this._statusProcessing = !this.#isManifestReady(embed);
-    if (this._statusProcessing) {
-      this._sourceCheckToken = undefined;
-      this.#setSourceProcessing(false);
-    }
-    this.#updateProcessingState();
-  }
-
-  #setSourceProcessing(value: boolean) {
-    if (this._sourceProcessing === value) return;
-    this._sourceProcessing = value;
-    this.#updateProcessingState();
-  }
-
-  #updateProcessingState() {
-    const shouldProcess = this._statusProcessing || this._sourceProcessing;
-    const wasProcessing = this._isProcessing;
-    this._isProcessing = shouldProcess;
-
-    if (shouldProcess) {
+    if (needsProcessing && lacksSource) {
       this.#scheduleProcessingRefresh();
-      if (!wasProcessing) {
-        this.#teardownPlayback();
-      }
     } else {
       this.#clearProcessingRefresh();
     }
+
+    const shouldShow = hasStatus && needsProcessing && (lacksSource || awaitingMetadata);
+
+    if (this._isProcessing !== shouldShow) {
+      this._isProcessing = shouldShow;
+      this.requestUpdate();
+    }
+  }
+
+  #hasPlayableSource() {
+    const video = this._embedObj?.video;
+    if (!video) return false;
+
+    const renditions = Array.isArray(video.renditions) ? video.renditions : [];
+    const hasHls = renditions.some(
+      (rendition) => rendition.container === 'hls' && rendition.type === 'video',
+    );
+    const hasMp4 = renditions.some(
+      (rendition) => rendition.container === 'mp4' && rendition.type === 'video',
+    );
+
+    return hasHls || hasMp4 || !!video.original;
+  }
+
+  #awaitingMetadata() {
+    if (this._videoElement) {
+      const duration = this._videoElement.duration;
+      const readyState = this._videoElement.readyState;
+
+      if (!isFinite(duration) || duration <= 0) {
+        return true;
+      }
+
+      if (readyState <= Player.METADATA_READY_STATES.HAVE_METADATA) {
+        return true;
+      }
+
+      return false;
+    }
+
+    const embedDuration = this._embedObj?.video?.duration;
+    if (typeof embedDuration === 'number') {
+      return embedDuration <= 0;
+    }
+
+    return false;
+  }
+
+  #manifestStatus() {
+    return this._embedObj?.video?.status;
+  }
+
+  #manifestNeedsProcessing(status = this.#manifestStatus()) {
+    if (typeof status === 'string') {
+      return !['ready', 'playable'].includes(status);
+    }
+    return false;
   }
 
   #scheduleProcessingRefresh() {
@@ -531,7 +570,8 @@ export class Player extends MaveElement {
   }
 
   #clearProcessingRefresh() {
-    if (this._processingRefreshHandle != null && typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return;
+    if (this._processingRefreshHandle != null) {
       window.clearTimeout(this._processingRefreshHandle);
       this._processingRefreshHandle = undefined;
     }
@@ -553,93 +593,6 @@ export class Player extends MaveElement {
     }
   }
 
-  async #verifySourceAvailability(embed: Embed) {
-    if (typeof window === 'undefined' || typeof fetch !== 'function') {
-      this.#setSourceProcessing(false);
-      return;
-    }
-
-    if (!this.#isManifestReady(embed)) {
-      this._sourceCheckToken = undefined;
-      this.#setSourceProcessing(false);
-      return;
-    }
-
-    const urls = this.#candidateSources();
-    if (!urls.length) {
-      this.#setSourceProcessing(true);
-      return;
-    }
-
-    const token = Symbol();
-    this._sourceCheckToken = token;
-
-    for (const url of urls) {
-      const accessible = await this.#checkUrlAccessible(url);
-      if (this._sourceCheckToken !== token) return;
-      if (accessible) {
-        this.#setSourceProcessing(false);
-        return;
-      }
-    }
-
-    if (this._sourceCheckToken !== token) return;
-    this.#setSourceProcessing(true);
-  }
-
-  #candidateSources() {
-    if (!this._embedObj) return [];
-
-    const urls: string[] = [];
-    const hls = this.#hlsPath;
-    if (hls) urls.push(hls);
-
-    const src = this.#srcPath;
-    if (src) {
-      if (!urls.includes(src)) {
-        urls.push(src);
-      }
-    }
-
-    return urls;
-  }
-
-  async #checkUrlAccessible(url: string) {
-    try {
-      const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-      if (headResponse.ok) {
-        return true;
-      }
-
-      if (![405, 501].includes(headResponse.status)) {
-        return false;
-      }
-    } catch {
-      // continue to GET fallback
-    }
-
-    try {
-      const headers: Record<string, string> = {};
-      if (this.#shouldUseRangeRequest(url)) {
-        headers.Range = 'bytes=0-0';
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        cache: 'no-store',
-        headers,
-      });
-
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  #shouldUseRangeRequest(url: string) {
-    return /\.(mp4|mov|m4v)(\?|$)/i.test(url);
-  }
-
   #destroyHlsInstance() {
     if (!this.hls) return;
     try {
@@ -648,32 +601,6 @@ export class Player extends MaveElement {
       // no-op
     }
     this.hls = undefined;
-  }
-
-  #teardownPlayback() {
-    this._metricsInstance?.demonitor();
-    this._metricsInstance = undefined;
-
-    this.#destroyHlsInstance();
-
-    this._cleanupHlsAudioTracks?.();
-    this._cleanupHlsAudioTracks = undefined;
-
-    if (this._pendingAudioTrackSetup != null) {
-      cancelAnimationFrame(this._pendingAudioTrackSetup);
-      this._pendingAudioTrackSetup = undefined;
-    }
-
-    this._hlsAudioTrackIdMap.clear();
-    this._hlsAudioTracks = [];
-    this._currentAudioTrackMenu = undefined;
-
-    if (this._videoElement) {
-      this._videoElement.pause();
-      this._videoElement.removeAttribute('src');
-      this._videoElement.load();
-      this._videoElement = undefined;
-    }
   }
 
   #getImageRendition(
@@ -760,6 +687,7 @@ export class Player extends MaveElement {
         }),
       );
       this._intersectionObserver.observe(this._videoElement);
+      this.#updateLoadingState();
 
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
@@ -819,6 +747,21 @@ export class Player extends MaveElement {
                 }
               }
             }
+          }
+
+          if (
+            event === 'loadedmetadata' ||
+            event === 'durationchange' ||
+            event === 'loadeddata' ||
+            event === 'emptied' ||
+            event === 'waiting' ||
+            event === 'stalled' ||
+            event === 'error' ||
+            event === 'playing' ||
+            event === 'canplay' ||
+            event === 'loadstart'
+          ) {
+            this.#updateLoadingState();
           }
 
           this.dispatchEvent(
@@ -1047,9 +990,9 @@ export class Player extends MaveElement {
   // Used for updating the embed settings
   updateEmbed(embed: Embed) {
     this._embedObj = embed;
-    this.#applyProcessingState(embed);
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.updateStylePoster();
+    this.#updateLoadingState();
 
     this.poster = this._embedObj.settings.poster;
 
@@ -1438,9 +1381,21 @@ export class Player extends MaveElement {
     return styleMap(style);
   }
 
-  #renderPlaceholder(message: string, { showSpinner = true } = {}) {
+  #renderPlaceholder(
+    message: string,
+    {
+      showSpinner = true,
+      overlay = false,
+    }: { showSpinner?: boolean; overlay?: boolean } = {},
+  ) {
+    const wrapperClasses = overlay
+      ? 'processing-wrapper processing-wrapper--overlay'
+      : 'processing-wrapper';
     return html`
-      <div class="processing-wrapper" style=${styleMap(this.#placeholderWrapperStyle())}>
+      <div
+        class=${wrapperClasses}
+        style=${styleMap(this.#placeholderWrapperStyle(overlay))}
+      >
         <div
           class="processing-state"
           style=${styleMap(this.#placeholderBackgroundStyle())}
@@ -1463,7 +1418,11 @@ export class Player extends MaveElement {
     return style;
   }
 
-  #placeholderWrapperStyle() {
+  #placeholderWrapperStyle(overlay = false) {
+    if (overlay) {
+      return {};
+    }
+
     const style: { [key: string]: string } = { width: '100%' };
     const explicitWidth = this.width ?? this._embedObj?.settings.width;
     const explicitHeight = this.height ?? this._embedObj?.settings.height;
@@ -1507,7 +1466,10 @@ export class Player extends MaveElement {
 
   #renderProcessingPlaceholder(status?: Embed['video']['status']) {
     const showSpinner = status !== 'errored';
-    return this.#renderPlaceholder(this.#processingMessage(status), { showSpinner });
+    return this.#renderPlaceholder(this.#processingMessage(status), {
+      showSpinner,
+      overlay: true,
+    });
   }
 
   #renderPendingPlaceholder() {
@@ -1536,7 +1498,6 @@ export class Player extends MaveElement {
   }
 
   get #hlsPath() {
-    if (!this.#isManifestReady()) return;
     const highestRendition = this.#highestRendition('hls');
     if (highestRendition) {
       const params = new URLSearchParams();
@@ -1547,7 +1508,11 @@ export class Player extends MaveElement {
   }
 
   get #srcPath() {
-    if (!this.#isManifestReady()) return;
+    const duration = this._embedObj?.video?.duration;
+    if (typeof duration === 'number' && duration <= 0) {
+      return this._embedObj.video.original;
+    }
+
     const highestRendition = this.#highestRendition('mp4');
     const src = highestRendition
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
@@ -1621,7 +1586,7 @@ export class Player extends MaveElement {
         })}
       >
         ${this.embedController.render({
-          pending: () => this.#renderPendingPlaceholder(),
+          pending: () => nothing,
           error: () => this.#renderErrorPlaceholder(),
           complete: (data) => {
             if (!data) return this.#renderPendingPlaceholder();
@@ -1629,14 +1594,14 @@ export class Player extends MaveElement {
             const embedData = data as Embed;
             this._embedObj = embedData;
             this.updateEmbed(embedData);
-            void this.#verifySourceAvailability(embedData);
 
-            return this._isProcessing
-              ? this.#renderProcessingPlaceholder(embedData.video?.status)
-              : this.#renderVideoTemplate();
+            return this.#renderVideoTemplate();
           },
         })}
       </slot>
+      ${this._embedObj && this._isProcessing
+        ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
+        : nothing}
       <slot name="start-screen"></slot>
       <slot name="end-screen"></slot>
       <slot name="hover-screen"></slot>
