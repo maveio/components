@@ -2,7 +2,7 @@ import { Config } from '../config';
 
 export type Rendition = {
   size: 'sd' | 'hd' | 'fhd' | 'qhd' | 'uhd';
-  codec: 'h264' | 'hevc' | 'av1' | 'webp' | 'webm' | 'jpg' | 'mp3';
+  codec: 'h264' | 'hevc' | 'av1' | 'webp' | 'webm' | 'jpg' | 'mp3' | 'aac';
   container: 'webp' | 'webm' | 'jpg' | 'mp4' | 'avif' | 'hls' | 'mp3';
   type?:
     | 'audio'

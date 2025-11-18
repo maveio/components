@@ -12,7 +12,7 @@
     <h1 class="text-center mt-12">Regular mave-player:</h1>
 
     <div class="max-w-2xl mx-auto mt-2">
-      <mave-player embed="ubg50SrEx9CqNZR" subtitles="en" style="display: block; width: 100%; background: center / contain no-repeat url(https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg?e=1745867906); aspect-ratio: 16 / 9;"></mave-player>
+      <mave-player embed="ubg50SrEx9CqNZR" subtitles="en" locale="nl" style="display: block; width: 100%; background: center / contain no-repeat url(https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg?e=1745867906); aspect-ratio: 16 / 9;"></mave-player>
     </div>
 
 
@@ -44,6 +44,21 @@
         </div>
       </div>
     </div>
+
+    <mave-files embed="ubg50SrEx9CqNZR">
+      <div name="mave-files-video">
+      <div>
+        Video | <span slot="date"></span> | <span slot="duration"></span> |
+        <span slot="filetype"></span> | <span slot="size"></span>
+      </div>
+    </div>
+    <div name="mave-files-audio">
+      <div>Audio | <span slot="filetype"></span></div>
+    </div>
+    <div name="mave-files-subtitles">
+      <div>Caption | <span slot="filetype"></span></div>
+    </div>
+  </mave-files>
 
     <!-- for the above mave-player (embed id is not required here) in the pop we can apply a custom pop with subtitles enabled -->
     <mave-pop embed="ubg50SrEx9CqNZR">
