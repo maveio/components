@@ -229,7 +229,6 @@ export class Player extends MaveElement {
     }
 
     :host,
-    media-controller,
     theme-default,
     video {
       width: 100%;

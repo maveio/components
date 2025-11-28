@@ -38,6 +38,7 @@ export function build(name, LitElement, html, css) {
         display: flex;
         width: 100%;
         height: 100%;
+        max-height: 100vh;
         background: transparent;
         aspect-ratio: var(--aspect-ratio, 16 / 9);
 

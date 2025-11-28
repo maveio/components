@@ -38,6 +38,7 @@ export function build(name, LitElement, html, css) {
         --media-font-family: system-ui, sans-serif;
         width: var(--width, 100%);
         height: var(--height, 100%);
+        max-height: 100vh;
         aspect-ratio: var(--aspect-ratio, 16 / 9);
         margin: 0;
         padding: 0;
