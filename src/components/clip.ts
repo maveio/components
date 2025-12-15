@@ -218,7 +218,7 @@ export class Clip extends LitElement {
   }
 
   get paused(): boolean {
-    return this._videoElement?.paused || true;
+    return this._videoElement?.paused ?? true;
   }
 
   get duration(): Promise<number> {
