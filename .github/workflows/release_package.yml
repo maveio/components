@@ -42,6 +42,11 @@ jobs:
           registry-url: https://registry.npmjs.org/
           node-version: '21'
 
+      - name: Ensure npm supports trusted publishing (OIDC)
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+
       # Install dependencies (required by Run tests step)
       #- name: Install dependencies
       #  run: yarn install
@@ -59,8 +64,9 @@ jobs:
       - name: Set publish-only env
         if: github.event.inputs.publish-only == 'true'
         run: |
-          echo "NEW_VERSION=v$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
-          echo "RELEASE_TAG=${{ github.event.inputs.publish-tag }}" >> $GITHUB_ENV
+          VERSION=$(node -p 'require("./package.json").version')
+          echo "NEW_VERSION=v${VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=${{ github.event.inputs.publish-tag }}" >> "$GITHUB_ENV"
 
       # Bump package version
       # Use tag latest
