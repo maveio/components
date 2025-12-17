@@ -1,5 +1,6 @@
 name: Release package
 permissions:
+  id-token: write
   contents: write
   pull-requests: read
 on:
@@ -7,14 +8,23 @@ on:
     inputs:
       release-type:
         description: 'Release type (one of): patch, minor, major, prepatch, preminor, premajor, prerelease'
-        required: true
+        required: false
+        default: patch
+      publish-only:
+        description: 'If true, only run npm publish (no version bump, changelog, or GitHub release)'
+        required: false
+        default: 'false'
+      publish-tag:
+        description: 'npm dist-tag to publish under when publish-only=true (e.g. latest, beta)'
+        required: false
+        default: latest
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       # Checkout project repository
       - name: Checkout
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v4
 
       - name: Import GPG key
         id: import-gpg
@@ -27,7 +37,7 @@ jobs:
 
       # Setup Node.js environment
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           registry-url: https://registry.npmjs.org/
           node-version: '21'
@@ -46,10 +56,16 @@ jobs:
           git config --global user.email "${{ steps.import-gpg.outputs.email }}"
           git config --global user.name "${{ steps.import-gpg.outputs.name }}"
 
+      - name: Set publish-only env
+        if: github.event.inputs.publish-only == 'true'
+        run: |
+          echo "NEW_VERSION=v$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
+          echo "RELEASE_TAG=${{ github.event.inputs.publish-tag }}" >> $GITHUB_ENV
+
       # Bump package version
       # Use tag latest
       - name: Bump release version
-        if: startsWith(github.event.inputs.release-type, 'pre') != true
+        if: github.event.inputs.publish-only != 'true' && startsWith(github.event.inputs.release-type, 'pre') != true
         run: |
           echo "NEW_VERSION=$(npm --no-git-tag-version version $RELEASE_TYPE)" >> $GITHUB_ENV
           echo "RELEASE_TAG=latest" >> $GITHUB_ENV
@@ -59,7 +75,7 @@ jobs:
       # Bump package pre-release version
       # Use tag beta for pre-release versions
       - name: Bump pre-release version
-        if: startsWith(github.event.inputs.release-type, 'pre')
+        if: github.event.inputs.publish-only != 'true' && startsWith(github.event.inputs.release-type, 'pre')
         run: |
           echo "NEW_VERSION=$(npm --no-git-tag-version --preid=beta version $RELEASE_TYPE)" >> $GITHUB_ENV
           echo "RELEASE_TAG=beta" >> $GITHUB_ENV
@@ -68,6 +84,7 @@ jobs:
 
       # Update changelog unreleased section with new version
       - name: Update changelog
+        if: github.event.inputs.publish-only != 'true'
         uses: superfaceai/release-changelog-action@v1
         with:
           path-to-changelog: CHANGELOG.md
@@ -77,32 +94,27 @@ jobs:
       # Read version changelog
       - id: get-changelog
         name: Get version changelog
+        if: github.event.inputs.publish-only != 'true'
         uses: superfaceai/release-changelog-action@v1
         with:
           path-to-changelog: CHANGELOG.md
           version: ${{ env.NEW_VERSION }}
           operation: read
 
-      # Update GitHub release with changelog
-      - name: Update GitHub release documentation
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ env.NEW_VERSION }}
-          body: ${{ steps.get-changelog.outputs.changelog }}
-          prerelease: ${{ startsWith(github.event.inputs.release-type, 'pre') }}
-          token: ${{ secrets.PUSH_TO_PROTECTED_BRANCH }}
-
       # Commit changes
       - name: Commit CHANGELOG.md and package.json changes and create tag
+        if: github.event.inputs.publish-only != 'true'
         run: |
           git add "package.json"
           git add "CHANGELOG.md"
           git commit -m "release ${{ env.NEW_VERSION }}"
+          git tag "${{ env.NEW_VERSION }}"
 
       - name: Install dependencies
         run: npm install
 
       - name: Push to protected branch
+        if: github.event.inputs.publish-only != 'true'
         uses: CasperWA/push-protected@v2
         with:
           token: ${{ secrets.PUSH_TO_PROTECTED_BRANCH }}
@@ -110,11 +122,19 @@ jobs:
           unprotect_reviews: true
           tags: true
 
+      # Update GitHub release with changelog
+      - name: Update GitHub release documentation
+        if: github.event.inputs.publish-only != 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.NEW_VERSION }}
+          body: ${{ steps.get-changelog.outputs.changelog }}
+          prerelease: ${{ startsWith(github.event.inputs.release-type, 'pre') }}
+          token: ${{ secrets.PUSH_TO_PROTECTED_BRANCH }}
+
       # Publish version to public repository
       - name: Publish
         run: npm publish --access public --tag ${{ env.RELEASE_TAG }} --verbose
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
 
       - name: Purge cache
         uses: gacts/purge-jsdelivr-cache@v1
