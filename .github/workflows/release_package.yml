@@ -40,12 +40,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           registry-url: https://registry.npmjs.org/
-          node-version: '21'
-
-      - name: Ensure npm supports trusted publishing (OIDC)
-        run: |
-          npm install -g npm@^11.5.1
-          npm --version
+          node-version: '24'
 
       # Install dependencies (required by Run tests step)
       #- name: Install dependencies
