@@ -153,7 +153,8 @@ export class Clip extends LitElement {
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: var(--clip-fit, cover);
+      object-position: var(--clip-position, 50% 50%);
     }
   `;
 
