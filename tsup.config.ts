@@ -40,7 +40,7 @@ export default defineConfig({
     'hls.js',
     'phoenix',
     'tus-js-client',
-    '@maveio/metrics',
+    '@maveio/data',
   ],
   esbuildPlugins: [
     replace({
@@ -54,9 +54,9 @@ export default defineConfig({
       __MAVE_UPLOAD_ENDPOINT__: isProduction
         ? 'https://upload.mave.io/files'
         : process.env.MAVE_UPLOAD_ENDPOINT,
-      __MAVE_METRICS_SOCKET_ENDPOINT__: isProduction
-        ? 'wss://metrics.video-dns.com/socket'
-        : process.env.MAVE_METRICS_SOCKET_ENDPOINT,
+      __MAVE_METRICS_ENDPOINT__: isProduction
+        ? 'https://metrics.video-dns.com/v1/events'
+        : process.env.MAVE_METRICS_ENDPOINT,
       __MAVE_CDN_ENDPOINT__: isProduction
         ? 'https://space-${this.spaceId}.video-dns.com'
         : process.env.MAVE_CDN_ENDPOINT,

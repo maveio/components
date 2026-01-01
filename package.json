@@ -114,7 +114,7 @@
     "@lit/localize": "^0.12.1",
     "@lit/react": "^1.0.5",
     "@lit/task": "^1.0.0",
-    "@maveio/metrics": "^0.1.5",
+    "@maveio/data": "^0.1.0",
     "hls.js": "^1.6.13",
     "lit": "^3.1.2",
     "media-chrome": "^4.15.0",
