@@ -1,5 +1,5 @@
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
-import { Metrics } from '@maveio/metrics';
+import { Metrics } from '@maveio/data';
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -363,12 +363,13 @@ export class Clip extends LitElement {
       };
 
       Metrics.config = {
-        socketPath: Config.metrics.socket,
-        apiKey: this._embed.metrics_key,
+        apiEndpoint: Config.metrics.endpoint,
       };
 
       if (Config.metrics.enabled)
-        this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+        this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+          component: 'clip',
+        });
     }
 
     if (this._queue.length) {

@@ -1,7 +1,7 @@
 export const Config = {
   metrics: {
     enabled: true,
-    socket: '__MAVE_METRICS_SOCKET_ENDPOINT__',
+    endpoint: '__MAVE_METRICS_ENDPOINT__',
   },
   upload: {
     socket: '__MAVE_SOCKET_ENDPOINT__',

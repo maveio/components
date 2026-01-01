@@ -3,18 +3,18 @@ import 'media-chrome/menu';
 import './audio-track-menu';
 
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
-import { Metrics } from '@maveio/metrics';
+import { Metrics } from '@maveio/data';
 import type {
-  AudioTracksUpdatedData,
-  AudioTrackSwitchedData,
-  MediaPlaylist,
+    AudioTracksUpdatedData,
+    AudioTrackSwitchedData,
+    MediaPlaylist,
 } from 'hls.js';
 import Hls from 'hls.js';
 import { css, html, nothing } from 'lit';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 
 import { Config } from '../config';
@@ -785,8 +785,7 @@ export class Player extends MaveElement {
       });
 
       Metrics.config = {
-        socketPath: Config.metrics.socket,
-        apiKey: this._embedObj.metrics_key,
+        apiEndpoint: Config.metrics.endpoint,
       };
 
       const metadata = {
@@ -822,7 +821,9 @@ export class Player extends MaveElement {
         this.hls?.attachMedia(this._videoElement);
         this.#setupHlsAudioTracks();
         if (Config.metrics.enabled)
-          this._metricsInstance = new Metrics(this.hls, this.embed, metadata);
+          this._metricsInstance = new Metrics(this.hls, this.embed, {
+            component: 'player',
+          });
       } else if (
         this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
         this.#hlsPath
@@ -837,7 +838,9 @@ export class Player extends MaveElement {
         this._hlsAudioTracks = [];
         this._videoElement.src = this.#hlsPath;
         if (Config.metrics.enabled)
-          this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+          this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+            component: 'player',
+          });
       } else {
         this._cleanupHlsAudioTracks?.();
         this._cleanupHlsAudioTracks = undefined;
@@ -849,7 +852,9 @@ export class Player extends MaveElement {
         this._hlsAudioTracks = [];
         if (this.#srcPath) this._videoElement.src = this.#srcPath;
         if (Config.metrics.enabled)
-          this._metricsInstance = new Metrics(this._videoElement, this.embed, metadata);
+          this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+            component: 'player',
+          });
       }
 
       if (this._queue.length) {
