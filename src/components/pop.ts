@@ -1,8 +1,10 @@
-import { css, html, LitElement } from 'lit';
+import { css, html, LitElement, nothing } from 'lit';
 import { query } from 'lit/decorators/query.js';
 
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { Collection } from '../embed/api';
+import { EmbedController, EmbedType } from '../embed/controller';
 import { Player } from './player.js';
 
 export class Pop extends LitElement {
@@ -12,6 +14,8 @@ export class Pop extends LitElement {
   @query('.backdrop') _backdrop: HTMLElement;
 
   private _player?: Player;
+  private embedController = new EmbedController(this, EmbedType.Collection);
+  private _collection: Collection;
 
   static styles = css`
     :host {
@@ -88,6 +92,14 @@ export class Pop extends LitElement {
       display: block;
     }
 
+    dialog[closed] slot {
+      display: block;
+    }
+
+    dialog[open] slot {
+      display: block;
+    }
+
     .button-close {
       display: none;
       position: fixed;
@@ -137,7 +149,22 @@ export class Pop extends LitElement {
       background-position: center center;
       background-repeat: no-repeat;
     }
+
+    .frame_multiple {
+      width: 24rem;
+      padding-bottom: 0;
+      height: 75vh;
+      margin-bottom: 4.75rem;
+    }
+
+    slot {
+      position: fixed;
+      color: white;
+      bottom: 10px;
+    }
   `;
+
+  @property() token?: string;
 
   private _backdropColor: string;
   @property()
@@ -171,8 +198,118 @@ export class Pop extends LitElement {
     return styleMap(style);
   }
 
+  get _slottedChildren() {
+    const slot = this.shadowRoot?.querySelector('slot');
+    return slot?.assignedElements({ flatten: true }) || [];
+  }
+
+  _nextPreviousSet = false;
+  _opened = false;
+
+  _touchStartX: number = 0;
+  _touchEndX: number = 0;
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.token) this.embedController.token = this.token;
+    if (window) {
+      window.addEventListener('keydown', this.keyPressed.bind(this));
+    }
+  }
+
+  keyPressed(e: KeyboardEvent) {
+    const index = this._collection.videos.findIndex(
+      (video) => video.id === this._player?.embed,
+    );
+
+    if (this._opened) {
+      if (e.key === 'ArrowRight' && index < this._collection.videos.length - 1) {
+        this.playNextOrPrevious(1);
+      } else if (e.key === 'ArrowLeft' && index > 0) {
+        this.playNextOrPrevious(-1);
+      }
+    }
+  }
+
+  handleSwipe() {
+    const swipeThreshold = 50; // Minimum distance in pixels for a swipe to be counted
+    const swipeDistance = this._touchStartX - this._touchEndX;
+
+    if (Math.abs(swipeDistance) > swipeThreshold) {
+      if (swipeDistance > 0) {
+        // Swipe left, go to the next video
+        this.playNextOrPrevious(1);
+      } else {
+        // Swipe right, go to the previous video
+        this.playNextOrPrevious(-1);
+      }
+    }
+  }
+
+  findInSlotted(selector: string, tagNameCheck?: string): Element | null {
+    for (const child of this._slottedChildren) {
+      if (
+        child.matches(selector) ||
+        (tagNameCheck && child.tagName === tagNameCheck.toUpperCase())
+      ) {
+        return child;
+      }
+
+      const found = child.querySelector(selector);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+
+  playNextOrPrevious(direction: number) {
+    const currentIndex = this._collection.videos.findIndex(
+      (video) => video.id === this._player?.embed,
+    );
+
+    const newIndex =
+      (currentIndex + direction + this._collection.videos.length) %
+      this._collection.videos.length;
+    const newEmbed = this._collection.videos[newIndex].id;
+
+    this._player?.setAttribute('embed', newEmbed);
+    this._player?.play();
+
+    const currentIndexElement = this.findInSlotted('[name="mave-current-index"]');
+    if (currentIndexElement) {
+      currentIndexElement.textContent = (newIndex + 1).toString();
+    }
+
+    this.nextPreviousStyle(newIndex);
+  }
+
+  nextPreviousStyle(index: number) {
+    const previous = this.findInSlotted('[name="mave-pop-previous"]') as HTMLElement;
+    const next = this.findInSlotted('[name="mave-pop-next"]') as HTMLElement;
+    if (next && previous) {
+      if (index == 0) {
+        previous.style.opacity = '0.5';
+        previous.style.pointerEvents = 'none';
+      } else {
+        previous.style.opacity = '1';
+        previous.style.pointerEvents = 'auto';
+      }
+
+      if (index == this._collection.videos.length - 1) {
+        next.style.opacity = '0.5';
+        next.style.pointerEvents = 'none';
+      } else {
+        next.style.opacity = '1';
+        next.style.pointerEvents = 'auto';
+      }
+    }
+  }
+
   open(player: Player) {
-    this._player = player;
+    let hasPlayer = false;
+    const playerElement = this.findInSlotted('mave-player', 'mave-player');
+
     if (player.aspect_ratio) {
       const [w, h] = player.aspect_ratio.split('/');
       this.style.setProperty('--frame-ratio-w', w);
@@ -181,12 +318,54 @@ export class Pop extends LitElement {
 
     this.style.display = 'block';
 
-    const tryToOpen = (resolve: (value: unknown) => void) => {
-      this._frame.appendChild(player);
+    if (playerElement) {
+      hasPlayer = true;
+      this._frame.style.display = 'none';
+      for (const attr of player.attributes) {
+        playerElement.setAttribute(attr.name, attr.value);
+      }
+      this._player = playerElement as Player;
+    }
 
-      setTimeout(() => {
-        this._dialog.showModal();
-      }, 25);
+    if (!hasPlayer) {
+      this._frame.appendChild(player);
+      this._player = player;
+    }
+
+    const tryToOpen = (resolve: (value: unknown) => void) => {
+      if (this.token) {
+        this._frame.classList.add('frame_multiple');
+
+        const next = this.findInSlotted('[name="mave-pop-next"]');
+        const previous = this.findInSlotted('[name="mave-pop-previous"]');
+        const folderCount = this.findInSlotted('[name="mave-folder-count"]');
+        const currentIndex = this.findInSlotted('[name="mave-current-index"]');
+
+        if (!this._nextPreviousSet) {
+          next?.addEventListener('click', () => {
+            this.playNextOrPrevious(1);
+          });
+
+          previous?.addEventListener('click', () => {
+            this.playNextOrPrevious(-1);
+          });
+          this._nextPreviousSet = true;
+        }
+
+        if (folderCount) {
+          folderCount.textContent = this._collection.videos.length.toString();
+        }
+
+        if (currentIndex) {
+          const index = this._collection.videos.findIndex(
+            (video) => video.id === this._player?.embed,
+          );
+          currentIndex.textContent = (index + 1).toString();
+          this.nextPreviousStyle(index);
+        }
+      }
+
+      setTimeout(() => this._dialog.showModal(), 25);
 
       this._dialog.addEventListener(
         'close',
@@ -197,7 +376,12 @@ export class Pop extends LitElement {
         { once: true },
       );
 
-      resolve(this);
+      this.addEventListener('touchstart', this.touchStart.bind(this), { passive: true });
+      this.addEventListener('touchend', this.touchEnd.bind(this), { passive: true });
+
+      this._opened = true;
+
+      resolve(this._player);
     };
 
     return new Promise((resolve) => {
@@ -215,7 +399,17 @@ export class Pop extends LitElement {
     });
   }
 
+  touchStart(e: TouchEvent) {
+    this._touchStartX = e.touches[0].clientX;
+  }
+
+  touchEnd(e: TouchEvent) {
+    this._touchEndX = e.changedTouches[0].clientX;
+    this.handleSwipe();
+  }
+
   possibleClose(e: MouseEvent) {
+    if (e.target instanceof HTMLElement && !e.target.closest('dialog')) return;
     if (e.target != this._player) this.close();
   }
 
@@ -226,19 +420,46 @@ export class Pop extends LitElement {
       'transitionend',
       () => {
         this._frame.innerHTML = '';
-        this.dispatchEvent(new Event('closed', { bubbles: true }));
+
+        if (this._player) {
+          this._player.pause();
+          this._player.currentTime = 0;
+        }
+
+        const detail = {
+          player: this._player,
+        };
+        this.dispatchEvent(new CustomEvent('closed', { bubbles: true, detail }));
       },
       { once: true },
     );
+
+    this.removeEventListener('touchstart', this.touchStart.bind(this));
+    this.removeEventListener('touchend', this.touchEnd.bind(this));
+
+    this._opened = false;
+  }
+
+  disconnectedCallback(): void {
+    window.removeEventListener('keydown', this.keyPressed.bind(this));
   }
 
   render() {
     return html`
+      ${this.token
+        ? this.embedController.render({
+            complete: (data: any) => {
+              this._collection = data as Collection;
+              if (data.error) return console.warn(data.error);
+            },
+          })
+        : nothing}
+
       <dialog style=${this.styles}>
         <div class="backdrop"></div>
         <div class="content" @click=${this.possibleClose}>
           <div class="wrapper">
-            <slot style="display: none;"></slot>
+            <slot></slot>
             <div class="frame"></div>
           </div>
         </div>
@@ -331,6 +552,7 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
       }
     }
     player.embed = embed;
+    player.setAttribute('embed', embed);
     return player;
   }
 
@@ -351,12 +573,15 @@ export const checkPop = (element: HTMLElement | ShadowRoot | Document): void => 
         if (!popped) {
           const player = createPlayer(embed, attributes);
 
-          pop.open(player).then(() => {
-            player.play();
+          pop.open(player).then((p) => {
+            (p as Player).play();
           });
 
-          pop.addEventListener('closed', () => {
+          pop.addEventListener('closed', (event: Event) => {
+            const customEvent = event as CustomEvent;
+            const player = customEvent.detail.player as Player;
             player.pause();
+            player.currentTime = 0;
           });
         }
       });
