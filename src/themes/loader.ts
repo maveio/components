@@ -60,8 +60,10 @@ export class ThemeLoader {
       ThemeLoader.instance = new ThemeLoader();
     }
 
-    if (ThemeLoader.instance.themes.find((theme) => theme.name === name))
+    if (ThemeLoader.instance.themes.find((theme) => theme.name === name)) {
+      ThemeLoader.instance.currentTheme = name;
       return Promise.resolve(ThemeLoader.instance);
+    }
 
     // Add to cache instantaneously to make sure it doesn't load again
     ThemeLoader.instance.themes.push({ name });
@@ -123,8 +125,10 @@ export class ThemeLoader {
       console.log('[mave-player]: theme css not loaded', e);
     }
 
-    if (ThemeLoader.instance.themes.find((theme) => theme.name === name))
+    if (ThemeLoader.instance.themes.find((theme) => theme.name === name)) {
+      ThemeLoader.instance.currentTheme = name;
       return Promise.resolve(ThemeLoader.instance);
+    }
 
     // Add to cache instantaneously to make sure it doesn't load again
     ThemeLoader.instance.themes.push({ name });

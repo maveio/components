@@ -127,7 +127,7 @@ export class MaveAudioTrackMenuButton extends MediaChromeMenuButton {
     <slot name="icon">${audioTrackIcon}</slot>
   `;
 
-  static getTooltipContentHTML = () => t('Audio');
+  static getTooltipContentHTML = () => t('audio tracks');
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -135,7 +135,7 @@ export class MaveAudioTrackMenuButton extends MediaChromeMenuButton {
   }
 
   #updateAriaLabel(): void {
-    const label = t('Audio');
+    const label = t('audio tracks');
     this.setAttribute('aria-label', label);
   }
 

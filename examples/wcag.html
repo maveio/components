@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=2.0">
+  <title>WCAG Examples | Mave Components</title>
+  <link
+    href="https://fonts.bunny.net/css2?family=Fraunces:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #0f1b2d;
+      --ink-muted: #3f4a5a;
+      --paper: #f6f2ea;
+      --surface: #ffffff;
+      --accent: #0f9488;
+      --accent-strong: #0c7e74;
+      --accent-warm: #f59e0b;
+      --line: #e2d9c9;
+      --shadow: 0 38px 70px -45px rgba(15, 23, 42, 0.6);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", "Noto Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(800px circle at 15% -15%, rgba(15, 148, 136, 0.18), transparent 60%),
+        radial-gradient(900px circle at 85% -20%, rgba(245, 158, 11, 0.18), transparent 60%),
+        linear-gradient(180deg, var(--paper) 0%, #fff 100%);
+      position: relative;
+      padding: 32px 20px 80px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(15, 27, 45, 0.08) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid rgba(15, 148, 136, 0.6);
+      outline-offset: 4px;
+      border-radius: 12px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      background: var(--surface);
+      color: var(--ink);
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 2px solid var(--accent);
+      text-decoration: none;
+      transform: translateY(-200%);
+      transition: transform 200ms ease;
+      z-index: 2;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    .hero {
+      max-width: 1140px;
+      margin: 0 auto 48px;
+      display: grid;
+      gap: 28px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      align-items: center;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-strong);
+      margin: 0 0 12px;
+    }
+
+    h1 {
+      font-family: "Fraunces", "Georgia", serif;
+      font-size: clamp(2rem, 3vw + 1rem, 3.5rem);
+      margin: 0 0 14px;
+      line-height: 1.1;
+    }
+
+    .lead {
+      font-size: 1.05rem;
+      color: var(--ink-muted);
+      margin: 0 0 20px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(15, 148, 136, 0.12);
+      color: var(--accent-strong);
+      text-decoration: none;
+      font-weight: 600;
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+
+    .pill:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 16px -14px rgba(15, 23, 42, 0.8);
+    }
+
+    .pill-button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .pill-button[aria-checked='true'] {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.8);
+    }
+
+    .theme-label {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      align-self: center;
+    }
+
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card h2 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+    }
+
+    .hero-card ul {
+      margin: 0 0 14px;
+      padding-left: 18px;
+      color: var(--ink-muted);
+    }
+
+    .note {
+      background: rgba(15, 148, 136, 0.1);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--accent-strong);
+      font-size: 0.95rem;
+    }
+
+    main {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: grid;
+      gap: 28px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 20px;
+    }
+
+    .card-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    @media (min-width: 960px) {
+      .card-grid.split {
+        grid-template-columns: 1.4fr 1fr;
+        align-items: start;
+      }
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.14);
+      color: #9a6700;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.6rem;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .muted {
+      color: var(--ink-muted);
+      margin: 0;
+    }
+
+    .player-shell {
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid #d3c9ba;
+      background: #0f172a;
+      box-shadow: 0 24px 40px -30px rgba(15, 23, 42, 0.75);
+    }
+
+    mave-player.player {
+      display: block;
+      width: 100%;
+    }
+
+    .card-meta {
+      display: grid;
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      .card-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .card-meta ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--ink-muted);
+    }
+
+    .contrast-sim {
+      --mave-control-bg: rgba(0, 0, 0, 0.85);
+      --mave-control-fg: rgb(255, 255, 255);
+      --mave-control-fg-muted: rgba(255, 255, 255, 0.85);
+      --mave-control-fg-weak: rgba(255, 255, 255, 0.6);
+    }
+
+    code {
+      background: rgba(15, 27, 45, 0.08);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #c8bfb0;
+      background: #fffaf2;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    details {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fdfbf7;
+      padding: 12px 16px 16px;
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .transcript-body {
+      margin-top: 12px;
+      border-radius: 12px;
+      border: 1px solid #eadfce;
+      background: #ffffff;
+      padding: 12px;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    mave-text.transcript {
+      display: block;
+      font-size: 0.98rem;
+      line-height: 1.6;
+    }
+
+    .reveal {
+      animation: float-in 700ms ease forwards;
+      opacity: 0;
+      transform: translateY(12px);
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes float-in {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+
+      .pill {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#examples">Skip to examples</a>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">WCAG-focused examples</p>
+      <h1>Accessible media patterns for mave-player</h1>
+      <p class="lead">
+        A focused set of examples for audio track selection, captions, and transcripts. These patterns
+        map to common WCAG checkpoints and are ready to reuse in demos or docs.
+      </p>
+      <div class="pill-row" role="radiogroup" aria-label="Theme selector">
+        <span class="theme-label">Theme</span>
+        <button class="pill pill-button" type="button" data-theme-select="default" role="radio"
+          aria-checked="false">Default</button>
+        <button class="pill pill-button" type="button" data-theme-select="dolphin" role="radio"
+          aria-checked="false">Dolphin</button>
+        <button class="pill pill-button" type="button" data-theme-select="synthwave" role="radio"
+          aria-checked="false">Synthwave</button>
+      </div>
+    </div>
+    <div class="hero-card">
+      <h2>Quick checks</h2>
+      <ul>
+        <li>Tab through player controls and confirm visible focus.</li>
+        <li>Toggle captions and verify legibility against the video.</li>
+        <li>Switch audio tracks and confirm labels are meaningful.</li>
+      </ul>
+      <div class="note">Tip: Use <kbd>Tab</kbd>, <kbd>Space</kbd>, and <kbd>Enter</kbd> to test controls.</div>
+    </div>
+  </header>
+
+  <main id="examples">
+    <section id="audio-tracks" class="card reveal" style="--delay: 0.05s;">
+      <div>
+        <span class="tag">WCAG 1.2.1 and 1.2.3</span>
+        <h2>Audio track selection</h2>
+        <p class="muted">
+          When multiple tracks exist, the audio track menu stays visible and lets users switch between
+          language or description tracks.
+        </p>
+      </div>
+
+      <div class="card-grid split">
+        <div class="player-shell">
+          <mave-player class="player" embed="ubg50LeDE9v86ye" theme="dolphin" color="#f6ead9" subtitles="en"
+            audiotracks="on" controls="play time rate seek volume audiotracks fullscreen subtitles"
+            style="display: block; width: 100%; background: url(&quot;https://space-ubg50.video-dns.com/LeDE9v86ye/v8/thumbnail.jpg?e=1762510175&quot;) center center / contain no-repeat; aspect-ratio: 16 / 9;"></mave-player>
+        </div>
+        <div class="card-meta">
+          <div>
+            <h3>What to verify</h3>
+            <ul>
+              <li>Audio track menu is reachable by keyboard.</li>
+              <li>Track names are descriptive (language or role).</li>
+              <li>Switching tracks does not reset playback.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Attributes in use</h3>
+            <p class="muted">
+              <code>audiotracks="on"</code>
+              <code>controls="... audiotracks ..."</code>
+              <code>color="#f6ead9"</code>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="captions" class="card reveal" style="--delay: 0.12s;">
+      <div class="card-grid split">
+        <div>
+          <span class="tag">WCAG 1.2.2</span>
+          <h2>Captions enabled on load</h2>
+          <p class="muted">
+            Use <code>subtitles</code> and <code>active-subtitle</code> to display captions immediately,
+            and keep the captions control visible for users who want to switch or disable them.
+          </p>
+          <div class="player-shell" style="margin-top: 16px;">
+            <mave-player class="player" embed="ubg50SrEx9CqNZR" theme="dolphin" subtitles="en" active-subtitle="en"
+              controls="play time seek volume audiotracks fullscreen subtitles"
+              style="display: block; width: 100%; background: url(&quot;https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg?e=1745867906&quot;) center center / contain no-repeat; aspect-ratio: 16 / 9;"></mave-player>
+          </div>
+        </div>
+        <div id="transcript">
+          <span class="tag">WCAG 1.2.1</span>
+          <h3>Transcript with jump-to-time</h3>
+          <p class="muted">
+            The transcript highlights current words and lets users click segments to seek playback.
+          </p>
+          <details open>
+            <summary>Open transcript panel</summary>
+            <div class="transcript-body">
+              <mave-text class="transcript" embed="ubg50SrEx9CqNZR" highlight="rgba(245,158,11,0.35)" clickable="true"
+                autoscroll="true"></mave-text>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section id="contrast" class="card reveal" style="--delay: 0.18s;">
+      <div>
+        <span class="tag">WCAG 1.4.3</span>
+        <h2>High contrast (emulated)</h2>
+        <p class="muted">
+          This example forces the same tokens we use when <code>prefers-contrast: more</code> is
+          enabled, without requiring an OS setting change.
+        </p>
+      </div>
+      <div class="card-grid split">
+        <div class="player-shell">
+          <mave-player class="player contrast-sim" embed="ubg50SrEx9CqNZR" theme="dolphin" subtitles="en"
+            controls="play time seek volume audiotracks fullscreen subtitles"
+            style="display: block; width: 100%; background: url(&quot;https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg?e=1745867906&quot;) center center / contain no-repeat; aspect-ratio: 16 / 9;"></mave-player>
+        </div>
+        <div class="card-meta">
+          <div>
+            <h3>What to verify</h3>
+            <ul>
+              <li>Icons and labels remain readable over bright frames.</li>
+              <li>Big play button stays legible on pause.</li>
+              <li>Menus retain contrast in hover and focus states.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Attributes in use</h3>
+            <p class="muted">
+              <code>class="contrast-sim"</code>
+              <code>subtitles="en"</code>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="compact" class="card reveal" style="--delay: 0.24s;">
+      <div>
+        <span class="tag">WCAG 1.4.10</span>
+        <h2>Compact player (~300px)</h2>
+        <p class="muted">
+          Players embedded in tight layouts should keep a usable control bar without
+          clipping or overlapping controls.
+        </p>
+      </div>
+      <div class="card-grid split">
+        <div class="player-shell" style="width: 300px; max-width: 100%; margin: 0 auto;">
+          <mave-player
+            class="player"
+            embed="ubg50SrEx9CqNZR"
+            theme="dolphin"
+            subtitles="en"
+            controls="play time seek volume audiotracks fullscreen subtitles"
+            style="display: block; width: 100%; background: url(&quot;https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg?e=1745867906&quot;) center center / contain no-repeat; aspect-ratio: 16 / 9;"
+          ></mave-player>
+        </div>
+        <div class="card-meta">
+          <div>
+            <h3>What to verify</h3>
+            <ul>
+              <li>Controls wrap cleanly without overlapping.</li>
+              <li>Seek bar stays full width and usable.</li>
+              <li>Primary actions remain reachable by keyboard.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Attributes in use</h3>
+            <p class="muted">
+              <code>width: 300px</code>
+              <code>controls=\"...\"</code>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script crossorigin type="module">
+    import { Player, Text, setConfig } from "../dist/index.js";
+    setConfig({ enabled: false });
+
+    const themeButtons = Array.from(document.querySelectorAll('[data-theme-select]'));
+    const players = Array.from(document.querySelectorAll('mave-player'));
+
+    const setTheme = (theme) => {
+      players.forEach((player) => {
+        player.setAttribute('theme', theme);
+      });
+      themeButtons.forEach((button) => {
+        const isActive = button.dataset.themeSelect === theme;
+        button.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      });
+    };
+
+    if (players.length) {
+      const initialTheme = players[0].getAttribute('theme') || 'default';
+      setTheme(initialTheme);
+    }
+
+    themeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const theme = button.dataset.themeSelect;
+        if (theme) setTheme(theme);
+      });
+    });
+  </script>
+</body>
+
+</html>
