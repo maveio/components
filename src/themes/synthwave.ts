@@ -13,6 +13,7 @@ export function build(name, LitElement, html, css) {
         overflow: hidden;
         position: relative;
         direction: ltr !important;
+        container-type: inline-size;
       }
 
       img,
@@ -36,6 +37,7 @@ export function build(name, LitElement, html, css) {
       media-controller {
         --media-tooltip-display: none;
         display: flex;
+        container-type: inline-size;
         width: 100%;
         height: 100%;
         max-height: 100vh;
@@ -47,17 +49,33 @@ export function build(name, LitElement, html, css) {
         --media-font-family: 'Inter', system-ui, sans-serif;
         --media-background-color: transparent;
 
-        --media-primary-color: rgba(255, 255, 255, 0.94);
-        --media-secondary-color: rgba(255, 255, 255, 0.94);
+        --media-primary-color: var(--mave-control-fg, rgba(255, 255, 255, 0.94));
+        --media-secondary-color: var(--mave-control-fg, rgba(255, 255, 255, 0.94));
 
         --media-control-padding: 8px;
         --media-control-background: transparent;
         --media-option-hover-background: rgba(0, 0, 0, 0.25);
 
+        --media-range-track-background: var(--mave-control-fg-weak, rgba(255, 255, 255, 0.35));
+        --media-range-track-pointer-background: var(
+          --mave-control-fg-muted,
+          rgba(255, 255, 255, 0.6)
+        );
+
         --media-preview-time-margin: 0 0 8px 0;
 
         --media-preview-thumbnail-max-width: 132px;
         --media-preview-thumbnail-max-height: 88px;
+      }
+
+      media-controller svg[stroke],
+      media-controller svg [stroke] {
+        stroke: currentColor;
+      }
+
+      media-controller svg[fill]:not([fill='none']),
+      media-controller svg [fill]:not([fill='none']) {
+        fill: currentColor;
       }
 
       media-loading-indicator {
@@ -79,7 +97,7 @@ export function build(name, LitElement, html, css) {
         user-select: none;
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
 
-        background: var(--primary-color, transparent);
+        background: var(--mave-control-bg, var(--primary-color, transparent));
 
         --media-control-hover-background: transparent;
       }
@@ -101,6 +119,14 @@ export function build(name, LitElement, html, css) {
         --media-range-thumb-width: 4px;
         --media-range-thumb-height: 4px;
         --media-range-thumb-transition: transform 100ms ease-out;
+        --media-text-color: #fff;
+      }
+
+      @media (prefers-contrast: more) {
+        media-time-range {
+          --media-preview-time-background: rgba(0, 0, 0, 0.85);
+          --media-preview-time-text-shadow: none;
+        }
       }
 
       media-time-display {
@@ -115,7 +141,8 @@ export function build(name, LitElement, html, css) {
       media-play-button,
       media-fullscreen-button,
       media-mute-button,
-      media-captions-menu-button,
+      mave-captions-menu-button,
+      media-settings-menu-button,
       media-audio-track-menu-button,
       mave-audio-track-menu-button {
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
@@ -127,20 +154,23 @@ export function build(name, LitElement, html, css) {
       media-play-button:hover,
       media-fullscreen-button:hover,
       media-mute-button:hover,
-      media-captions-menu-button:hover,
+      mave-captions-menu-button:hover,
+      media-settings-menu-button:hover,
       media-audio-track-menu-button:hover,
       mave-audio-track-menu-button:hover {
-        --media-primary-color: rgba(255, 255, 255, 1);
+        --media-primary-color: var(--mave-control-fg, rgba(255, 255, 255, 1));
         transform: scale(1.3);
       }
 
-      media-captions-menu-button:hover,
+      mave-captions-menu-button:hover,
+      media-settings-menu-button:hover,
       media-audio-track-menu-button:hover,
       mave-audio-track-menu-button:hover {
         transform: scale(1);
       }
 
-      media-captions-menu-button[aria-expanded='true'],
+      mave-captions-menu-button[aria-expanded='true'],
+      media-settings-menu-button[aria-expanded='true'],
       media-audio-track-menu-button[aria-expanded='true'],
       mave-audio-track-menu-button[aria-expanded='true'] {
         transform: scale(1);
@@ -153,7 +183,8 @@ export function build(name, LitElement, html, css) {
         padding-top: 7px;
       }
 
-      media-captions-menu-button div,
+      mave-captions-menu-button div,
+      media-settings-menu-button div,
       media-audio-track-menu-button div,
       mave-audio-track-menu-button div {
         width: 26px;
@@ -161,7 +192,8 @@ export function build(name, LitElement, html, css) {
       }
 
       media-play-button svg,
-      media-captions-menu-button svg,
+      mave-captions-menu-button svg,
+      media-settings-menu-button svg,
       media-fullscreen-button svg,
       media-mute-button svg,
       media-audio-track-menu-button svg,
@@ -171,13 +203,15 @@ export function build(name, LitElement, html, css) {
         transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      media-captions-menu-button:hover svg,
+      mave-captions-menu-button:hover svg,
+      media-settings-menu-button:hover svg,
       media-audio-track-menu-button:hover svg,
       mave-audio-track-menu-button:hover svg {
         transform: scale(1.3);
       }
 
-      media-captions-menu-button[aria-expanded='true'] svg,
+      mave-captions-menu-button[aria-expanded='true'] svg,
+      media-settings-menu-button[aria-expanded='true'] svg,
       media-audio-track-menu-button[aria-expanded='true'] svg,
       mave-audio-track-menu-button[aria-expanded='true'] svg {
         transform: scale(1);
@@ -188,7 +222,7 @@ export function build(name, LitElement, html, css) {
         bottom: calc(100% + 8px);
         min-width: 120px;
         transform-origin: bottom right;
-        background: var(--primary-color, rgba(0, 0, 0, 0.5));
+        background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.5)));
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -201,13 +235,28 @@ export function build(name, LitElement, html, css) {
         background: rgba(0, 0, 0, 0.15);
       }
 
+      media-settings-menu {
+        background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.5)));
+        border-radius: 8px;
+        backdrop-filter: blur(12px);
+        min-width: 160px;
+      }
+
+      media-settings-menu[hidden] {
+        display: none;
+      }
+
+      media-settings-menu-item {
+        --media-menu-item-hover-background: rgba(0, 0, 0, 0.15);
+      }
+
       media-audio-track-menu,
       mave-audio-track-menu {
         position: absolute;
         bottom: calc(100% + 8px);
         min-width: 120px;
         transform-origin: bottom right;
-        background: var(--primary-color, rgba(0, 0, 0, 0.5));
+        background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.5)));
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -227,13 +276,34 @@ export function build(name, LitElement, html, css) {
         display: var(--media-audio-track-menu-button-display, none);
       }
 
+      media-settings-menu-button {
+        display: none;
+      }
+
+      @supports not (container-type: inline-size) {
+        media-settings-menu-button {
+          display: flex;
+        }
+      }
+
       media-controller[mediapaused] div[slot='centered-chrome'] media-play-button {
         opacity: 1;
       }
 
       div[slot='centered-chrome'] media-play-button {
         opacity: 0;
-        --media-control-hover-background: transparent;
+        --media-control-background: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.45))
+        );
+        --media-control-hover-background: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.45))
+        );
+        border-radius: 999px;
+        padding: 8px;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(6px);
       }
 
       div[slot='centered-chrome'] media-play-button div {
@@ -334,8 +404,49 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-menu,
-      media-captions-menu-button[mediasubtitleslist] {
+      mave-captions-menu-button[mediasubtitleslist] {
         display: var(--captions-display, flex);
+      }
+
+      @container (max-width: 320px) {
+        media-control-bar {
+          flex-wrap: wrap;
+          height: auto;
+          gap: 6px;
+          padding: 6px 8px;
+        }
+
+        media-control-bar > div[style*='flex-grow: 1'] {
+          display: none;
+        }
+
+        media-control-bar > :not(media-time-range) {
+          order: 2;
+        }
+
+        media-time-display {
+          display: none;
+        }
+
+        media-time-range {
+          order: 1;
+          margin: 0 0 2px;
+        }
+
+        media-playback-rate-button {
+          display: none;
+        }
+
+        mave-captions-menu-button,
+        media-captions-menu-button,
+        mave-audio-track-menu-button,
+        media-audio-track-menu-button {
+          display: none;
+        }
+
+        media-settings-menu-button {
+          display: flex;
+        }
       }
 
       .mave-loader {
@@ -496,7 +607,7 @@ export function build(name, LitElement, html, css) {
             <div style="flex-grow: 1;"></div>
             <media-time-display showduration></media-time-display>
             <media-playback-rate-button></media-playback-rate-button>
-            <media-captions-menu-button>
+            <mave-captions-menu-button id="mave-captions">
               <div slot="off">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -525,8 +636,8 @@ export function build(name, LitElement, html, css) {
                   />
                 </svg>
               </div>
-            </media-captions-menu-button>
-            <media-captions-menu hidden anchor="auto"></media-captions-menu>
+            </mave-captions-menu-button>
+            <media-captions-menu hidden anchor="mave-captions"></media-captions-menu>
             <mave-audio-track-menu
               hidden
               anchor="mave-audio-tracks"
@@ -549,6 +660,38 @@ export function build(name, LitElement, html, css) {
                 </svg>
               </div>
             </mave-audio-track-menu-button>
+            <media-settings-menu-button id="mave-settings">
+              <div slot="icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <circle cx="5" cy="12" r="2"></circle>
+                  <circle cx="12" cy="12" r="2"></circle>
+                  <circle cx="19" cy="12" r="2"></circle>
+                </svg>
+              </div>
+            </media-settings-menu-button>
+            <media-settings-menu hidden anchor="mave-settings">
+              <media-settings-menu-item style="display: var(--playbackrate-display, flex);">
+                <span>Playback speed</span>
+                <media-playback-rate-menu slot="submenu" hidden></media-playback-rate-menu>
+              </media-settings-menu-item>
+              <media-settings-menu-item
+                style="display: var(--mave-captions-menu-button-display, flex);"
+              >
+                <span>Captions</span>
+                <media-captions-menu slot="submenu" hidden></media-captions-menu>
+              </media-settings-menu-item>
+              <media-settings-menu-item
+                style="display: var(--media-audio-track-menu-button-display, none);"
+              >
+                <span>Audio tracks</span>
+                <mave-audio-track-menu slot="submenu" hidden></mave-audio-track-menu>
+              </media-settings-menu-item>
+            </media-settings-menu>
             <media-fullscreen-button>
               <div slot="enter">
                 <svg

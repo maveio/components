@@ -1,6 +1,7 @@
 import 'media-chrome';
 import 'media-chrome/menu';
 import './audio-track-menu';
+import './captions-menu-button';
 
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/data';
@@ -24,6 +25,20 @@ import { ThemeLoader } from '../themes/loader';
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
 import { videoEvents } from '../utils/video_events';
+
+type ControlColors = {
+  bg: string;
+  fg: string;
+  fgMuted: string;
+  fgWeak: string;
+};
+
+type ParsedColor = {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+};
 
 @localized()
 export class Player extends MaveElement {
@@ -205,6 +220,10 @@ export class Player extends MaveElement {
   private _currentAudioTrackMenu?: Element | null;
   private _themeMutationObserver?: MutationObserver;
   private _themeMutationObserverRoot?: Node;
+  private _controlColorsKey?: string;
+  private _controlColors?: ControlColors;
+  private _contrastQuery?: MediaQueryList;
+  private _contrastQueryHandler?: (event: MediaQueryListEvent) => void;
 
   static styles = css`
     :host {
@@ -446,6 +465,21 @@ export class Player extends MaveElement {
     this.languageController.locale = this.locale || 'en';
     this.loadTheme();
 
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      this._contrastQuery = window.matchMedia('(prefers-contrast: more)');
+      this._contrastQueryHandler = () => {
+        this._controlColorsKey = undefined;
+        this._controlColors = undefined;
+        this.requestUpdate();
+      };
+
+      if (this._contrastQuery.addEventListener) {
+        this._contrastQuery.addEventListener('change', this._contrastQueryHandler);
+      } else if (this._contrastQuery.addListener) {
+        this._contrastQuery.addListener(this._contrastQueryHandler);
+      }
+    }
+
     this.addEventListener(
       'mave:video_element_ready',
       this.#applySubtitleStyles.bind(this),
@@ -471,6 +505,15 @@ export class Player extends MaveElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this._contrastQuery && this._contrastQueryHandler) {
+      if (this._contrastQuery.removeEventListener) {
+        this._contrastQuery.removeEventListener('change', this._contrastQueryHandler);
+      } else if (this._contrastQuery.removeListener) {
+        this._contrastQuery.removeListener(this._contrastQueryHandler);
+      }
+    }
+    this._contrastQuery = undefined;
+    this._contrastQueryHandler = undefined;
     this._metricsInstance?.demonitor();
     this.#clearProcessingRefresh();
     this._cleanupHlsAudioTracks?.();
@@ -1290,12 +1333,26 @@ export class Player extends MaveElement {
     const volumeControlEnabled =
       this.controls.includes('volume') || this.controls.includes('full');
 
-    if (this.color || this._embedObj?.settings.color) {
-      style['--primary-color'] = `${this.color || this._embedObj?.settings.color}${
-        this.opacity || this._embedObj?.settings.opacity
-          ? this._embedObj?.settings.opacity
-          : ''
-      }`;
+    const baseColor = this.color || this._embedObj?.settings.color;
+    const baseOpacity = this.opacity || this._embedObj?.settings.opacity;
+    const controlColorValue = baseColor
+      ? `${baseColor}${baseOpacity ? baseOpacity : ''}`
+      : undefined;
+
+    if (controlColorValue) {
+      style['--primary-color'] = controlColorValue;
+      const controlColors = this.#resolveControlColors(controlColorValue);
+      if (controlColors) {
+        style['--mave-control-bg'] = controlColors.bg;
+        style['--mave-control-fg'] = controlColors.fg;
+        style['--mave-control-fg-muted'] = controlColors.fgMuted;
+        style['--mave-control-fg-weak'] = controlColors.fgWeak;
+      }
+    } else if (this.#prefersContrastMore()) {
+      style['--mave-control-bg'] = 'rgba(0, 0, 0, 0.85)';
+      style['--mave-control-fg'] = 'rgb(255, 255, 255)';
+      style['--mave-control-fg-muted'] = 'rgba(255, 255, 255, 0.85)';
+      style['--mave-control-fg-weak'] = 'rgba(255, 255, 255, 0.6)';
     }
     if (
       this.aspect_ratio == 'auto' ||
@@ -1329,9 +1386,9 @@ export class Player extends MaveElement {
       style['--fullscreen-display'] = this.controls.includes('fullscreen')
         ? 'flex'
         : 'none';
-      style['--media-captions-menu-button-display'] = this.controls.includes('subtitles')
-        ? 'flex'
-        : 'none';
+      const captionsDisplay = this.controls.includes('subtitles') ? 'flex' : 'none';
+      style['--media-captions-menu-button-display'] = captionsDisplay;
+      style['--mave-captions-menu-button-display'] = captionsDisplay;
     }
 
     style['--playbackrate-display'] = this.controls.includes('rate') ? 'flex' : 'none';
@@ -1344,6 +1401,7 @@ export class Player extends MaveElement {
         !this.active_subtitle)
     ) {
       style['--media-captions-menu-button-display'] = 'none';
+      style['--mave-captions-menu-button-display'] = 'none';
     }
 
     if (
@@ -1394,6 +1452,106 @@ export class Player extends MaveElement {
       : 'none';
 
     return styleMap(style);
+  }
+
+  #resolveControlColors(colorValue: string): ControlColors | undefined {
+    if (!colorValue) return undefined;
+    const prefersContrast = this.#prefersContrastMore();
+    const cacheKey = `${colorValue}|${prefersContrast ? 'more' : 'default'}`;
+
+    if (this._controlColorsKey === cacheKey && this._controlColors) {
+      return this._controlColors;
+    }
+
+    const parsed = this.#parseColor(colorValue);
+    if (!parsed) return undefined;
+
+    const minAlpha = prefersContrast ? 0.85 : 0.6;
+    const alpha = Math.max(parsed.a ?? 1, minAlpha);
+    const bg = `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${alpha.toFixed(3)})`;
+
+    const fgRgb = this.#pickContrastColor(parsed.r, parsed.g, parsed.b);
+    const fg = `rgb(${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b})`;
+    const mutedAlpha = prefersContrast ? 0.78 : 0.55;
+    const weakAlpha = prefersContrast ? 0.55 : 0.3;
+    const fgMuted = `rgba(${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b}, ${mutedAlpha})`;
+    const fgWeak = `rgba(${fgRgb.r}, ${fgRgb.g}, ${fgRgb.b}, ${weakAlpha})`;
+
+    const result = { bg, fg, fgMuted, fgWeak };
+    this._controlColorsKey = cacheKey;
+    this._controlColors = result;
+    return result;
+  }
+
+  #prefersContrastMore(): boolean {
+    if (this._contrastQuery) return this._contrastQuery.matches;
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-contrast: more)').matches;
+  }
+
+  #parseColor(value: string): ParsedColor | undefined {
+    if (typeof document === 'undefined' || !document.body) return undefined;
+    const swatch = document.createElement('span');
+    swatch.style.color = value;
+    swatch.style.position = 'absolute';
+    swatch.style.left = '-9999px';
+    swatch.style.top = '-9999px';
+    swatch.style.opacity = '0';
+    swatch.style.pointerEvents = 'none';
+    document.body.appendChild(swatch);
+    const computed = getComputedStyle(swatch).color;
+    swatch.remove();
+
+    const match = computed.match(/rgba?\((.+)\)/);
+    if (!match) return undefined;
+    const raw = match[1].replace('/', ' ').trim();
+    const parts = raw.split(/[\s,]+/).filter(Boolean);
+    if (parts.length < 3) return undefined;
+    const r = this.#parseChannel(parts[0]);
+    const g = this.#parseChannel(parts[1]);
+    const b = this.#parseChannel(parts[2]);
+    const a = parts[3] ? this.#parseAlpha(parts[3]) : 1;
+
+    if ([r, g, b, a].some((channel) => Number.isNaN(channel))) return undefined;
+    return { r, g, b, a };
+  }
+
+  #parseChannel(value: string): number {
+    const trimmed = value.trim();
+    if (trimmed.endsWith('%')) {
+      return Math.round((parseFloat(trimmed) / 100) * 255);
+    }
+    return Math.round(parseFloat(trimmed));
+  }
+
+  #parseAlpha(value: string): number {
+    const trimmed = value.trim();
+    const alpha = trimmed.endsWith('%')
+      ? parseFloat(trimmed) / 100
+      : parseFloat(trimmed);
+    if (Number.isNaN(alpha)) return 1;
+    return Math.min(1, Math.max(0, alpha));
+  }
+
+  #pickContrastColor(r: number, g: number, b: number): ParsedColor {
+    const luminance = this.#relativeLuminance(r, g, b);
+    const contrastWithWhite = (1.05) / (luminance + 0.05);
+    const contrastWithBlack = (luminance + 0.05) / 0.05;
+
+    return contrastWithBlack >= contrastWithWhite
+      ? { r: 0, g: 0, b: 0, a: 1 }
+      : { r: 255, g: 255, b: 255, a: 1 };
+  }
+
+  #relativeLuminance(r: number, g: number, b: number): number {
+    const normalize = (channel: number) => {
+      const srgb = channel / 255;
+      return srgb <= 0.03928 ? srgb / 12.92 : Math.pow((srgb + 0.055) / 1.055, 2.4);
+    };
+    const rLin = normalize(r);
+    const gLin = normalize(g);
+    const bLin = normalize(b);
+    return 0.2126 * rLin + 0.7152 * gLin + 0.0722 * bLin;
   }
 
   #renderPlaceholder(

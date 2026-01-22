@@ -13,6 +13,7 @@ export function build(name, LitElement, html, css) {
         overflow: hidden;
         background: transparent;
         direction: ltr !important;
+        container-type: inline-size;
       }
 
       img,
@@ -36,6 +37,7 @@ export function build(name, LitElement, html, css) {
         display: flex;
         background: transparent;
         --media-font-family: system-ui, sans-serif;
+        container-type: inline-size;
         width: var(--width, 100%);
         height: var(--height, 100%);
         max-height: 100vh;
@@ -48,9 +50,17 @@ export function build(name, LitElement, html, css) {
         --media-control-background: transparent;
         --media-control-hover-background: transparent;
 
+        --media-primary-color: var(--mave-control-fg, rgba(238, 238, 238, 1));
+
         --media-range-track-height: 1px;
-        --media-range-track-background: rgba(255, 255, 255, 0.1);
-        --media-range-track-pointer-background: rgba(255, 255, 255, 0.25);
+        --media-range-track-background: var(
+          --mave-control-fg-weak,
+          rgba(255, 255, 255, 0.1)
+        );
+        --media-range-track-pointer-background: var(
+          --mave-control-fg-muted,
+          rgba(255, 255, 255, 0.25)
+        );
 
         --media-range-thumb-background: transparent;
         --media-range-thumb-width: 20px;
@@ -68,6 +78,16 @@ export function build(name, LitElement, html, css) {
         --media-option-hover-background: rgba(0, 0, 0, 0.15);
       }
 
+      media-controller svg[stroke],
+      media-controller svg [stroke] {
+        stroke: currentColor;
+      }
+
+      media-controller svg[fill]:not([fill='none']),
+      media-controller svg [fill]:not([fill='none']) {
+        fill: currentColor;
+      }
+
       media-controller[mediapaused] media-control-bar {
         opacity: 1;
       }
@@ -81,7 +101,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-loading-indicator {
-        --media-icon-color: rgba(255, 255, 255, 1);
+        --media-icon-color: var(--mave-control-fg, rgba(255, 255, 255, 1));
       }
 
       media-control-bar media-loading-indicator {
@@ -198,7 +218,7 @@ export function build(name, LitElement, html, css) {
       media-time-range:hover {
         opacity: 1;
         --media-range-thumb-transform: scale(1);
-        --media-range-thumb-background: #fff;
+        --media-range-thumb-background: var(--mave-control-fg, #fff);
       }
 
       media-time-range span {
@@ -209,7 +229,7 @@ export function build(name, LitElement, html, css) {
         height: 100%;
         --media-range-thumb-width: 16px;
         --media-range-thumb-height: 16px;
-        --media-range-thumb-background: #fff;
+        --media-range-thumb-background: var(--mave-control-fg, #fff);
         --media-range-thumb-transform: scale(1);
       }
 
@@ -244,12 +264,15 @@ export function build(name, LitElement, html, css) {
         bottom: 0;
         pointer-events: none;
         background: var(
-          --primary-color,
-          linear-gradient(
-            180deg,
-            rgba(0, 0, 0, 0) 0%,
-            rgba(0, 0, 0, 0.25) 60%,
-            rgba(0, 0, 0, 0.5) 100%
+          --mave-control-bg,
+          var(
+            --primary-color,
+            linear-gradient(
+              180deg,
+              rgba(0, 0, 0, 0) 0%,
+              rgba(0, 0, 0, 0.25) 60%,
+              rgba(0, 0, 0, 0.5) 100%
+            )
           )
         );
       }
@@ -259,14 +282,17 @@ export function build(name, LitElement, html, css) {
         justify-content: center;
         align-items: center;
         border-radius: 1000px;
-        background-color: var(--primary-color);
+        background-color: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.45))
+        );
         padding: 12px;
       }
 
       div[slot='centered-chrome'] media-play-button {
         width: 72px;
         height: 72px;
-        --media-icon-color: white;
+        --media-icon-color: var(--mave-control-fg, white);
       }
 
       div[slot='centered-chrome'] media-play-button svg {
@@ -307,7 +333,7 @@ export function build(name, LitElement, html, css) {
       media-volume-range {
         border-radius: 9999px;
         padding: 0 8px 0 8px;
-        background: var(--primary-color, rgba(0, 0, 0, 0.25));
+        background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
         --media-range-track-width: 80px;
         backdrop-filter: blur(12px);
       }
@@ -338,7 +364,7 @@ export function build(name, LitElement, html, css) {
         bottom: calc(100% + 4px);
         min-width: 120px;
         transform-origin: bottom right;
-        background: var(--primary-color, rgba(0, 0, 0, 0.25));
+        background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -351,22 +377,37 @@ export function build(name, LitElement, html, css) {
         background: rgba(0, 0, 0, 0.15);
       }
 
-      media-captions-menu-button {
-        margin-right: -2px;
+      media-settings-menu {
+        background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        border-radius: 8px;
+        backdrop-filter: blur(12px);
+        min-width: 160px;
       }
 
-      media-captions-menu-button svg {
-      }
-
-      media-captions-menu-button.small-button {
+      media-settings-menu[hidden] {
         display: none;
       }
 
-      media-captions-menu-button[mediacaptionlist].small-button {
+      media-settings-menu-item {
+        --media-menu-item-hover-background: rgba(0, 0, 0, 0.15);
+      }
+
+      mave-captions-menu-button {
+        margin-right: -2px;
+      }
+
+      mave-captions-menu-button svg {
+      }
+
+      mave-captions-menu-button.small-button {
+        display: none;
+      }
+
+      mave-captions-menu-button[mediacaptionlist].small-button {
         display: flex;
       }
 
-      media-captions-menu-button[mediasubtitleslist].small-button {
+      mave-captions-menu-button[mediasubtitleslist].small-button {
         display: flex;
       }
 
@@ -376,7 +417,7 @@ export function build(name, LitElement, html, css) {
         bottom: calc(100% + 4px);
         min-width: 120px;
         transform-origin: bottom right;
-        background: var(--primary-color, rgba(0, 0, 0, 0.25));
+        background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -401,8 +442,18 @@ export function build(name, LitElement, html, css) {
         display: var(--media-audio-track-menu-button-display, none);
       }
 
-      media-captions-menu-button[mediasubtitleslist].small-button svg[slot='on'] {
-        --media-icon-color: white;
+      media-settings-menu-button.small-button {
+        display: none;
+      }
+
+      @supports not (container-type: inline-size) {
+        media-settings-menu-button.small-button {
+          display: flex;
+        }
+      }
+
+      mave-captions-menu-button[mediasubtitleslist].small-button svg[slot='on'] {
+        --media-icon-color: var(--mave-control-fg, white);
       }
 
       .mave-loader {
@@ -520,8 +571,67 @@ export function build(name, LitElement, html, css) {
       }
 
       media-captions-menu,
-      media-captions-menu-button[mediasubtitleslist].small-button {
+      mave-captions-menu-button[mediasubtitleslist].small-button {
         display: var(--captions-display, flex);
+      }
+
+      @container (max-width: 320px) {
+        media-control-bar {
+          flex-wrap: wrap;
+          gap: 4px 6px;
+          padding: 2px 6px 6px 4px;
+        }
+
+        .mave-gradient-bottom {
+          height: 80px;
+        }
+
+        .small-button {
+          width: 36px;
+          height: 36px;
+        }
+
+        .small-button svg {
+          height: 20px;
+        }
+
+        media-mute-button.small-button svg {
+          height: 22px;
+        }
+
+        media-fullscreen-button.small-button svg {
+          height: 20px;
+        }
+
+        media-control-bar > :not(media-time-range) {
+          order: 2;
+        }
+
+        media-time-display {
+          display: none;
+        }
+
+        media-time-range {
+          order: 1;
+          flex-basis: 100%;
+          margin: 2px 0 0;
+          opacity: 1;
+        }
+
+        media-playback-rate-button {
+          display: none;
+        }
+
+        mave-captions-menu-button.small-button,
+        media-captions-menu-button.small-button,
+        mave-audio-track-menu-button.small-button,
+        media-audio-track-menu-button.small-button {
+          display: none;
+        }
+
+        media-settings-menu-button.small-button {
+          display: flex;
+        }
       }
     `;
 
@@ -615,8 +725,8 @@ export function build(name, LitElement, html, css) {
               <media-preview-time-display slot="preview"></media-preview-time-display>
             </media-time-range>
             <media-playback-rate-button></media-playback-rate-button>
-            <media-captions-menu hidden anchor="auto"></media-captions-menu>
-            <media-captions-menu-button class="small-button">
+            <media-captions-menu hidden anchor="mave-captions"></media-captions-menu>
+            <mave-captions-menu-button id="mave-captions" class="small-button">
               <svg
                 slot="off"
                 xmlns="http://www.w3.org/2000/svg"
@@ -643,7 +753,7 @@ export function build(name, LitElement, html, css) {
                   clip-rule="evenodd"
                 />
               </svg>
-            </media-captions-menu-button>
+            </mave-captions-menu-button>
             <mave-audio-track-menu
               hidden
               anchor="mave-audio-tracks"
@@ -665,6 +775,37 @@ export function build(name, LitElement, html, css) {
                 <path d="M14 15v-3"></path>
               </svg>
             </mave-audio-track-menu-button>
+            <media-settings-menu-button id="mave-settings" class="small-button">
+              <svg
+                slot="icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <circle cx="5" cy="12" r="2"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+                <circle cx="19" cy="12" r="2"></circle>
+              </svg>
+            </media-settings-menu-button>
+            <media-settings-menu hidden anchor="mave-settings">
+              <media-settings-menu-item style="display: var(--playbackrate-display, flex);">
+                <span>Playback speed</span>
+                <media-playback-rate-menu slot="submenu" hidden></media-playback-rate-menu>
+              </media-settings-menu-item>
+              <media-settings-menu-item
+                style="display: var(--mave-captions-menu-button-display, flex);"
+              >
+                <span>Captions</span>
+                <media-captions-menu slot="submenu" hidden></media-captions-menu>
+              </media-settings-menu-item>
+              <media-settings-menu-item
+                style="display: var(--media-audio-track-menu-button-display, none);"
+              >
+                <span>Audio tracks</span>
+                <mave-audio-track-menu slot="submenu" hidden></mave-audio-track-menu>
+              </media-settings-menu-item>
+            </media-settings-menu>
             <div class="media-volume-wrapper">
               <media-mute-button class="small-button">
                 <svg
