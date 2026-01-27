@@ -577,30 +577,35 @@ export function build(name, LitElement, html, css) {
 
       @container (max-width: 320px) {
         media-control-bar {
+          position: static;
           flex-wrap: wrap;
-          gap: 4px 6px;
-          padding: 2px 6px 6px 4px;
+          gap: 0 2px;
+          padding: 0 4px 2px 2px;
+          z-index: auto;
+        }
+
+        media-captions-menu,
+        media-audio-track-menu,
+        mave-audio-track-menu,
+        media-settings-menu {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          min-width: unset;
+          width: 100%;
+          max-height: none;
+          overflow-y: auto;
+          border-radius: 0;
+          background: rgba(0, 0, 0, 0.85);
+          backdrop-filter: blur(16px);
+          transform-origin: bottom center;
+          z-index: 30;
         }
 
         .mave-gradient-bottom {
-          height: 80px;
-        }
-
-        .small-button {
-          width: 36px;
-          height: 36px;
-        }
-
-        .small-button svg {
-          height: 20px;
-        }
-
-        media-mute-button.small-button svg {
-          height: 22px;
-        }
-
-        media-fullscreen-button.small-button svg {
-          height: 20px;
+          display: none;
         }
 
         media-control-bar > :not(media-time-range) {
@@ -608,29 +613,36 @@ export function build(name, LitElement, html, css) {
         }
 
         media-time-display {
-          display: none;
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          font-size: 14px;
+          min-width: 0;
+          margin: 0;
+          padding: 2px 6px !important;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(8px);
+          border-radius: 4px;
+          z-index: 10;
         }
 
         media-time-range {
           order: 1;
           flex-basis: 100%;
-          margin: 2px 0 0;
+          height: 28px;
+          min-height: 0;
+          margin: 0;
           opacity: 1;
+          --media-preview-thumbnail-max-width: 0px;
+          --media-preview-thumbnail-max-height: 0px;
         }
 
-        media-playback-rate-button {
+        media-preview-thumbnail {
           display: none;
         }
 
-        mave-captions-menu-button.small-button,
-        media-captions-menu-button.small-button,
-        mave-audio-track-menu-button.small-button,
-        media-audio-track-menu-button.small-button {
+        div[slot='centered-chrome'] {
           display: none;
-        }
-
-        media-settings-menu-button.small-button {
-          display: flex;
         }
       }
     `;
