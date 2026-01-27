@@ -652,6 +652,21 @@ export function build(name, LitElement, html, css) {
         div[slot='centered-chrome'] {
           display: none;
         }
+
+        .media-volume-wrapper {
+          padding-left: 0;
+        }
+
+        .media-volume-wrapper media-mute-button.small-button {
+          flex: 1 1 0;
+          min-width: 0;
+          width: auto;
+        }
+
+        .media-volume-range-wrapper {
+          left: 50%;
+          margin-left: -71px;
+        }
       }
     `;
 
