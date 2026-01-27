@@ -365,6 +365,7 @@ export function build(name, LitElement, html, css) {
         min-width: 120px;
         transform-origin: bottom right;
         background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -379,6 +380,8 @@ export function build(name, LitElement, html, css) {
 
       media-settings-menu {
         background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        --media-settings-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
         border-radius: 8px;
         backdrop-filter: blur(12px);
         min-width: 160px;
@@ -418,6 +421,7 @@ export function build(name, LitElement, html, css) {
         min-width: 120px;
         transform-origin: bottom right;
         background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -575,7 +579,7 @@ export function build(name, LitElement, html, css) {
         display: var(--captions-display, flex);
       }
 
-      @container (max-width: 320px) {
+      @container (max-width: 480px) {
         media-control-bar {
           position: static;
           flex-wrap: wrap;
@@ -598,18 +602,22 @@ export function build(name, LitElement, html, css) {
           max-height: none;
           overflow-y: auto;
           border-radius: 0;
-          background: rgba(0, 0, 0, 0.85);
+          background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
           backdrop-filter: blur(16px);
           transform-origin: bottom center;
           z-index: 30;
         }
 
         .mave-gradient-bottom {
-          display: none;
+          height: 50%;
         }
 
         media-control-bar > :not(media-time-range) {
           order: 2;
+          flex: 1 1 0;
+          min-width: 0;
+          width: auto;
+          justify-content: center;
         }
 
         media-time-display {
@@ -620,7 +628,7 @@ export function build(name, LitElement, html, css) {
           min-width: 0;
           margin: 0;
           padding: 2px 6px !important;
-          background: rgba(0, 0, 0, 0.5);
+          background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.5)));
           backdrop-filter: blur(8px);
           border-radius: 4px;
           z-index: 10;

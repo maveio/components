@@ -1347,6 +1347,9 @@ export class Player extends MaveElement {
         style['--mave-control-fg'] = controlColors.fg;
         style['--mave-control-fg-muted'] = controlColors.fgMuted;
         style['--mave-control-fg-weak'] = controlColors.fgWeak;
+        style['--media-control-background'] = controlColors.bg;
+        style['--media-menu-background'] = controlColors.bg;
+        style['--media-settings-menu-background'] = controlColors.bg;
       }
     } else if (this.#prefersContrastMore()) {
       style['--mave-control-bg'] = 'rgba(0, 0, 0, 0.85)';

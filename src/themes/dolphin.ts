@@ -373,7 +373,7 @@ export function build(name, LitElement, html, css) {
         display: var(--captions-display, flex);
       }
 
-      @container (max-width: 320px) {
+      @container (max-width: 480px) {
         media-control-bar {
           position: static;
           flex-wrap: wrap;
@@ -398,10 +398,16 @@ export function build(name, LitElement, html, css) {
           max-height: none;
           overflow-y: auto;
           border-radius: 0;
-          background: rgba(0, 0, 0, 0.85);
+          background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
+          --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
+          --media-settings-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
           backdrop-filter: blur(16px);
           transform-origin: bottom center;
           z-index: 30;
+        }
+
+        .mave-gradient-bottom {
+          display: none;
         }
 
         media-control-bar > div[style*='flex-grow: 1'] {
@@ -415,14 +421,14 @@ export function build(name, LitElement, html, css) {
         media-time-display {
           position: absolute;
           top: 8px;
-          left: 8px;
+          right: 16px;
           font-size: 14px;
           min-width: 0;
           margin: 0;
-          padding: 2px 6px;
-          background: rgba(0, 0, 0, 0.5);
+          padding: 2px 8px;
+          background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.5)));
           backdrop-filter: blur(8px);
-          border-radius: 4px;
+          border-radius: 12px;
           z-index: 10;
         }
 
@@ -477,6 +483,7 @@ export function build(name, LitElement, html, css) {
             </media-play-button>
           </div>
           <div
+            class="mave-gradient-bottom"
             style="position: absolute; bottom: 0; width: 100%; height: 50%; background: linear-gradient(0deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%); pointer-events: none;"
           ></div>
           <div style="width: calc(100% - 32px); padding: 16px;">
