@@ -375,10 +375,33 @@ export function build(name, LitElement, html, css) {
 
       @container (max-width: 320px) {
         media-control-bar {
+          position: static;
           flex-wrap: wrap;
           height: auto;
-          row-gap: 6px;
-          padding: 6px 8px;
+          row-gap: 0;
+          padding: 0 4px 2px 2px;
+          transform: none;
+          z-index: auto;
+        }
+
+        media-captions-menu,
+        media-audio-track-menu,
+        mave-audio-track-menu,
+        media-settings-menu {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          min-width: unset;
+          width: 100%;
+          max-height: none;
+          overflow-y: auto;
+          border-radius: 0;
+          background: rgba(0, 0, 0, 0.85);
+          backdrop-filter: blur(16px);
+          transform-origin: bottom center;
+          z-index: 30;
         }
 
         media-control-bar > div[style*='flex-grow: 1'] {
@@ -390,29 +413,34 @@ export function build(name, LitElement, html, css) {
         }
 
         media-time-display {
-          display: none;
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          font-size: 14px;
+          min-width: 0;
+          margin: 0;
+          padding: 2px 6px;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(8px);
+          border-radius: 4px;
+          z-index: 10;
         }
 
         media-time-range {
           order: 1;
           flex-basis: 100%;
           height: 28px;
-          margin: 0 0 2px;
+          margin: 0;
+          --media-preview-thumbnail-max-width: 0px;
+          --media-preview-thumbnail-max-height: 0px;
         }
 
-        media-playback-rate-button {
+        media-preview-thumbnail {
           display: none;
         }
 
-        mave-captions-menu-button,
-        media-captions-menu-button,
-        mave-audio-track-menu-button,
-        media-audio-track-menu-button {
+        div[slot='centered-chrome'] {
           display: none;
-        }
-
-        media-settings-menu-button {
-          display: flex;
         }
       }
     `;
