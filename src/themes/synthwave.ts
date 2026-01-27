@@ -408,7 +408,7 @@ export function build(name, LitElement, html, css) {
         display: var(--captions-display, flex);
       }
 
-      @container (max-width: 320px) {
+      @container (max-width: 480px) {
         media-control-bar {
           position: static;
           padding: 0 2px;
@@ -430,10 +430,16 @@ export function build(name, LitElement, html, css) {
           max-height: none;
           overflow-y: auto;
           border-radius: 0;
-          background: rgba(0, 0, 0, 0.85);
+          background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
+          --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
+          --media-settings-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
           backdrop-filter: blur(16px);
           transform-origin: bottom center;
           z-index: 30;
+        }
+
+        .mave-gradient-bottom {
+          display: none;
         }
 
         media-control-bar > div[style*='flex-grow: 1'] {
@@ -448,7 +454,7 @@ export function build(name, LitElement, html, css) {
           min-width: 0;
           margin: 0;
           padding: 2px 6px;
-          background: rgba(0, 0, 0, 0.5);
+          background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.5)));
           backdrop-filter: blur(8px);
           border-radius: 4px;
           z-index: 10;
@@ -456,8 +462,9 @@ export function build(name, LitElement, html, css) {
 
         media-time-range {
           margin: 0;
-          padding: 0;
+          padding: 4px 8px 0;
           z-index: auto;
+          background: var(--mave-control-bg, var(--primary-color, transparent));
           --media-preview-thumbnail-max-width: 0px;
           --media-preview-thumbnail-max-height: 0px;
         }
@@ -524,6 +531,7 @@ export function build(name, LitElement, html, css) {
             </media-play-button>
           </div>
           <div
+            class="mave-gradient-bottom"
             style="position: absolute; bottom: 0; width: 100%; height: 25%; background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0) 100%); pointer-events: none;"
           ></div>
           <media-control-bar>
