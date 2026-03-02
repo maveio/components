@@ -1,6 +1,6 @@
 {
   "name": "@maveio/components",
-  "version": "0.0.170",
+  "version": "0.0.171",
   "description": "privacy friendly (🇪🇺), iframe-less, video UI elements for videos hosted on mave.io",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
