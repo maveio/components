@@ -6,7 +6,6 @@ dotenv.config();
 
 export default defineConfig({
   root: '.',
-  publicDir: 'dist',
   server: {
     port: 5173,
   },
