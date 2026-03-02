@@ -92,6 +92,11 @@ export function build(name, LitElement, html, css) {
         --media-range-thumb-width: 5px;
         --media-range-thumb-height: 5px;
         --media-range-thumb-transition: transform 100ms ease-out;
+        transition: background-color 200ms ease;
+      }
+
+      media-controller[userinactive]:not([mediapaused]) media-control-bar {
+        background: transparent;
       }
 
       media-time-range {
