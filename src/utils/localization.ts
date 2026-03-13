@@ -39,6 +39,14 @@ export const localization = configureLocalization({
   sourceLocale: 'default',
   targetLocales: ['en', 'nl', 'de', 'fr'],
   loadLocale: async (locale) => {
+
+    if (potentialDistFolder()) {
+      const distModule = await loadFromDist(locale);
+      if (distModule) {
+        return distModule;
+      }
+    }
+
     const loader = resolveLoader(locale);
 
     if (loader) {
