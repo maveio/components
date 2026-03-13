@@ -27,13 +27,22 @@ async function loadBundledTheme(name: string): Promise<ThemeModule | undefined> 
   if (!defaults.includes(name)) return undefined;
 
   const useDistFolder = Boolean(potentialDistFolder());
-  if (useDistFolder) {
-    const themePath = `./dist/themes/${name}.js`;
-    return importExternalModule(themePath);
+
+  if (!useDistFolder) {
+    const loader = bundledThemeLoaders[name];
+    if (loader) {
+      try {
+        return await loader();
+      } catch {
+        // Fall through to URL-based loading for app bundlers that do not emit
+        // sibling theme modules from dependencies.
+      }
+    }
   }
 
-  const loader = bundledThemeLoaders[name];
-  return loader ? loader() : undefined;
+  const relativePath = useDistFolder ? `./dist/themes/${name}.js` : `./themes/${name}.js`;
+  const url = new URL(relativePath, import.meta.url).href;
+  return importExternalModule(url);
 }
 
 async function importExternalModule(modulePath: string): Promise<ThemeModule> {
