@@ -35,13 +35,13 @@ export class Clip extends LitElement {
 
   @property() fallback?: 'placeholder' | 'thumbnail' = 'placeholder';
 
-  private _loop: boolean;
+  private _loop?: boolean;
   @property()
   set loop(value: boolean | string) {
-    this._loop = (value === '' || value == 'true' || value == true) ?? false;
+    this._loop = value === '' || value == 'true' || value == true;
   }
   get loop(): boolean {
-    return this._loop;
+    return this._loop ?? false;
   }
 
   private _poster?: string;
@@ -403,6 +403,14 @@ export class Clip extends LitElement {
     }
   }
 
+  get #shouldLoop(): boolean {
+    if (this._loop !== undefined) {
+      return this._loop;
+    }
+
+    return this.autoplay !== 'off';
+  }
+
   render() {
     return html`
       ${this.embedController.render({
@@ -424,7 +432,7 @@ export class Clip extends LitElement {
               poster=${ifDefined(this._failedPlay ? this.poster : undefined)}
               ${ref(this.#handleVideo)}
               ?autoplay=${this.autoplay === 'always'}
-              ?loop=${this.loop || true}
+              ?loop=${this.#shouldLoop}
             >
               ${this.sources.map(
                 (source) => html`
