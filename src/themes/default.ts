@@ -609,7 +609,7 @@ export function build(name, LitElement, html, css) {
         }
 
         .mave-gradient-bottom {
-          height: 50%;
+          height: 50px;
         }
 
         media-control-bar > :not(media-time-range) {
@@ -650,7 +650,7 @@ export function build(name, LitElement, html, css) {
         }
 
         div[slot='centered-chrome'] {
-          display: none;
+          display: var(--big-button-display, none);
         }
 
         .media-volume-wrapper {
