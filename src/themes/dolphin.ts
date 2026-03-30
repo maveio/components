@@ -451,7 +451,7 @@ export function build(name, LitElement, html, css) {
         }
 
         div[slot='centered-chrome'] {
-          display: none;
+          display: var(--big-button-display, none);
         }
       }
     `;
