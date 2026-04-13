@@ -10,8 +10,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 export default defineConfig({
   platform: 'browser',
-  entry: ['src/**/*.ts'],
-  entryPoints: ['src/index.ts'],
+  entry: ['src/index.ts', 'src/config.ts', 'src/react.ts', 'src/vue.ts'],
   format: ['esm', 'cjs'],
   splitting: true,
   treeshake: isProduction,

@@ -130,4 +130,6 @@ export type Caption = {
   segments: Segment[];
 };
 
-export const baseUrl = Config.api.endpoint;
+export function baseUrl() {
+  return Config.api.endpoint;
+}
