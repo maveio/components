@@ -1,6 +1,8 @@
 import type { App, Ref, SetupContext, Slots, VNode } from 'vue';
 import { cloneVNode, defineComponent, h, onMounted, onUpdated, ref } from 'vue';
 
+export { configureMave, setConfig } from './config.js';
+
 import { Clip as ClipElement } from './components/clip.js';
 import { Files as FilesElement } from './components/files.js';
 import { Image as ImageElement } from './components/img.js';

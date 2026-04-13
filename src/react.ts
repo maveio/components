@@ -75,4 +75,4 @@ export const Pop = createComponent({
   react: React,
 });
 
-export { setConfig } from './config.js';
+export { configureMave, setConfig } from './config.js';

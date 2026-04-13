@@ -6,4 +6,4 @@ export { Player } from './components/player.js';
 export { Pop } from './components/pop.js';
 export { Text } from './components/text.js';
 export { Upload } from './components/upload.js';
-export { setConfig } from './config.js';
+export { configureMave, setConfig } from './config.js';

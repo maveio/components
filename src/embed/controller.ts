@@ -61,7 +61,7 @@ export class EmbedController {
     if (this.type == EmbedType.Embed) {
       return this.embedFile('manifest.json');
     } else {
-      const url = new URL(`${API.baseUrl}/collection/${this.token}`);
+      const url = new URL(`${API.baseUrl()}/collection/${this.token}`);
       if (this.embed && this.embed?.length > 1)
         url.searchParams.append('embed', this.embed);
       return url.toString();
