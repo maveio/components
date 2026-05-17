@@ -10,7 +10,19 @@ const isDev = process.env.NODE_ENV === 'development';
 
 export default defineConfig({
   platform: 'browser',
-  entry: ['src/index.ts', 'src/config.ts', 'src/react.ts', 'src/vue.ts'],
+  entry: {
+    index: 'src/index.ts',
+    config: 'src/config.ts',
+    react: 'src/react.ts',
+    vue: 'src/vue.ts',
+    'generated/locales/de': 'src/generated/locales/de.ts',
+    'generated/locales/en': 'src/generated/locales/en.ts',
+    'generated/locales/fr': 'src/generated/locales/fr.ts',
+    'generated/locales/nl': 'src/generated/locales/nl.ts',
+    'themes/default': 'src/themes/default.ts',
+    'themes/dolphin': 'src/themes/dolphin.ts',
+    'themes/synthwave': 'src/themes/synthwave.ts',
+  },
   format: ['esm', 'cjs'],
   splitting: true,
   treeshake: isProduction,
