@@ -69,7 +69,7 @@ export default defineConfig({
         ? 'https://metrics.video-dns.com/v1/events'
         : process.env.MAVE_METRICS_ENDPOINT,
       __MAVE_CDN_ENDPOINT__: isProduction
-        ? 'space-${this.spaceId}.video-dns.com'
+        ? 'https://space-${this.spaceId}.video-dns.com'
         : process.env.MAVE_CDN_ENDPOINT,
     }),
   ],
