@@ -26,26 +26,41 @@ const bundledThemeLoaders: Record<string, () => Promise<ThemeModule>> = {
 async function loadBundledTheme(name: string): Promise<ThemeModule | undefined> {
   if (!defaults.includes(name)) return undefined;
 
-  const useDistFolder = Boolean(potentialDistFolder());
+  const distFolder = potentialDistFolder();
 
-  if (!useDistFolder) {
+  if (!distFolder) {
     const loader = bundledThemeLoaders[name];
     if (loader) {
       try {
         return await loader();
       } catch {
-        // Fall through to URL-based loading for app bundlers that do not emit
-        // sibling theme modules from dependencies.
+        return undefined;
       }
     }
+
+    return undefined;
   }
 
-  const relativePath = useDistFolder ? `./dist/themes/${name}.js` : `./themes/${name}.js`;
+  const relativePath = `./${distFolder}themes/${name}.js`;
   const url = new URL(relativePath, import.meta.url).href;
-  return importExternalModule(url);
+  if (!url || url.endsWith('/undefined')) return undefined;
+
+  try {
+    return await importExternalModule(url);
+  } catch {
+    return undefined;
+  }
 }
 
 async function importExternalModule(modulePath: string): Promise<ThemeModule> {
+  if (
+    typeof modulePath !== 'string' ||
+    !modulePath ||
+    modulePath.endsWith('/undefined')
+  ) {
+    throw new Error('[mave-player]: invalid external theme module path');
+  }
+
   return import(
     /* webpackIgnore: true */
     /* @vite-ignore */
@@ -102,9 +117,12 @@ export class ThemeLoader {
         if (bundledTheme) {
           bundledTheme.build(name, LitElement, html, css);
         } else {
-          const themePath = `./${potentialDistFolder()}themes/${name}.js`;
-          const { build } = await importExternalModule(themePath);
-          build(name, LitElement, html, css);
+          const distFolder = potentialDistFolder();
+          if (distFolder) {
+            const themePath = `./${distFolder}themes/${name}.js`;
+            const { build } = await importExternalModule(themePath);
+            build(name, LitElement, html, css);
+          }
         }
       }
     } catch (e) {

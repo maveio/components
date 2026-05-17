@@ -22,14 +22,19 @@ function resolveLoader(locale: string) {
 
 async function loadFromDist(locale: string) {
   const base = potentialDistFolder();
-  if (!base) return null;
+  if (!base || typeof base !== 'string') return null;
 
   try {
     // When the bundle is consumed directly from "dist", the generated locale
     // files sit alongside the compiled chunks. Resolve the path relative to
     // the current module at runtime to support that scenario.
-    const url = new URL(`./${base}generated/locales/${locale}.js`, import.meta.url);
-    return await import(/* @vite-ignore */ url.href);
+    const href = new URL(
+      `./${base}generated/locales/${locale}.js`,
+      import.meta.url,
+    ).href;
+    if (!href || href.endsWith('/undefined')) return null;
+
+    return await import(/* @vite-ignore */ href);
   } catch (err) {
     return null;
   }
