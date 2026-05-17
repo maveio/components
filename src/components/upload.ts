@@ -41,12 +41,12 @@ export class Upload extends LitElement {
   @property({ type: Boolean }) disableCompletion = false;
 
   @state() _progress = 0;
-  @state() _upload_id: string;
+  @state() _upload_id?: string;
   @state() _completed = false;
   @state() _dragging = false;
   @state() _error: UploadErrorDetail | null = null;
   @state() private _hasErrorSlot = false;
-  private embedChannel: EmbedChannel;
+  private embedChannel?: EmbedChannel;
   @query('#mave-upload-input') private fileInput?: HTMLInputElement;
   private playableEmitted = false;
   private currentEmbed?: string;
@@ -239,18 +239,7 @@ export class Upload extends LitElement {
       });
     }
 
-    this.embedChannel = Data.connect(this.token);
-    if (this.embedChannel.upload_id) {
-      this._upload_id = this.embedChannel.upload_id;
-    }
-    this.embedChannel.channel.on('initiate', ({ upload_id }) => {
-      this._upload_id = upload_id;
-      this.embedChannel.upload_id = upload_id;
-      this.playableEmitted = false;
-    });
-    this.embedChannel.channel.on('completed', this.completed.bind(this));
-    this.embedChannel.channel.on('rendition', this.rendition.bind(this));
-    this.embedChannel.channel.on('error', this.error.bind(this));
+    this.connectUploadChannel();
   }
 
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {
@@ -260,17 +249,63 @@ export class Upload extends LitElement {
     }
   }
 
+  private connectUploadChannel() {
+    if (!this.isConnected) return;
+
+    if (!this.token) {
+      this.disconnectUploadChannel();
+      return;
+    }
+
+    if (this.embedChannel?.token === this.token) return;
+
+    this.disconnectUploadChannel();
+
+    const embedChannel = Data.connect(this.token);
+    this.embedChannel = embedChannel;
+
+    if (embedChannel.upload_id) {
+      this._upload_id = embedChannel.upload_id;
+    }
+
+    embedChannel.channel.on('initiate', ({ upload_id }) => {
+      if (this.embedChannel !== embedChannel) return;
+
+      this._upload_id = upload_id;
+      embedChannel.upload_id = upload_id;
+      this.playableEmitted = false;
+    });
+    embedChannel.channel.on('completed', (payload) => {
+      if (this.embedChannel === embedChannel) this.completed(payload);
+    });
+    embedChannel.channel.on('rendition', (payload) => {
+      if (this.embedChannel === embedChannel) this.rendition(payload);
+    });
+    embedChannel.channel.on('error', (payload) => {
+      if (this.embedChannel === embedChannel) this.error(payload);
+    });
+  }
+
+  private disconnectUploadChannel() {
+    if (!this.embedChannel) return;
+
+    const embedChannel = this.embedChannel;
+    this.embedChannel = undefined;
+    this._upload_id = undefined;
+    void Data.disconnect(embedChannel);
+  }
+
   reset() {
     this._progress = 0;
     this._completed = false;
     this._error = null;
     this.playableEmitted = false;
     this.currentEmbed = undefined;
-    this.embedChannel.channel.push('reset', {});
+    this.embedChannel?.channel.push('reset', {});
   }
 
   disconnectedCallback() {
-    Data.disconnect(this.embedChannel);
+    this.disconnectUploadChannel();
     this.removeEventListener('click', this.handleActionClick);
     this.removeEventListener('keydown', this.handleActionKeyDown);
     this.slotObserver?.disconnect();
@@ -333,6 +368,9 @@ export class Upload extends LitElement {
   }
 
   upload(file: File) {
+    const uploadId = this._upload_id;
+    if (!uploadId) return;
+
     this.dispatchEvent(
       new CustomEvent('upload', { bubbles: true, composed: true, detail: { file } }),
     );
@@ -345,10 +383,10 @@ export class Upload extends LitElement {
         title: file.name,
         filetype: file.type,
         token: this.token,
-        upload_id: this._upload_id,
+        upload_id: uploadId,
       },
       fingerprint: (selectedFile, options) =>
-        Upload.uploadFingerprint(selectedFile as File, options.endpoint, this._upload_id),
+        Upload.uploadFingerprint(selectedFile as File, options.endpoint, uploadId),
       onError: (e) => {
         const detail = this.uploadErrorDetail(file, e);
         this._error = detail;
@@ -758,6 +796,10 @@ export class Upload extends LitElement {
 
   protected updated(changedProperties: PropertyValues<Upload>) {
     super.updated(changedProperties);
+    if (changedProperties.has('token')) {
+      this.connectUploadChannel();
+    }
+
     const progress = this._progress || 0;
     const state = this.currentState;
 
