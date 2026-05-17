@@ -16,6 +16,7 @@ interface UploadErrorDetail {
   file?: File;
   reason: string;
   message?: string;
+  error?: unknown;
   allowedExtensions?: {
     video: string[];
     audio: string[];
@@ -346,10 +347,16 @@ export class Upload extends LitElement {
         token: this.token,
         upload_id: this._upload_id,
       },
+      fingerprint: (selectedFile, options) =>
+        Upload.uploadFingerprint(selectedFile as File, options.endpoint, this._upload_id),
       onError: (e) => {
-        console.log(e);
+        const detail = this.uploadErrorDetail(file, e);
+        this._error = detail;
+        this._progress = 0;
+        this._completed = false;
+
         this.dispatchEvent(
-          new CustomEvent('failed', { bubbles: true, composed: true, detail: e }),
+          new CustomEvent('failed', { bubbles: true, composed: true, detail }),
         );
       },
       onProgress: (uploaded, total) => {
@@ -379,6 +386,70 @@ export class Upload extends LitElement {
 
       upload.start();
     });
+  }
+
+  private uploadErrorDetail(file: File, error: unknown): UploadErrorDetail {
+    return {
+      file,
+      reason: 'upload failed',
+      message: Upload.uploadErrorMessage(error),
+      error,
+    };
+  }
+
+  private static uploadFingerprint(
+    file: File,
+    endpoint: string | null | undefined,
+    uploadId: string,
+  ): Promise<string> {
+    return Promise.resolve(
+      [
+        'mave-upload',
+        uploadId,
+        file.name,
+        file.type,
+        file.size,
+        file.lastModified,
+        endpoint,
+      ].join('-'),
+    );
+  }
+
+  private static uploadErrorMessage(error: unknown): string {
+    const responseBody = Upload.uploadErrorResponseBody(error);
+
+    if (responseBody) {
+      return responseBody;
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    return msg('something went wrong');
+  }
+
+  private static uploadErrorResponseBody(error: unknown): string | null {
+    const body = (
+      error as { originalResponse?: { getBody?: () => string } }
+    )?.originalResponse
+      ?.getBody?.()
+      ?.trim();
+
+    if (!body) {
+      return null;
+    }
+
+    try {
+      const decoded = JSON.parse(body);
+      if (typeof decoded?.error === 'string' && decoded.error.trim() !== '') {
+        return decoded.error.trim();
+      }
+    } catch (_error) {
+      return body;
+    }
+
+    return body;
   }
 
   completed(data: { embed: string }) {

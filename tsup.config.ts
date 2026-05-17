@@ -45,10 +45,10 @@ export default defineConfig({
     replace({
       __buildVersion: json.version,
       __MAVE_ENDPOINT__: isProduction
-        ? 'https://mave.io/api/v1'
+        ? 'https://api.mave.io/api/v1'
         : process.env.MAVE_ENDPOINT,
       __MAVE_SOCKET_ENDPOINT__: isProduction
-        ? 'wss://app.mave.io/api/v1/socket'
+        ? 'wss://dash.mave.io/api/v1/socket'
         : process.env.MAVE_SOCKET_ENDPOINT,
       __MAVE_UPLOAD_ENDPOINT__: isProduction
         ? 'https://upload.mave.io/files'
@@ -57,7 +57,7 @@ export default defineConfig({
         ? 'https://metrics.video-dns.com/v1/events'
         : process.env.MAVE_METRICS_ENDPOINT,
       __MAVE_CDN_ENDPOINT__: isProduction
-        ? 'https://space-${this.spaceId}.video-dns.com'
+        ? 'space-${this.spaceId}.video-dns.com'
         : process.env.MAVE_CDN_ENDPOINT,
     }),
   ],
