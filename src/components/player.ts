@@ -163,41 +163,32 @@ export class Player extends MaveElement {
     }
   }
 
-  private _poster?: string;
+  private _poster?: string | number;
   @property()
   get poster(): string | null {
-    if (!this.embed || !this._embedObj || !this.#getImageRendition('thumbnail', 'jpg'))
-      return null;
+    if (!this.embed || !this._embedObj) return null;
 
-    if (this._poster && this._poster == 'custom') {
-      return this.embedController.embedFile(this.#posterRendition('custom_thumbnail'));
+    if (this._poster === 'custom') {
+      return this.#posterFile('custom_thumbnail') || this.#manifestPoster();
     }
 
-    if (
-      this._poster &&
-      (!Number.isNaN(parseFloat(this._poster)) || !Number.isNaN(parseInt(this._poster)))
-    ) {
-      if (
-        this._embedObj.poster &&
-        this._embedObj.poster.renditions &&
-        this._embedObj.poster.renditions.find((p) => p.type == 'custom_thumbnail')
-      ) {
-        return this.embedController.embedFile(this.#posterRendition('custom_thumbnail'));
-      } else {
-        return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${this._poster}`;
-      }
+    if (this.#hasPosterValue(this._poster) && this.#isTimecodePoster(this._poster)) {
+      return this.#posterFile('custom_thumbnail') || this.#timecodePoster(this._poster);
     }
 
-    if (this._poster) {
-      return this._poster;
+    if (this.#hasPosterValue(this._poster)) {
+      return `${this._poster}`;
     }
 
-    return this.embedController.embedFile(this.#posterRendition('thumbnail'));
+    return this.#posterFile('thumbnail') || this.#manifestPoster();
   }
-  set poster(value: string | null) {
-    if (value) {
-      this._poster = value;
-      this.requestUpdate('poster');
+  set poster(value: string | number | null) {
+    const nextPoster = value === null || value === '' ? undefined : value;
+
+    if (this._poster != nextPoster) {
+      const oldPoster = this._poster;
+      this._poster = nextPoster;
+      this.requestUpdate('poster', oldPoster);
     }
   }
 
@@ -660,36 +651,45 @@ export class Player extends MaveElement {
     type: 'poster' | 'thumbnail' | 'custom_thumbnail',
     container: 'webp' | 'avif' | 'jpg',
   ) {
-    return (
-      this._embedObj.poster &&
-      this._embedObj.poster.renditions &&
-      this._embedObj.poster.renditions.find(
-        (rendition) => rendition.container === container && rendition.type === type,
-      )
+    return this._embedObj?.poster?.renditions?.find(
+      (rendition) => rendition.container === container && rendition.type === type,
     );
   }
 
-  #posterRendition(type: 'poster' | 'thumbnail' | 'custom_thumbnail') {
-    const t = type == 'custom_thumbnail' ? 'thumbnail' : type;
-    const jpg = this.#getImageRendition(t, 'jpg');
+  #posterFile(type: 'thumbnail' | 'custom_thumbnail') {
+    const jpg = this.#getImageRendition(type, 'jpg');
+    if (!jpg) return null;
 
-    if (jpg) {
-      // get avif first, then webp, then jpg
+    const filename = type == 'custom_thumbnail' ? 'thumbnail.jpg' : `${type}.jpg`;
+    return this.embedController.embedFile(
+      `${filename}${jpg.date ? `?e=${jpg.date}` : ''}`,
+    );
+  }
 
-      // Safari has issues with posters that are not jpg
-      // const avif = getImage('avif');
-      // const webp = getImage('webp');
+  #manifestPoster() {
+    return (
+      this._embedObj?.poster?.image_src ||
+      this._embedObj?.poster?.initial_frame_src ||
+      null
+    );
+  }
 
-      // return avif
-      //   ? `${type}.avif${avif.date ? `?date=${avif.date}` : ''}`
-      //   : webp
-      //   ? `${type}.webp${webp.date ? `?date=${webp.date}` : ''}`
-      //   : `${type}.jpg${jpg && jpg.date ? `?date=${jpg.date}` : ''}`;
-
-      return `${t}.jpg${jpg && jpg.date ? `?e=${jpg.date}` : ''}`;
-    } else {
-      return `${t}.jpg`;
+  #timecodePoster(time: string | number) {
+    if (!this.embedController.spaceId || !this.embedController.embedId) {
+      return this.#manifestPoster();
     }
+
+    return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${time}`;
+  }
+
+  #hasPosterValue(value: string | number | null | undefined): value is string | number {
+    return value !== null && value !== undefined && value !== '';
+  }
+
+  #isTimecodePoster(value: string | number) {
+    if (typeof value === 'number') return Number.isFinite(value);
+
+    return !Number.isNaN(parseFloat(value)) || !Number.isNaN(parseInt(value));
   }
 
   #getStartLevel(): number {
@@ -1049,10 +1049,9 @@ export class Player extends MaveElement {
   updateEmbed(embed: Embed) {
     this._embedObj = embed;
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
+    this.poster = this._embedObj.settings.poster;
     this.updateStylePoster();
     this.#updateLoadingState();
-
-    this.poster = this._embedObj.settings.poster;
 
     if (!this.attributes.getNamedItem('color')) {
       this.color = this._embedObj.settings.color;
