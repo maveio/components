@@ -6,14 +6,14 @@ export function build(name, LitElement, html, css) {
     static styles = css`
       :host {
         all: initial !important;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        overflow: hidden;
-        background: transparent;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        overflow: hidden !important;
+        background: transparent !important;
         direction: ltr !important;
-        container-type: inline-size;
+        container-type: inline-size !important;
       }
 
       img,
@@ -23,13 +23,21 @@ export function build(name, LitElement, html, css) {
 
       ::slotted(video) {
         overflow: hidden;
-        display: flex;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: flex !important;
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        aspect-ratio: var(--aspect-ratio, 16 / 9);
+        object-fit: contain !important;
         background: transparent;
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+      }
+
+      ::slotted([slot='poster']) {
+        display: block;
+        width: 100%;
+        height: 100%;
+        --media-object-fit: contain;
+        --media-object-position: center;
       }
 
       media-controller {

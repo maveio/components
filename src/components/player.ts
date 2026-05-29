@@ -1,4 +1,5 @@
 import 'media-chrome';
+import 'media-chrome/media-poster-image';
 import 'media-chrome/menu';
 import './audio-track-menu';
 import './captions-menu-button';
@@ -6,9 +7,9 @@ import './captions-menu-button';
 import { IntersectionController } from '@lit-labs/observers/intersection-controller.js';
 import { Metrics } from '@maveio/data';
 import type {
-    AudioTracksUpdatedData,
-    AudioTrackSwitchedData,
-    MediaPlaylist,
+  AudioTracksUpdatedData,
+  AudioTrackSwitchedData,
+  MediaPlaylist,
 } from 'hls.js';
 import Hls from 'hls.js';
 import { css, html, nothing } from 'lit';
@@ -220,6 +221,11 @@ export class Player extends MaveElement {
     :host {
       display: block;
       position: relative;
+      width: var(--width, 100%);
+      height: var(--height, auto);
+      aspect-ratio: var(--aspect-ratio, auto);
+      max-height: 100vh;
+      overflow: hidden;
     }
 
     video::cue {
@@ -238,11 +244,35 @@ export class Player extends MaveElement {
       outline: 0;
     }
 
-    :host,
+    slot[name='video'],
+    slot[name='video'] > *,
     theme-default,
     video {
       width: 100%;
       max-height: 100vh;
+    }
+
+    slot[name='video'] {
+      display: block;
+      position: absolute;
+      inset: 0;
+      height: 100%;
+    }
+
+    slot[name='video'] > *,
+    video {
+      aspect-ratio: var(--aspect-ratio, 16 / 9);
+    }
+
+    slot[name='video'] > :not(:defined) {
+      display: block;
+    }
+
+    video {
+      display: block;
+      height: 100%;
+      object-fit: contain;
+      background: transparent;
     }
 
     slot[name='start-screen'],
@@ -480,6 +510,12 @@ export class Player extends MaveElement {
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {
     if (name === 'locale') {
       this.languageController.locale = this.locale || 'en';
+    }
+    if (
+      this._embedObj &&
+      (name === 'aspect_ratio' || name === 'width' || name === 'height')
+    ) {
+      this.#syncHostLayout();
     }
     super.requestUpdate(name, oldValue);
   }
@@ -1050,7 +1086,6 @@ export class Player extends MaveElement {
     this._embedObj = embed;
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.poster = this._embedObj.settings.poster;
-    this.updateStylePoster();
     this.#updateLoadingState();
 
     if (!this.attributes.getNamedItem('color')) {
@@ -1088,6 +1123,26 @@ export class Player extends MaveElement {
 
     if (!this.attributes.getNamedItem('loop')) {
       this.loop = this._embedObj.settings.loop;
+    }
+
+    this.#syncHostLayout();
+    this.updateStylePoster();
+  }
+
+  #syncHostLayout() {
+    this.style.setProperty('--aspect-ratio', this.#placeholderAspectRatio());
+    this.#syncHostDimension('--width', this.width ?? this._embedObj?.settings.width);
+    this.#syncHostDimension(
+      '--height',
+      this.height ?? this._embedObj?.settings.height,
+    );
+  }
+
+  #syncHostDimension(property: '--width' | '--height', value?: string) {
+    if (value && value !== 'auto') {
+      this.style.setProperty(property, value);
+    } else {
+      this.style.removeProperty(property);
     }
   }
 
@@ -1356,15 +1411,7 @@ export class Player extends MaveElement {
       style['--mave-control-fg-muted'] = 'rgba(255, 255, 255, 0.85)';
       style['--mave-control-fg-weak'] = 'rgba(255, 255, 255, 0.6)';
     }
-    if (
-      this.aspect_ratio == 'auto' ||
-      (this._embedObj?.settings.aspect_ratio == 'auto' && !this.aspect_ratio)
-    ) {
-      style['--aspect-ratio'] = this._embedObj?.video.aspect_ratio;
-    } else {
-      style['--aspect-ratio'] =
-        this.aspect_ratio || this._embedObj?.settings.aspect_ratio;
-    }
+    style['--aspect-ratio'] = this.#placeholderAspectRatio();
 
     if (this.width || this._embedObj?.settings.width) {
       style['--width'] = this.width || this._embedObj?.settings.width;
@@ -1621,22 +1668,71 @@ export class Player extends MaveElement {
   }
 
   #placeholderAspectRatio() {
-    if (this.aspect_ratio && this.aspect_ratio !== 'auto') {
+    if (
+      this.attributes.getNamedItem('aspect-ratio') &&
+      this.aspect_ratio &&
+      this.aspect_ratio !== 'auto'
+    ) {
       return this.aspect_ratio;
     }
 
-    if (
-      this._embedObj?.settings.aspect_ratio &&
-      this._embedObj.settings.aspect_ratio !== 'auto'
-    ) {
-      return this._embedObj.settings.aspect_ratio;
+    const videoAspectRatio = this.#videoAspectRatio();
+    const settingsAspectRatio = this._embedObj?.settings.aspect_ratio;
+
+    if (settingsAspectRatio && settingsAspectRatio !== 'auto') {
+      if (
+        videoAspectRatio &&
+        this.#isDefaultLandscapeAspectRatio(settingsAspectRatio)
+      ) {
+        return videoAspectRatio;
+      }
+
+      return settingsAspectRatio;
     }
 
+    return videoAspectRatio ?? '16 / 9';
+  }
+
+  #videoAspectRatio() {
     if (this._embedObj?.video?.aspect_ratio) {
       return this._embedObj.video.aspect_ratio;
     }
 
-    return '16 / 9';
+    const width = this._embedObj?.video?.max_width;
+    const height = this._embedObj?.video?.max_height;
+
+    if (
+      typeof width === 'number' &&
+      typeof height === 'number' &&
+      width > 0 &&
+      height > 0
+    ) {
+      return `${width} / ${height}`;
+    }
+  }
+
+  #isDefaultLandscapeAspectRatio(value: string) {
+    const ratio = this.#parseAspectRatio(value);
+    return Math.abs(ratio - 16 / 9) < 0.01;
+  }
+
+  #videoIntrinsicDimensions() {
+    const ratio = this.#parseAspectRatio(this.#placeholderAspectRatio());
+    if (ratio >= 1) {
+      return { width: Math.round(ratio * 1000), height: 1000 };
+    }
+
+    return { width: 1000, height: Math.round(1000 / ratio) };
+  }
+
+  #parseAspectRatio(value: string | undefined) {
+    if (!value) return 16 / 9;
+
+    const [width, height] = value.split(/[/:]/).map((part) => parseFloat(part));
+    const ratio = height ? width / height : width;
+
+    if (!Number.isFinite(ratio) || ratio <= 0) return 16 / 9;
+    return ratio;
   }
 
   #renderProcessingPlaceholder(status?: Embed['video']['status']) {
@@ -1659,19 +1755,31 @@ export class Player extends MaveElement {
 
   #renderVideoTemplate() {
     if (!this._embedObj) return nothing;
+    const videoDimensions = this.#videoIntrinsicDimensions();
+
     return staticHtml`<theme-${unsafeStatic(this._themeLoaded)} style=${this.styles}>
       <video
         @click=${this.#requestPlay}
         playsinline
         ?loop=${this.loop || this._embedObj.settings.loop}
         poster=${this.poster}
+        width=${videoDimensions.width}
+        height=${videoDimensions.height}
         ${ref(this.#handleVideo)}
         slot="media"
         crossorigin="anonymous"
       >
         ${this.#storyboard} ${this.#subtitles}
       </video>
+      ${this.#posterTemplate}
     </theme-${unsafeStatic(this._themeLoaded)}>`;
+  }
+
+  get #posterTemplate() {
+    const poster = this.poster;
+    if (!poster) return nothing;
+
+    return html`<media-poster-image slot="poster" src=${poster}></media-poster-image>`;
   }
 
   get #hlsPath() {

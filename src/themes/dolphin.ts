@@ -6,14 +6,14 @@ export function build(name, LitElement, html, css) {
     static styles = css`
       :host {
         all: initial !important;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        overflow: hidden;
-        position: relative;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        overflow: hidden !important;
+        position: relative !important;
         direction: ltr !important;
-        container-type: inline-size;
+        container-type: inline-size !important;
       }
 
       img,
@@ -23,15 +23,22 @@ export function build(name, LitElement, html, css) {
 
       ::slotted(video) {
         overflow: hidden;
-        display: flex;
-        width: 100%;
-        height: 100%;
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
         aspect-ratio: var(--aspect-ratio, 16 / 9);
-        object-fit: contain;
-        display: flex !important;
+        object-fit: contain !important;
         background: transparent;
         transform-origin: center;
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+      }
+
+      ::slotted([slot='poster']) {
+        display: block;
+        width: 100%;
+        height: 100%;
+        --media-object-fit: contain;
+        --media-object-position: center;
       }
 
       media-controller {
@@ -463,6 +470,7 @@ export function build(name, LitElement, html, css) {
             <div id="subtitles_text">subtitles</div>
           </div>
           <slot name="media" slot="media"></slot>
+          <slot name="poster" slot="poster"></slot>
           <div slot="centered-chrome">
             <media-play-button>
               <div slot="play">
