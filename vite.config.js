@@ -5,8 +5,9 @@ import { defineConfig } from 'vite';
 dotenv.config();
 
 export default defineConfig({
-  root: '.',
+  root: './examples',
   server: {
     port: 5173,
+    allowedHosts: true
   },
 });

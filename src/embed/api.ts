@@ -60,6 +60,8 @@ export type Embed = {
     size: number;
     duration: number;
     language: string;
+    max_height?: number | null;
+    max_width?: number | null;
     status?: 'waiting' | 'playable' | 'uploading' | 'preparing' | 'ready' | 'errored';
     ready?: boolean;
     sources: {
