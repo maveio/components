@@ -8,13 +8,17 @@ import { ref } from 'lit/directives/ref.js';
 import { Config } from '../config';
 import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
+import {
+  type ClipCodec,
+  type ClipSource,
+  clipMimeType,
+  detectPlayableClipCodecs,
+  selectClipPosterSource,
+  selectClipSources,
+} from '../utils/clip_sources';
 import { videoEvents } from '../utils/video_events';
 
-interface Source {
-  media?: number | undefined;
-  codec: string;
-  src: string;
-}
+const DEFAULT_CLIP_CODECS: ClipCodec[] = ['av1', 'hevc', 'h264'];
 
 export class Clip extends LitElement {
   private _embedId: string;
@@ -46,8 +50,13 @@ export class Clip extends LitElement {
 
   private _poster?: string;
   @property()
-  get poster(): string {
-    return this.embedController.embedFile(`${this.fallback}.jpg`);
+  get poster(): string | undefined {
+    return selectClipPosterSource({
+      explicitPoster: this._poster,
+      fallback: this.fallback,
+      poster: this._embed?.poster,
+      toSrc: (file) => this.embedController.embedFile(file),
+    });
   }
   set poster(value: string | null) {
     if (value) {
@@ -70,72 +79,34 @@ export class Clip extends LitElement {
     }
   }
 
-  get sources(): Source[] {
-    const renditionType =
-      this.autoplay === 'scroll' ? ['clip_keyframes'] : ['video', 'clip'];
+  get sources(): ClipSource[] {
+    if (!this._embed?.video?.renditions?.length) return [];
 
-    const renditions = this._embed.video.renditions
-      .filter(
-        (r) =>
-          (this.quality == 'auto'
-            ? r.size !== 'uhd'
-            : this.#sizes.indexOf(r.size) <= this.#sizes.indexOf(this.quality)) &&
-          r.container === 'mp4' &&
-          this.#codecs.includes(r.codec) &&
-          (!r.type || renditionType.includes(r.type)),
-      )
-      .sort((a, b) =>
-        a.size === b.size
-          ? this.#codecs.indexOf(a.codec) - this.#codecs.indexOf(b.codec)
-          : this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size),
-      )
-      .map((r) => {
-        const media = this.#mediaWidth.find((m) => m.size === r.size)?.media;
-        const file = `${r.codec}_${r.size}${
-          r.type && r.type != 'video' ? `_${r.type}` : ''
-        }.mp4`;
-
-        return {
-          media,
-          src: this.embedController.embedFile(file),
-          codec: this.#codecDescription[r.codec] ?? r.codec,
-        };
-      });
-
-    const fallbackRenditions = this._embed.video.renditions
-      .filter(
-        (r) =>
-          this.#sizes.indexOf(r.size) <= this.#sizes.indexOf('fhd') &&
-          r.container === 'mp4' &&
-          this.#codecs.includes(r.codec) &&
-          (!r.type || renditionType.includes(r.type)),
-      )
-      .sort((a, b) => this.#sizes.indexOf(b.size) - this.#sizes.indexOf(a.size)); // Get the highest quality available up to fhd
-
-    if (fallbackRenditions.length > 0) {
-      const fallbackRendition = fallbackRenditions[0];
-      const file = `${fallbackRendition.codec}_${fallbackRendition.size}${
-        fallbackRendition.type && fallbackRendition.type != 'video'
-          ? `_${fallbackRendition.type}`
-          : ''
-      }.mp4`;
-
-      const fallbackSource = {
-        media: undefined,
-        src: this.embedController.embedFile(file),
-        codec: this.#codecDescription[fallbackRendition.codec] ?? fallbackRendition.codec,
-      };
-
-      renditions.push(fallbackSource);
-    }
-
-    return renditions;
+    return selectClipSources(this._embed.video.renditions, {
+      autoplay: this.autoplay,
+      devicePixelRatio: this.#devicePixelRatio,
+      playableCodecs: this._playableCodecs,
+      preferredCodecs: this._preferredCodecs,
+      quality: this.quality,
+      renderedLongEdge: this.#renderedLongEdge,
+      toSrc: (file) => this.embedController.embedFile(file),
+    });
   }
 
   private _videoElement?: HTMLMediaElement;
+  private _videoEventsAttached = false;
+  private _metricsEmbed?: string;
+  private _resizeObserver?: ResizeObserver;
+  private _scrollListenerActive = false;
+  private _sourceSignature = '';
+  private _codecCapabilitiesKey = '';
+  private _handleScrollEvent = () => this.#handleScroll();
   private _queue: { (): void }[] = [];
 
   @state() private _failedPlay = false;
+  @state() private _playableCodecs: ClipCodec[] = DEFAULT_CLIP_CODECS;
+  @state() private _preferredCodecs: ClipCodec[] = DEFAULT_CLIP_CODECS;
+  @state() private _observedLongEdge = 0;
 
   private _intersectionObserver = new IntersectionController(this, {
     callback: this.#intersected.bind(this),
@@ -165,19 +136,25 @@ export class Clip extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    if (typeof document !== 'undefined' && this.autoplay === 'scroll') {
-      document.addEventListener('scroll', this.#handleScroll.bind(this));
-    }
+    this.#detectPlayableCodecs();
+    this.#syncScrollListener();
+    this.#observeRenderedSize();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
 
-    if (typeof document !== 'undefined' && this.autoplay === 'scroll') {
-      document.removeEventListener('scroll', this.#handleScroll.bind(this));
-    }
+    this.#stopScrollListener();
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = undefined;
 
     this._metricsInstance?.demonitor();
+  }
+
+  updated() {
+    this.#syncScrollListener();
+    this.#reloadVideoIfSourcesChanged();
+    this.#detectCodecCapabilities();
   }
 
   #handleScroll() {
@@ -200,7 +177,12 @@ export class Clip extends LitElement {
         time = scrollFraction * this._videoElement.duration;
       }
 
-      if (time >= 0 && time <= this._videoElement.duration) {
+      if (
+        Number.isFinite(this._videoElement.duration) &&
+        this._videoElement.duration > 0 &&
+        time >= 0 &&
+        time <= this._videoElement.duration
+      ) {
         this._videoElement.currentTime = time;
       }
     }
@@ -235,7 +217,7 @@ export class Clip extends LitElement {
           }
         });
 
-        this._videoElement?.addEventListener('error', (event) => {
+        this._videoElement?.addEventListener('error', () => {
           reject(new Error('Failed to load video metadata.'));
         });
       };
@@ -279,53 +261,19 @@ export class Clip extends LitElement {
     }
   }
 
-  get #sizes() {
-    return ['sd', 'hd', 'fhd', 'qhd', 'uhd'];
-  }
-
-  get #codecs() {
-    const ua = navigator.userAgent;
-    const isEdgeOnMac = /Edg/.test(ua) && /Mac OS/.test(ua);
-    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
-    const isMacOS = /Mac OS/.test(ua);
-    const isIOS = /iPhone|iPad/.test(ua);
-
-    if ((isMacOS && (isSafari || isEdgeOnMac)) || isIOS) {
-      return ['hevc', 'h264'];
-    }
-
-    // Default to av1, h264 for all other combinations
-    return ['av1', 'h264'];
-  }
-
-  get #codecDescription(): Record<string, string> {
-    return {
-      av1: 'av01.0.08M.08.0.110.01.01.01.0,opus',
-      hevc: 'hevc.01.00.78,mp4a.40.2',
-      h264: 'avc1.64.00.28,mp4a.40.2',
-    };
-  }
-
-  get #mediaWidth() {
-    return [
-      { size: 'qhd', media: 1280 },
-      { size: 'fhd', media: 1080 },
-      { size: 'hd', media: 720 },
-      { size: 'sd', media: 640 },
-    ];
-  }
-
   #handlePlay() {
     this._metricsInstance?.monitor();
     if (this._videoElement) {
       this._videoElement.muted = true;
-      this._videoElement.play().catch((e) => {
+      this._videoElement.play().catch(() => {
         this._failedPlay = true;
       });
     }
   }
 
   #handleVideo(videoElement?: Element) {
+    if (!videoElement && !this._videoElement) return;
+
     if (!this._videoElement) {
       this._videoElement = videoElement as HTMLMediaElement;
       this.dispatchEvent(
@@ -337,9 +285,13 @@ export class Clip extends LitElement {
       );
     }
 
+    if (!this._videoElement) return;
+
     this._intersectionObserver.observe(this._videoElement);
 
-    if (this._videoElement && this._embed) {
+    if (this._embed && !this._videoEventsAttached) {
+      this._videoEventsAttached = true;
+
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
           if (!this._canPlay && this.autoplay === 'scroll' && event === 'canplay') {
@@ -356,27 +308,32 @@ export class Clip extends LitElement {
           );
         });
       });
+    }
 
-      const metadata = {
-        component: 'clip',
-        video_id: this._embed.video.id,
-        space_id: this._embed.space_id,
-      };
-
-      Metrics.config = {
-        apiEndpoint: Config.metrics.endpoint,
-      };
-
-      if (Config.metrics.enabled)
-        this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-          component: 'clip',
-        });
+    if (this._embed) {
+      this.#syncMetrics();
     }
 
     if (this._queue.length) {
       this._queue.forEach((fn) => fn());
       this._queue = [];
     }
+  }
+
+  #syncMetrics() {
+    if (!this._videoElement || !Config.metrics.enabled) return;
+    if (this._metricsEmbed === this.embed) return;
+
+    this._metricsInstance?.demonitor();
+    this._metricsEmbed = this.embed;
+
+    Metrics.config = {
+      apiEndpoint: Config.metrics.endpoint,
+    };
+
+    this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+      component: 'clip',
+    });
   }
 
   #intersected(entries: IntersectionObserverEntry[]) {
@@ -429,27 +386,180 @@ export class Clip extends LitElement {
               )}
               muted
               playsinline
-              poster=${ifDefined(this._failedPlay ? this.poster : undefined)}
+              poster=${ifDefined(this.poster)}
               ${ref(this.#handleVideo)}
               ?autoplay=${this.autoplay === 'always'}
               ?loop=${this.#shouldLoop}
             >
               ${this.sources.map(
-                (source) => html`
-                  <source
-                    media=${ifDefined(
-                      source.media ? `(min-width: ${source.media}px)` : undefined,
-                    )}
-                    src=${source.src}
-                    type=${`video/mp4; ${source.codec}`}
-                  />
-                `,
+                (source) => html` <source src=${source.src} type=${source.type} /> `,
               )}
             </video>
           `;
         },
       })}
     `;
+  }
+
+  #detectPlayableCodecs() {
+    if (typeof document === 'undefined') return;
+
+    const video = document.createElement('video');
+    this._playableCodecs = detectPlayableClipCodecs(video);
+    this._preferredCodecs = this.#withH264Fallback(this._playableCodecs);
+  }
+
+  #detectCodecCapabilities() {
+    if (typeof navigator === 'undefined') return;
+    if (!navigator.mediaCapabilities?.decodingInfo) return;
+
+    const modernCodecs = this._playableCodecs.filter((codec) => codec !== 'h264');
+    if (!modernCodecs.length) return;
+
+    const renderedLongEdge = Math.max(
+      1,
+      Math.ceil(this.#renderedLongEdge * this.#devicePixelRatio),
+    );
+    const key = `${renderedLongEdge}:${modernCodecs.join(',')}`;
+    if (key === this._codecCapabilitiesKey) return;
+
+    this._codecCapabilitiesKey = key;
+
+    Promise.all(
+      modernCodecs.map(async (codec) => {
+        try {
+          const result = await navigator.mediaCapabilities.decodingInfo({
+            type: 'file',
+            video: {
+              bitrate: this.#bitrateForLongEdge(renderedLongEdge),
+              contentType: clipMimeType(codec),
+              framerate: 30,
+              height: renderedLongEdge,
+              width: renderedLongEdge,
+            },
+          });
+
+          return {
+            codec,
+            powerEfficient: result.powerEfficient,
+            smooth: result.smooth,
+            supported: result.supported,
+          };
+        } catch {
+          return {
+            codec,
+            powerEfficient: false,
+            smooth: false,
+            supported: true,
+          };
+        }
+      }),
+    ).then((results) => {
+      if (!this.isConnected) return;
+      if (key !== this._codecCapabilitiesKey) return;
+
+      const preferredCodecs = results
+        .filter((result) => result.supported)
+        .sort((a, b) => {
+          const powerEfficientDiff = Number(b.powerEfficient) - Number(a.powerEfficient);
+          if (powerEfficientDiff !== 0) return powerEfficientDiff;
+
+          const smoothDiff = Number(b.smooth) - Number(a.smooth);
+          if (smoothDiff !== 0) return smoothDiff;
+
+          return (
+            DEFAULT_CLIP_CODECS.indexOf(a.codec) - DEFAULT_CLIP_CODECS.indexOf(b.codec)
+          );
+        })
+        .map((result) => result.codec);
+
+      this._playableCodecs = this.#withH264Fallback(preferredCodecs);
+      this._preferredCodecs = this.#withH264Fallback(preferredCodecs);
+    });
+  }
+
+  #bitrateForLongEdge(longEdge: number): number {
+    if (longEdge >= 2560) return 6_000_000;
+    if (longEdge >= 1920) return 4_000_000;
+    if (longEdge >= 1280) return 2_000_000;
+    return 1_000_000;
+  }
+
+  #withH264Fallback(codecs: readonly ClipCodec[]): ClipCodec[] {
+    const uniqueCodecs = codecs.filter((codec, index) => codecs.indexOf(codec) === index);
+
+    if (!uniqueCodecs.includes('h264')) uniqueCodecs.push('h264');
+    return uniqueCodecs;
+  }
+
+  get #devicePixelRatio(): number {
+    if (typeof window === 'undefined') return 1;
+    return Math.max(window.devicePixelRatio || 1, 1);
+  }
+
+  get #renderedLongEdge(): number {
+    if (this._observedLongEdge > 0) return this._observedLongEdge;
+
+    if (typeof this.getBoundingClientRect !== 'function') return 0;
+
+    const { width, height } = this.getBoundingClientRect();
+    return Math.ceil(
+      Math.max(width, height, this.clientWidth || 0, this.clientHeight || 0),
+    );
+  }
+
+  #observeRenderedSize() {
+    this.#updateRenderedSize();
+
+    if (typeof ResizeObserver === 'undefined') return;
+
+    this._resizeObserver = new ResizeObserver(() => this.#updateRenderedSize());
+    this._resizeObserver.observe(this);
+  }
+
+  #updateRenderedSize() {
+    if (typeof this.getBoundingClientRect !== 'function') return;
+
+    const { width, height } = this.getBoundingClientRect();
+    const longEdge = Math.ceil(
+      Math.max(width, height, this.clientWidth || 0, this.clientHeight || 0),
+    );
+
+    if (longEdge !== this._observedLongEdge) {
+      this._observedLongEdge = longEdge;
+    }
+  }
+
+  #syncScrollListener() {
+    if (this.autoplay === 'scroll') {
+      if (typeof document === 'undefined' || this._scrollListenerActive) return;
+
+      document.addEventListener('scroll', this._handleScrollEvent, { passive: true });
+      this._scrollListenerActive = true;
+      return;
+    }
+
+    this.#stopScrollListener();
+  }
+
+  #stopScrollListener() {
+    if (typeof document === 'undefined' || !this._scrollListenerActive) return;
+
+    document.removeEventListener('scroll', this._handleScrollEvent);
+    this._scrollListenerActive = false;
+  }
+
+  #reloadVideoIfSourcesChanged() {
+    if (!this._embed || !this._videoElement) return;
+
+    const sourceSignature = this.sources.map((source) => source.src).join('|');
+    if (sourceSignature === this._sourceSignature) return;
+
+    this._sourceSignature = sourceSignature;
+
+    if (!this._videoElement.currentSrc || this._videoElement.paused) {
+      this._videoElement.load();
+    }
   }
 }
 
