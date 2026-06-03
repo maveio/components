@@ -196,6 +196,7 @@ export class Player extends MaveElement {
 
   @state() popped = false;
   @state() private _isProcessing = false;
+  @state() private _posterOverlayHidden = false;
 
   @query("slot[name='end-screen']") endScreenElement: HTMLElement;
   @query("slot[name='start-screen']") startScreenElement: HTMLElement;
@@ -222,6 +223,11 @@ export class Player extends MaveElement {
   private _posterWarmPromise?: Promise<boolean>;
   private _posterReadySrc?: string;
   private _autoplayRequestId = 0;
+  private _managedAspectRatio?: string;
+  private _managedPosterBackgroundSrc?: string;
+  private _managedHostDimensions = new Map<'--width' | '--height', string>();
+  private _posterOverlaySourceKey?: string;
+  private _hiddenPosterBackground?: string;
 
   static styles = css`
     :host {
@@ -470,12 +476,20 @@ export class Player extends MaveElement {
   }
 
   updateStylePoster() {
-    if (this.poster) {
-      this.style.setProperty(
-        'background',
-        `center / contain no-repeat url(${this.poster})`,
-      );
-    } else {
+    const poster = this.poster;
+    const currentBackground = this.style.getPropertyValue('background').trim();
+    const hasAuthorBackground =
+      currentBackground && !this._managedPosterBackgroundSrc;
+
+    if (hasAuthorBackground) return;
+
+    if (poster) {
+      if (this._managedPosterBackgroundSrc === poster) return;
+
+      this._managedPosterBackgroundSrc = poster;
+      this.style.setProperty('background', `center / contain no-repeat url(${poster})`);
+    } else if (this._managedPosterBackgroundSrc) {
+      this._managedPosterBackgroundSrc = undefined;
       this.style.removeProperty('background');
     }
   }
@@ -594,6 +608,8 @@ export class Player extends MaveElement {
     super.connectedCallback();
     this.languageController.locale = this.locale || 'en';
     this.loadTheme();
+    this.#syncHostLayout();
+    this.updateStylePoster();
 
     if (typeof window !== 'undefined' && window.matchMedia) {
       this._contrastQuery = window.matchMedia('(prefers-contrast: more)');
@@ -620,10 +636,7 @@ export class Player extends MaveElement {
     if (name === 'locale') {
       this.languageController.locale = this.locale || 'en';
     }
-    if (
-      this._embedObj &&
-      (name === 'aspect_ratio' || name === 'width' || name === 'height')
-    ) {
+    if (name === 'aspect_ratio' || name === 'width' || name === 'height') {
       this.#syncHostLayout();
     }
     super.requestUpdate(name, oldValue);
@@ -890,6 +903,7 @@ export class Player extends MaveElement {
       videoEvents.forEach((event) => {
         this._videoElement?.addEventListener(event, (e) => {
           if (event == 'play') this.#videoPlayed();
+          if (event == 'playing') this.#hidePosterSurfaces();
           if (event == 'ended') this.#showEndscreen();
           if (
             event == 'timeupdate' &&
@@ -1108,6 +1122,54 @@ export class Player extends MaveElement {
     }
   }
 
+  #hidePosterSurfaces() {
+    this.#hidePosterOverlay();
+    this.#hideRootPosterBackground();
+  }
+
+  #hidePosterOverlay() {
+    if (this._posterOverlayHidden) return;
+
+    this._posterOverlayHidden = true;
+  }
+
+  #hideRootPosterBackground() {
+    const backgroundImage = this.style.getPropertyValue('background-image').trim();
+    if (!backgroundImage || backgroundImage === 'none') return;
+
+    const poster = this.poster;
+    const isPosterBackground =
+      Boolean(this._managedPosterBackgroundSrc) ||
+      (Boolean(poster) && backgroundImage.includes(poster!));
+
+    if (!isPosterBackground) return;
+
+    this._hiddenPosterBackground = this.style.getPropertyValue('background').trim();
+    this.style.setProperty('background-image', 'none');
+  }
+
+  #resetPosterSurfaces() {
+    this.#resetPosterOverlay();
+    this.#resetRootPosterBackground();
+  }
+
+  #resetPosterOverlay() {
+    if (!this._posterOverlayHidden) return;
+
+    this._posterOverlayHidden = false;
+  }
+
+  #resetRootPosterBackground() {
+    if (!this._hiddenPosterBackground) return;
+
+    if (this.style.getPropertyValue('background-image').trim() === 'none') {
+      this.style.setProperty('background', this._hiddenPosterBackground);
+    }
+
+    this._hiddenPosterBackground = undefined;
+    this._managedPosterBackgroundSrc = undefined;
+  }
+
   #showEndscreen() {
     const endScreen = this.querySelector(
       '[slot="end-screen"], [data-slot="end-screen"]',
@@ -1230,6 +1292,12 @@ export class Player extends MaveElement {
 
   // Used for updating the embed settings
   updateEmbed(embed: Embed) {
+    const posterOverlaySourceKey = Player.posterOverlaySourceKey(embed);
+    if (this._posterOverlaySourceKey !== posterOverlaySourceKey) {
+      this._posterOverlaySourceKey = posterOverlaySourceKey;
+      this.#resetPosterSurfaces();
+    }
+
     this._embedObj = embed;
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.poster = this._embedObj.settings.poster;
@@ -1277,8 +1345,12 @@ export class Player extends MaveElement {
     this.updateStylePoster();
   }
 
+  private static posterOverlaySourceKey(embed: Embed) {
+    return [embed.id, embed.video?.id, embed.video?.version].join(':');
+  }
+
   #syncHostLayout() {
-    this.style.setProperty('--aspect-ratio', this.#placeholderAspectRatio());
+    this.#syncHostAspectRatio(this.#placeholderAspectRatio());
     this.#syncHostDimension('--width', this.width ?? this._embedObj?.settings.width);
     this.#syncHostDimension(
       '--height',
@@ -1286,10 +1358,29 @@ export class Player extends MaveElement {
     );
   }
 
+  #syncHostAspectRatio(value: string) {
+    const currentValue = this.style.getPropertyValue('--aspect-ratio').trim();
+    const hasAuthorValue =
+      currentValue && currentValue !== this._managedAspectRatio;
+
+    if (hasAuthorValue) return;
+
+    this._managedAspectRatio = value;
+    this.style.setProperty('--aspect-ratio', value);
+  }
+
   #syncHostDimension(property: '--width' | '--height', value?: string) {
+    const currentValue = this.style.getPropertyValue(property).trim();
+    const managedValue = this._managedHostDimensions.get(property);
+    const hasAuthorValue = currentValue && currentValue !== managedValue;
+
+    if (hasAuthorValue) return;
+
     if (value && value !== 'auto') {
+      this._managedHostDimensions.set(property, value);
       this.style.setProperty(property, value);
-    } else {
+    } else if (managedValue) {
+      this._managedHostDimensions.delete(property);
       this.style.removeProperty(property);
     }
   }
@@ -1925,7 +2016,9 @@ export class Player extends MaveElement {
 
   get #posterTemplate() {
     const poster = this.poster;
-    if (!poster || this._posterReadySrc !== poster) return nothing;
+    if (this._posterOverlayHidden || !poster || this._posterReadySrc !== poster) {
+      return nothing;
+    }
 
     return html`<media-poster-image slot="poster" src=${poster}></media-poster-image>`;
   }
