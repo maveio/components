@@ -190,6 +190,7 @@ export class Player extends MaveElement {
       const oldPoster = this._poster;
       this._poster = nextPoster;
       this.requestUpdate('poster', oldPoster);
+      void this.#warmPoster();
     }
   }
 
@@ -202,6 +203,7 @@ export class Player extends MaveElement {
   private _startedPlaying = false;
   private _themeLoaded: string;
   private static readonly PROCESSING_REFRESH_INTERVAL = 5000;
+  private static readonly POSTER_AUTOPLAY_WAIT_MS = 800;
 
   private _subtitlesText: HTMLElement;
   private _audioTrackCount = 0;
@@ -216,6 +218,10 @@ export class Player extends MaveElement {
   private _controlColors?: ControlColors;
   private _contrastQuery?: MediaQueryList;
   private _contrastQueryHandler?: (event: MediaQueryListEvent) => void;
+  private _posterWarmSrc?: string;
+  private _posterWarmPromise?: Promise<boolean>;
+  private _posterReadySrc?: string;
+  private _autoplayRequestId = 0;
 
   static styles = css`
     :host {
@@ -456,6 +462,7 @@ export class Player extends MaveElement {
 
   pause() {
     if (this._videoElement) {
+      this._autoplayRequestId++;
       this._videoElement.pause();
     } else {
       this._queue.push(() => this._videoElement?.pause());
@@ -468,7 +475,109 @@ export class Player extends MaveElement {
         'background',
         `center / contain no-repeat url(${this.poster})`,
       );
+    } else {
+      this.style.removeProperty('background');
     }
+  }
+
+  #warmPoster() {
+    const poster = this.poster;
+    if (!poster) {
+      this.#setPosterReadySrc(undefined);
+      return Promise.resolve(false);
+    }
+
+    if (this._posterReadySrc === poster) return Promise.resolve(true);
+
+    if (this._posterWarmSrc === poster && this._posterWarmPromise) {
+      return this._posterWarmPromise;
+    }
+
+    this.#setPosterReadySrc(undefined);
+    this._posterWarmSrc = poster;
+    this._posterWarmPromise = Player.loadPoster(poster).then((loaded) => {
+      if (this._posterWarmSrc !== poster || this.poster !== poster) return loaded;
+
+      this.#setPosterReadySrc(loaded ? poster : undefined);
+      if (!loaded) {
+        this._posterWarmSrc = undefined;
+        this._posterWarmPromise = undefined;
+      }
+      return loaded;
+    });
+    return this._posterWarmPromise;
+  }
+
+  #setPosterReadySrc(src: string | undefined) {
+    if (this._posterReadySrc === src) return;
+
+    const oldSrc = this._posterReadySrc;
+    this._posterReadySrc = src;
+    this.requestUpdate('_posterReadySrc', oldSrc);
+  }
+
+  private static loadPoster(src: string) {
+    if (typeof Image === 'undefined') return Promise.resolve(false);
+
+    return new Promise<boolean>((resolve) => {
+      const image = new Image();
+      let settled = false;
+
+      const finish = (loaded: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(loaded);
+      };
+
+      const finishAfterDecode = () => {
+        if (image.naturalWidth <= 0) {
+          finish(false);
+          return;
+        }
+
+        if (typeof image.decode === 'function') {
+          void image
+            .decode()
+            .catch(() => undefined)
+            .then(() => finish(true));
+        } else {
+          finish(true);
+        }
+      };
+
+      image.decoding = 'async';
+      if ('fetchPriority' in image) {
+        (
+          image as HTMLImageElement & { fetchPriority: string }
+        ).fetchPriority = 'high';
+      }
+      image.onload = finishAfterDecode;
+      image.onerror = () => finish(false);
+      image.src = src;
+
+      if (image.complete) finishAfterDecode();
+    });
+  }
+
+  private static waitForPoster(
+    promise: Promise<boolean>,
+    timeoutMs: number,
+  ): Promise<boolean> {
+    if (typeof window === 'undefined') return promise;
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const timeout = window.setTimeout(() => finish(false), timeoutMs);
+
+      const finish = (loaded: boolean) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        resolve(loaded);
+      };
+
+      void promise.then(finish).catch(() => finish(false));
+    });
   }
 
   #xhrHLSSetup(xhr: XMLHttpRequest, url: string) {
@@ -1041,34 +1150,72 @@ export class Player extends MaveElement {
   }
 
   #handleAutoplay() {
-    if (this._embedObj && this.autoplay == 'always') {
-      if (this._videoElement?.paused) {
-        this._metricsInstance?.monitor();
-        this._videoElement.muted = true;
-        this._videoElement?.play();
-      }
+    if (!this._embedObj) return;
+
+    if (this.#shouldAutoplayNow()) {
+      this.#requestAutoplayPlay();
+      return;
     }
 
+    if (this.#hasLazyAutoplay()) {
+      this._autoplayRequestId++;
+
+      if (
+        this._videoElement &&
+        !this._videoElement.paused &&
+        this._videoElement.readyState > 2
+      )
+        this._videoElement?.pause();
+    }
+  }
+
+  #hasLazyAutoplay() {
+    return (
+      this.autoplay === 'lazy' ||
+      this.autoplay === 'true' ||
+      this._embedObj?.settings.autoplay == 'on_show'
+    );
+  }
+
+  #shouldAutoplayNow() {
+    if (!this._embedObj) return false;
+    if (this.autoplay === 'always') return true;
+
+    return this.#hasLazyAutoplay() && this._intersected;
+  }
+
+  #requestAutoplayPlay() {
+    if (!this._videoElement?.paused) return;
+
+    const requestId = ++this._autoplayRequestId;
+    this._videoElement.muted = true;
+    void this.#playAutoplayWhenPosterReady(requestId);
+  }
+
+  async #playAutoplayWhenPosterReady(requestId: number) {
+    const posterReady = await Player.waitForPoster(
+      this.#warmPoster(),
+      Player.POSTER_AUTOPLAY_WAIT_MS,
+    );
+
+    if (posterReady) await this.updateComplete;
+
     if (
-      this._embedObj &&
-      (this.autoplay === 'lazy' ||
-        this.autoplay === 'true' ||
-        this._embedObj.settings.autoplay == 'on_show')
+      requestId !== this._autoplayRequestId ||
+      !this.isConnected ||
+      !this.#shouldAutoplayNow() ||
+      !this._videoElement?.paused
     ) {
-      if (this._intersected) {
-        if (this._videoElement?.paused) {
-          this._metricsInstance?.monitor();
-          this._videoElement.muted = true;
-          this._videoElement?.play();
-        }
-      } else {
-        if (
-          this._videoElement &&
-          !this._videoElement.paused &&
-          this._videoElement.readyState > 2
-        )
-          this._videoElement?.pause();
-      }
+      return;
+    }
+
+    this._metricsInstance?.monitor();
+    this._videoElement.muted = true;
+
+    try {
+      await this._videoElement.play();
+    } catch {
+      // Autoplay can still be denied by the browser or page policy.
     }
   }
 
@@ -1086,6 +1233,7 @@ export class Player extends MaveElement {
     this._embedObj = embed;
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.poster = this._embedObj.settings.poster;
+    void this.#warmPoster();
     this.#updateLoadingState();
 
     if (!this.attributes.getNamedItem('color')) {
@@ -1777,7 +1925,7 @@ export class Player extends MaveElement {
 
   get #posterTemplate() {
     const poster = this.poster;
-    if (!poster) return nothing;
+    if (!poster || this._posterReadySrc !== poster) return nothing;
 
     return html`<media-poster-image slot="poster" src=${poster}></media-poster-image>`;
   }
