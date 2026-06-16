@@ -109,6 +109,14 @@ export function build(name, LitElement, html, css) {
         --media-control-hover-background: transparent;
       }
 
+      media-controller[userinactive]:not([mediapaused]):focus-within media-control-bar,
+      media-controller[userinactive]:not([mediapaused]):focus-within .mave-gradient-bottom,
+      media-controller[userinactive]:not([mediapaused])
+        div[slot='centered-chrome']:focus-within {
+        opacity: 1 !important;
+        transition: var(--media-control-transition-in, opacity 0.25s);
+      }
+
       media-time-range {
         width: 100%;
         margin: 0 0 -4px 0;
@@ -127,6 +135,10 @@ export function build(name, LitElement, html, css) {
         --media-range-thumb-height: 4px;
         --media-range-thumb-transition: transform 100ms ease-out;
         --media-text-color: #fff;
+      }
+
+      media-time-range:focus-within {
+        --media-range-thumb-transform: scale(1.4);
       }
 
       @media (prefers-contrast: more) {

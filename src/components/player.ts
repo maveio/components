@@ -12,7 +12,7 @@ import type {
   MediaPlaylist,
 } from 'hls.js';
 import Hls from 'hls.js';
-import { css, html, nothing } from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
@@ -39,6 +39,15 @@ type ParsedColor = {
   g: number;
   b: number;
   a: number;
+};
+
+type MediaTimeRangeElement = HTMLElement & {
+  keysUsed?: string[];
+  mediaCurrentTime?: number;
+  mediaDuration?: number;
+  mediaSeekableStart?: number;
+  mediaSeekableEnd?: number;
+  range?: HTMLInputElement;
 };
 
 @localized()
@@ -215,6 +224,11 @@ export class Player extends MaveElement {
   private _currentAudioTrackMenu?: Element | null;
   private _themeMutationObserver?: MutationObserver;
   private _themeMutationObserverRoot?: Node;
+  private _timeRangeAccessibilityCleanups = new Map<
+    MediaTimeRangeElement,
+    { cleanup: () => void; sync: () => void }
+  >();
+  private _pendingTimeRangeAccessibilitySetup?: number;
   private _controlColorsKey?: string;
   private _controlColors?: ControlColors;
   private _contrastQuery?: MediaQueryList;
@@ -642,6 +656,14 @@ export class Player extends MaveElement {
     super.requestUpdate(name, oldValue);
   }
 
+  protected updated(changedProperties: PropertyValues<Player>) {
+    super.updated(changedProperties);
+
+    if (changedProperties.has('controls') || changedProperties.has('theme')) {
+      this.#queueTimeRangeAccessibilitySetup();
+    }
+  }
+
   #applySubtitleStyles() {
     this._videoElement?.addEventListener('webkitbeginfullscreen', () => {
       this.style.setProperty('--subtitle-opacity', '1');
@@ -677,6 +699,12 @@ export class Player extends MaveElement {
     this._themeMutationObserver?.disconnect();
     this._themeMutationObserver = undefined;
     this._themeMutationObserverRoot = undefined;
+    if (this._pendingTimeRangeAccessibilitySetup != null) {
+      cancelAnimationFrame(this._pendingTimeRangeAccessibilitySetup);
+      this._pendingTimeRangeAccessibilitySetup = undefined;
+    }
+    this._timeRangeAccessibilityCleanups.forEach(({ cleanup }) => cleanup());
+    this._timeRangeAccessibilityCleanups.clear();
   }
 
   loadTheme() {
@@ -897,6 +925,7 @@ export class Player extends MaveElement {
           composed: true,
         }),
       );
+      this.#setupTimeRangeAccessibility();
       this._intersectionObserver.observe(this._videoElement);
       this.#updateLoadingState();
 
@@ -1448,12 +1477,193 @@ export class Player extends MaveElement {
     this._themeMutationObserver?.disconnect();
 
     const observer = new MutationObserver(() => {
+      this.#queueTimeRangeAccessibilitySetup();
       this.#queueHlsAudioTrackSetup();
     });
     observer.observe(root, { childList: true, subtree: true });
 
     this._themeMutationObserver = observer;
     this._themeMutationObserverRoot = root;
+  }
+
+  #queueTimeRangeAccessibilitySetup() {
+    if (this._pendingTimeRangeAccessibilitySetup != null) return;
+    this._pendingTimeRangeAccessibilitySetup = requestAnimationFrame(() => {
+      this._pendingTimeRangeAccessibilitySetup = undefined;
+      this.#setupTimeRangeAccessibility();
+    });
+  }
+
+  #setupTimeRangeAccessibility() {
+    const root = this.#mediaChromeRoot;
+    if (!root) return;
+
+    this.#observeThemeRoot(root);
+
+    const timeRanges = Array.from(
+      root.querySelectorAll<MediaTimeRangeElement>('media-time-range'),
+    );
+
+    this._timeRangeAccessibilityCleanups.forEach(({ cleanup }, timeRange) => {
+      if (!timeRanges.includes(timeRange)) {
+        cleanup();
+        this._timeRangeAccessibilityCleanups.delete(timeRange);
+      }
+    });
+
+    timeRanges.forEach((timeRange) => {
+      const setup = this._timeRangeAccessibilityCleanups.get(timeRange);
+      if (setup) {
+        setup.sync();
+        return;
+      }
+
+      this.#setupTimeRangeAccessibilityFor(timeRange);
+    });
+  }
+
+  #setupTimeRangeAccessibilityFor(timeRange: MediaTimeRangeElement) {
+    const hadTabIndex = timeRange.hasAttribute('tabindex');
+    const tabIndex = timeRange.getAttribute('tabindex');
+    const keysUsed = timeRange.getAttribute('keysused');
+
+    const mergedKeys = new Set((keysUsed ?? '').split(/\s+/).filter((key) => key.length));
+    ['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].forEach((key) =>
+      mergedKeys.add(key),
+    );
+    timeRange.setAttribute('keysused', Array.from(mergedKeys).join(' '));
+
+    const syncTabStop = () => {
+      if (hadTabIndex) return;
+
+      if (this.#timeRangeAcceptsKeyboard(timeRange)) {
+        timeRange.setAttribute('tabindex', '0');
+      } else {
+        timeRange.removeAttribute('tabindex');
+      }
+    };
+
+    const focusRangeInput = () => {
+      const input = this.#timeRangeInput(timeRange);
+      if (!input || input.disabled) return;
+      if (timeRange.shadowRoot?.activeElement === input) return;
+
+      input.focus({ preventScroll: true });
+    };
+
+    const onFocus = () => {
+      requestAnimationFrame(focusRangeInput);
+    };
+
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.key === ' ') {
+        event.preventDefault();
+        return;
+      }
+
+      const input = this.#timeRangeInput(timeRange);
+      if (!input) return;
+      if (!this.#handleTimeRangeKeydown(timeRange, input, event)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    timeRange.addEventListener('focus', onFocus);
+    timeRange.addEventListener('keydown', onKeydown);
+    syncTabStop();
+
+    this._timeRangeAccessibilityCleanups.set(timeRange, {
+      sync: syncTabStop,
+      cleanup: () => {
+        timeRange.removeEventListener('focus', onFocus);
+        timeRange.removeEventListener('keydown', onKeydown);
+
+        if (hadTabIndex && tabIndex != null) {
+          timeRange.setAttribute('tabindex', tabIndex);
+        } else {
+          timeRange.removeAttribute('tabindex');
+        }
+
+        if (keysUsed != null) {
+          timeRange.setAttribute('keysused', keysUsed);
+        } else {
+          timeRange.removeAttribute('keysused');
+        }
+      },
+    });
+  }
+
+  #timeRangeAcceptsKeyboard(timeRange: MediaTimeRangeElement) {
+    const style = getComputedStyle(timeRange);
+
+    return (
+      style.display !== 'none' &&
+      style.visibility !== 'hidden' &&
+      !timeRange.hasAttribute('disabled') &&
+      timeRange.getAttribute('aria-disabled') !== 'true'
+    );
+  }
+
+  #timeRangeInput(timeRange: MediaTimeRangeElement) {
+    return (
+      timeRange.range ??
+      timeRange.shadowRoot?.querySelector<HTMLInputElement>('input[type="range"]')
+    );
+  }
+
+  #handleTimeRangeKeydown(
+    timeRange: MediaTimeRangeElement,
+    input: HTMLInputElement,
+    event: KeyboardEvent,
+  ) {
+    const seekableStart = timeRange.mediaSeekableStart ?? 0;
+    const seekableEndCandidate =
+      timeRange.mediaSeekableEnd ??
+      timeRange.mediaDuration ??
+      this._videoElement?.duration;
+    const seekableEnd = Number.isFinite(seekableEndCandidate)
+      ? Number(seekableEndCandidate)
+      : seekableStart;
+    const duration = Math.max(seekableEnd - seekableStart, 0);
+    const currentRatio = Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : 0;
+    const currentTime = seekableStart + currentRatio * duration;
+    const step = this.#timeRangeKeyboardStep(duration);
+    const pageStep = Math.max(step * 10, duration / 10);
+    let nextTime: number;
+
+    switch (event.key) {
+      case 'ArrowLeft':
+        nextTime = currentTime - step;
+        break;
+      case 'ArrowRight':
+        nextTime = currentTime + step;
+        break;
+      case 'PageDown':
+        nextTime = currentTime - pageStep;
+        break;
+      case 'PageUp':
+        nextTime = currentTime + pageStep;
+        break;
+      case 'Home':
+        nextTime = seekableStart;
+        break;
+      case 'End':
+        nextTime = seekableEnd;
+        break;
+      default:
+        return false;
+    }
+
+    const boundedTime = Math.min(Math.max(nextTime, seekableStart), seekableEnd);
+    input.valueAsNumber = duration ? (boundedTime - seekableStart) / duration : 0;
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    return true;
+  }
+
+  #timeRangeKeyboardStep(duration: number) {
+    if (!Number.isFinite(duration) || duration <= 0) return 1;
+    return Math.max(1, Math.min(10, duration / 100));
   }
 
   #getAudioTrackElements(): {

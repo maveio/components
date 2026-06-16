@@ -106,6 +106,15 @@ export function build(name, LitElement, html, css) {
         background: transparent;
       }
 
+      media-controller[userinactive]:not([mediapaused]):focus-within
+        .mave-control-bar-wrapper,
+      media-controller[userinactive]:not([mediapaused]):focus-within .mave-gradient-bottom,
+      media-controller[userinactive]:not([mediapaused])
+        div[slot='centered-chrome']:focus-within {
+        opacity: 1 !important;
+        transition: var(--media-control-transition-in, opacity 0.25s);
+      }
+
       media-time-range {
         width: 100%;
         height: 38px;
@@ -115,6 +124,10 @@ export function build(name, LitElement, html, css) {
         --media-range-track-border-radius: 8px;
         --media-range-hover-background: transparent;
         --media-text-color: #fff;
+      }
+
+      media-time-range:focus-within {
+        --media-range-thumb-transform: scale(1.4);
       }
 
       @media (prefers-contrast: more) {
@@ -499,7 +512,7 @@ export function build(name, LitElement, html, css) {
             class="mave-gradient-bottom"
             style="position: absolute; bottom: 0; width: 100%; height: 50%; background: linear-gradient(0deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%); pointer-events: none;"
           ></div>
-          <div style="width: calc(100% - 32px); padding: 16px;">
+          <div class="mave-control-bar-wrapper" style="width: calc(100% - 32px); padding: 16px;">
             <media-control-bar>
               <media-play-button>
                 <div slot="play">
