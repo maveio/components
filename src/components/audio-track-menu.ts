@@ -131,12 +131,22 @@ export class MaveAudioTrackMenuButton extends MediaChromeMenuButton {
 
   connectedCallback(): void {
     super.connectedCallback();
+    this.#syncInitialAriaExpanded();
     this.#updateAriaLabel();
   }
 
   #updateAriaLabel(): void {
     const label = t('audio tracks');
     this.setAttribute('aria-label', label);
+  }
+
+  #syncInitialAriaExpanded(): void {
+    if (this.hasAttribute('aria-expanded')) return;
+
+    this.setAttribute(
+      'aria-expanded',
+      this.invokeTargetElement && !this.invokeTargetElement.hidden ? 'true' : 'false',
+    );
   }
 
   get invokeTargetElement(): HTMLElement | null {
