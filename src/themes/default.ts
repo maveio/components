@@ -224,7 +224,7 @@ export function build(name, LitElement, html, css) {
       }
 
       media-fullscreen-button.small-button svg {
-        height: 24px;
+        height: 28px;
       }
 
       media-time-range {
