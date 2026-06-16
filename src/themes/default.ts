@@ -790,7 +790,7 @@ export function build(name, LitElement, html, css) {
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke-width="1.1"
+                stroke-width="1.3"
                 stroke="currentColor"
               >
                 <path
@@ -824,17 +824,14 @@ export function build(name, LitElement, html, css) {
               <svg
                 slot="icon"
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 22 22"
+                viewBox="0 0 24 24"
                 fill="none"
-                stroke="#fff"
-                stroke-width="1.1"
+                stroke="currentColor"
+                stroke-width="1.3"
                 stroke-linecap="round"
-                stroke-linejoin="round"
+                aria-hidden="true"
               >
-                <circle cx="11" cy="11" r="9"></circle>
-                <path d="M8 15v-5"></path>
-                <path d="M11 17V8"></path>
-                <path d="M14 15v-3"></path>
+                <path d="M5 10.5v3M8 7.5v9M11 4.75v14.5M14 7.5v9M17 5.75v12.5M20 9.5v5"></path>
               </svg>
             </mave-audio-track-menu-button>
             <media-settings-menu-button
@@ -883,7 +880,7 @@ export function build(name, LitElement, html, css) {
                   viewBox="0 0 24 24"
                   fill="currentColor"
                   stroke="currentColor"
-                  stroke-width="1.1"
+                  stroke-width="1.3"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
@@ -899,7 +896,7 @@ export function build(name, LitElement, html, css) {
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="1.1"
+                  stroke-width="1.3"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
@@ -914,7 +911,7 @@ export function build(name, LitElement, html, css) {
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="1.1"
+                  stroke-width="1.3"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
@@ -929,7 +926,7 @@ export function build(name, LitElement, html, css) {
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="1.1"
+                  stroke-width="1.3"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
@@ -952,7 +949,7 @@ export function build(name, LitElement, html, css) {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.25"
+                stroke-width="1.3"
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 class="feather feather-maximize"
@@ -969,7 +966,7 @@ export function build(name, LitElement, html, css) {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.25"
+                stroke-width="1.3"
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 class="feather feather-maximize"
