@@ -539,6 +539,7 @@ export function build(name, LitElement, html, css) {
                   fill="currentColor"
                   xmlns="http://www.w3.org/2000/svg"
                   color="currentColor"
+                  style="transform: translateX(4px);"
                 >
                   <path
                     d="M6.906 4.537A.6.6 0 006 5.053v13.894a.6.6 0 00.906.516l11.723-6.947a.6.6 0 000-1.032L6.906 4.537z"
