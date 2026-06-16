@@ -110,14 +110,6 @@ export function build(name, LitElement, html, css) {
         opacity: 1;
       }
 
-      media-controller[userinactive]:not([mediapaused]):focus-within media-control-bar,
-      media-controller[userinactive]:not([mediapaused]):focus-within .mave-gradient-bottom,
-      media-controller[userinactive]:not([mediapaused])
-        div[slot='centered-chrome']:focus-within {
-        opacity: 1 !important;
-        transition: var(--media-control-transition-in, opacity 0.25s);
-      }
-
       media-loading-indicator {
         --media-icon-color: var(--mave-control-fg, rgba(255, 255, 255, 1));
       }
