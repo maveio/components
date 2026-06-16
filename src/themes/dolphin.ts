@@ -59,6 +59,8 @@ export function build(name, LitElement, html, css) {
         --media-control-padding: 8px;
         --media-control-background: transparent;
         --media-option-hover-background: rgba(0, 0, 0, 0.25);
+        --media-focus-box-shadow: inset 0 0 0 2px rgb(27 127 204 / 0.9);
+        --media-menu-item-focus-shadow: inset 0 0 0 2px rgb(27 127 204 / 0.9);
 
         --media-range-track-background: var(--mave-control-fg-weak, rgba(255, 255, 255, 0.35));
         --media-range-track-pointer-background: var(
@@ -119,7 +121,7 @@ export function build(name, LitElement, html, css) {
         width: 100%;
         height: 38px;
         flex-grow: 1;
-        border-radius: 8px;
+        border-radius: 0;
 
         --media-range-track-border-radius: 8px;
         --media-range-hover-background: transparent;

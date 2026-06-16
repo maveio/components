@@ -57,6 +57,8 @@ export function build(name, LitElement, html, css) {
 
         --media-control-background: transparent;
         --media-control-hover-background: transparent;
+        --media-focus-box-shadow: inset 0 0 0 2px rgb(27 127 204 / 0.9);
+        --media-menu-item-focus-shadow: inset 0 0 0 2px rgb(27 127 204 / 0.9);
 
         --media-primary-color: var(--mave-control-fg, rgba(238, 238, 238, 1));
 

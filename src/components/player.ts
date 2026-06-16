@@ -229,6 +229,8 @@ export class Player extends MaveElement {
     { cleanup: () => void; sync: () => void }
   >();
   private _pendingTimeRangeAccessibilitySetup?: number;
+  private _timeRangeAccessibilitySetupAttempts = 0;
+  private static readonly TIME_RANGE_ACCESSIBILITY_SETUP_MAX_ATTEMPTS = 10;
   private _controlColorsKey?: string;
   private _controlColors?: ControlColors;
   private _contrastQuery?: MediaQueryList;
@@ -660,6 +662,7 @@ export class Player extends MaveElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('controls') || changedProperties.has('theme')) {
+      this._timeRangeAccessibilitySetupAttempts = 0;
       this.#queueTimeRangeAccessibilitySetup();
     }
   }
@@ -703,6 +706,7 @@ export class Player extends MaveElement {
       cancelAnimationFrame(this._pendingTimeRangeAccessibilitySetup);
       this._pendingTimeRangeAccessibilitySetup = undefined;
     }
+    this._timeRangeAccessibilitySetupAttempts = 0;
     this._timeRangeAccessibilityCleanups.forEach(({ cleanup }) => cleanup());
     this._timeRangeAccessibilityCleanups.clear();
   }
@@ -925,6 +929,7 @@ export class Player extends MaveElement {
           composed: true,
         }),
       );
+      this._timeRangeAccessibilitySetupAttempts = 0;
       this.#setupTimeRangeAccessibility();
       this._intersectionObserver.observe(this._videoElement);
       this.#updateLoadingState();
@@ -1496,13 +1501,23 @@ export class Player extends MaveElement {
 
   #setupTimeRangeAccessibility() {
     const root = this.#mediaChromeRoot;
-    if (!root) return;
+    if (!root) {
+      this.#retryTimeRangeAccessibilitySetup();
+      return;
+    }
 
     this.#observeThemeRoot(root);
 
     const timeRanges = Array.from(
       root.querySelectorAll<MediaTimeRangeElement>('media-time-range'),
     );
+
+    if (!timeRanges.length) {
+      this.#retryTimeRangeAccessibilitySetup();
+      return;
+    }
+
+    this._timeRangeAccessibilitySetupAttempts = 0;
 
     this._timeRangeAccessibilityCleanups.forEach(({ cleanup }, timeRange) => {
       if (!timeRanges.includes(timeRange)) {
@@ -1520,6 +1535,18 @@ export class Player extends MaveElement {
 
       this.#setupTimeRangeAccessibilityFor(timeRange);
     });
+  }
+
+  #retryTimeRangeAccessibilitySetup() {
+    if (
+      this._timeRangeAccessibilitySetupAttempts >=
+      Player.TIME_RANGE_ACCESSIBILITY_SETUP_MAX_ATTEMPTS
+    ) {
+      return;
+    }
+
+    this._timeRangeAccessibilitySetupAttempts += 1;
+    this.#queueTimeRangeAccessibilitySetup();
   }
 
   #setupTimeRangeAccessibilityFor(timeRange: MediaTimeRangeElement) {
@@ -1600,6 +1627,7 @@ export class Player extends MaveElement {
     return (
       style.display !== 'none' &&
       style.visibility !== 'hidden' &&
+      timeRange.getClientRects().length > 0 &&
       !timeRange.hasAttribute('disabled') &&
       timeRange.getAttribute('aria-disabled') !== 'true'
     );
@@ -1835,6 +1863,22 @@ export class Player extends MaveElement {
       this.subtitles === 'none' || this.subtitles === 'off' || !embedHasSubtitles;
     const volumeControlEnabled =
       this.controls.includes('volume') || this.controls.includes('full');
+    const hasAuthorControls = this.hasAttribute('controls');
+    const hasInlineControls =
+      !this.controls.includes('big') &&
+      !this.controls.includes('none') &&
+      this.controls.some((control) =>
+        [
+          'play',
+          'time',
+          'seek',
+          'volume',
+          'audiotracks',
+          'fullscreen',
+          'subtitles',
+          'rate',
+        ].includes(control),
+      );
 
     const baseColor = this.color || this._embedObj?.settings.color;
     const baseOpacity = this.opacity || this._embedObj?.settings.opacity;
@@ -1904,6 +1948,7 @@ export class Player extends MaveElement {
 
     if (
       this.controls.includes('full') ||
+      (hasAuthorControls && hasInlineControls) ||
       (this._embedObj?.settings.controls == 'full' &&
         !this.controls.includes('big') &&
         !this.controls.includes('none'))
