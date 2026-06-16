@@ -7,6 +7,7 @@ export class MaveCaptionsMenuButton extends MediaCaptionsMenuButton {
 
   connectedCallback(): void {
     super.connectedCallback();
+    this.#syncInitialAriaExpanded();
     this.#updateAriaLabel();
   }
 
@@ -21,6 +22,15 @@ export class MaveCaptionsMenuButton extends MediaCaptionsMenuButton {
 
   #updateAriaLabel(): void {
     this.setAttribute('aria-label', t('Captions'));
+  }
+
+  #syncInitialAriaExpanded(): void {
+    if (this.hasAttribute('aria-expanded')) return;
+
+    this.setAttribute(
+      'aria-expanded',
+      this.invokeTargetElement && !this.invokeTargetElement.hidden ? 'true' : 'false',
+    );
   }
 }
 

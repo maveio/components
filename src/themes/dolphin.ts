@@ -540,7 +540,7 @@ export function build(name, LitElement, html, css) {
               <media-time-display showduration></media-time-display>
               <div style="flex-grow: 1;"></div>
               <media-playback-rate-button></media-playback-rate-button>
-              <mave-captions-menu-button id="mave-captions">
+              <mave-captions-menu-button id="mave-captions" aria-expanded="false">
                 <div slot="off">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -575,7 +575,7 @@ export function build(name, LitElement, html, css) {
                 hidden
                 anchor="mave-audio-tracks"
               ></mave-audio-track-menu>
-              <mave-audio-track-menu-button id="mave-audio-tracks">
+              <mave-audio-track-menu-button id="mave-audio-tracks" aria-expanded="false">
                 <div slot="icon">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -593,7 +593,7 @@ export function build(name, LitElement, html, css) {
                   </svg>
                 </div>
               </mave-audio-track-menu-button>
-              <media-settings-menu-button id="mave-settings">
+              <media-settings-menu-button id="mave-settings" aria-expanded="false">
                 <div slot="icon">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
