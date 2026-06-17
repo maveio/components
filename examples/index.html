@@ -304,11 +304,21 @@
       border-radius: 14px;
       border: 1px solid var(--line);
       background: #fffdf8;
-      font-weight: 500;
       color: var(--ink-muted);
     }
 
-    .file-row span {
+    .file-title {
+      margin-bottom: 4px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .file-meta {
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+
+    .file-meta span {
       color: var(--ink);
       font-weight: 600;
     }
@@ -563,14 +573,23 @@
       <div class="card-grid split">
         <mave-files class="file-list" embed="ubg50SrEx9CqNZR">
           <div name="mave-files-video" class="file-row">
-            Video | <span slot="date"></span> | <span slot="duration"></span> |
-            <span slot="filetype"></span> | <span slot="size"></span>
+            <div class="file-title" data-slot="title">MP4 Video</div>
+            <div class="file-meta" data-slot="description">
+              Video | <span slot="date"></span> | <span slot="duration"></span> |
+              <span slot="filetype"></span> | <span slot="size"></span>
+            </div>
           </div>
           <div name="mave-files-audio" class="file-row">
-            Audio | <span slot="filetype"></span>
+            <div class="file-title" data-slot="title">Audio Track</div>
+            <div class="file-meta" data-slot="description">
+              Audio | <span slot="filetype"></span>
+            </div>
           </div>
           <div name="mave-files-subtitles" class="file-row">
-            Caption | <span slot="filetype"></span>
+            <div class="file-title" data-slot="title">Subtitle File</div>
+            <div class="file-meta" data-slot="description">
+              Caption | <span slot="filetype"></span>
+            </div>
           </div>
         </mave-files>
         <div class="card-meta">

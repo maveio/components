@@ -26,6 +26,7 @@ export class Files extends MaveElement {
 
   private embedController = new EmbedController(this);
   private _data: Embed;
+  private _accessibleTextId: number = 0;
 
   static styles = css`
     :host {
@@ -114,8 +115,8 @@ export class Files extends MaveElement {
                 downloadUrl,
                 `${this._data.name}.${downloadExtension}`,
               );
-              link.setAttribute('aria-label', 'Download video');
               link.appendChild(template);
+              this.#setDownloadLinkAccessibleText(link);
 
               return html`${link}`;
             }
@@ -143,8 +144,8 @@ export class Files extends MaveElement {
                 audioUrl,
                 primaryAudioTrack.filename || `${this._data.name}.${audioFiletype}`,
               );
-              link.setAttribute('aria-label', 'Download audio');
               link.appendChild(template);
+              this.#setDownloadLinkAccessibleText(link);
 
               return html`${link}`;
             }
@@ -163,8 +164,8 @@ export class Files extends MaveElement {
                 subtitle.path,
                 `${this._data.name}.vtt`,
               );
-              link.setAttribute('aria-label', 'Download subtitles');
               link.appendChild(template);
+              this.#setDownloadLinkAccessibleText(link);
 
               return html`${link}`;
             }
@@ -239,6 +240,71 @@ export class Files extends MaveElement {
     });
 
     return link;
+  }
+
+  #setDownloadLinkAccessibleText(link: HTMLAnchorElement): void {
+    const titleElement = this.#findAccessibleTitleElement(link);
+    if (!titleElement) return;
+
+    const descriptionElement = this.#findAccessibleDescriptionElement(
+      link,
+      titleElement,
+    );
+
+    link.setAttribute('aria-labelledby', this.#ensureElementId(titleElement, 'title'));
+
+    if (descriptionElement) {
+      link.setAttribute(
+        'aria-describedby',
+        this.#ensureElementId(descriptionElement, 'description'),
+      );
+    }
+  }
+
+  #findAccessibleTitleElement(link: HTMLAnchorElement): HTMLElement | undefined {
+    const explicitTitle = link.querySelector<HTMLElement>(
+      '[data-slot="title"], [slot="title"], [data-mave-files-title], .file-title',
+    );
+    if (explicitTitle && explicitTitle.textContent?.trim()) return explicitTitle;
+
+    const children = Array.from(link.children) as HTMLElement[];
+    if (children.length < 2) return undefined;
+
+    const firstChild = children[0];
+    if (firstChild.tagName.toLowerCase() === 'span') return undefined;
+
+    return firstChild.textContent?.trim() ? firstChild : undefined;
+  }
+
+  #findAccessibleDescriptionElement(
+    link: HTMLAnchorElement,
+    titleElement: HTMLElement,
+  ): HTMLElement | undefined {
+    const explicitDescription = link.querySelector<HTMLElement>(
+      '[data-slot="description"], [slot="description"], [data-mave-files-description], .file-meta',
+    );
+    if (explicitDescription && explicitDescription.textContent?.trim()) {
+      return explicitDescription;
+    }
+
+    const children = Array.from(link.children) as HTMLElement[];
+    const titleIndex = children.indexOf(titleElement);
+    if (titleIndex < 0) return undefined;
+
+    const nextChild = children[titleIndex + 1];
+    return nextChild?.textContent?.trim() ? nextChild : undefined;
+  }
+
+  #ensureElementId(element: HTMLElement, type: 'title' | 'description'): string {
+    if (!element.id) {
+      this._accessibleTextId += 1;
+      element.id = `mave-files-${type}-${this._accessibleTextId}`;
+    }
+
+    element.removeAttribute('slot');
+    element.removeAttribute('data-slot');
+
+    return element.id;
   }
 
   #formatMegabytes(bytes: number): string {
