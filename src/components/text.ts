@@ -151,7 +151,27 @@ export class Text extends LitElement {
       -webkit-box-decoration-break: clone;
     }
 
-    [data-segment-id][role='button']:focus-visible {
+    [data-segment-id] {
+      display: block;
+      margin: 1em 0;
+    }
+
+    button[data-segment-id] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      line-height: inherit;
+      padding: 0;
+      text-align: inherit;
+      white-space: normal;
+      width: 100%;
+    }
+
+    button[data-segment-id]:focus-visible {
       border-radius: 0.25em;
       outline: 2px solid var(--mave-text-segment-focus-outline, #2563eb);
       outline-offset: 3px;
@@ -209,17 +229,6 @@ export class Text extends LitElement {
     this.#seekToSegment(event.currentTarget as HTMLElement | null);
   }
 
-  #jumpToSegmentKeydown(event: KeyboardEvent) {
-    if (
-      !this.isInteractive() ||
-      (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar')
-    ) {
-      return;
-    }
-    event.preventDefault();
-    this.#seekToSegment(event.currentTarget as HTMLElement | null);
-  }
-
   #seekToSegment(segment: HTMLElement | null) {
     if (segment && this.player) {
       const time = segment.getAttribute('x-caption-segment-start');
@@ -232,6 +241,49 @@ export class Text extends LitElement {
 
   private isInteractive() {
     return this.clickable && Boolean(this.player);
+  }
+
+  #renderSegmentWords(segment: Caption['segments'][number], segmentIndex: number) {
+    return segment.words.map(
+      (word, wordIndex) => html`
+        <span
+          data-word-id="word-${segmentIndex}-${wordIndex}"
+          style=${styleMap(this.wordStyle(this.inRange(word) as boolean))}
+          part=${ifDefined(this.inRange(word, 'word', segmentIndex, wordIndex))}
+          x-caption-word-start="${word.start}"
+          x-caption-word-end="${word.end}"
+          >${word.word.trim()}</span
+        >
+      `,
+    );
+  }
+
+  #renderSegment(segment: Caption['segments'][number], segmentIndex: number) {
+    if (this.isInteractive()) {
+      return html`
+        <button
+          type="button"
+          data-segment-id="segment-${segmentIndex}"
+          @click=${this.#jumpToSegment}
+          part=${ifDefined(this.inRange(segment, 'segment'))}
+          x-caption-segment-start="${segment.start}"
+          x-caption-segment-end="${segment.end}"
+        >
+          ${this.#renderSegmentWords(segment, segmentIndex)}
+        </button>
+      `;
+    }
+
+    return html`
+      <p
+        data-segment-id="segment-${segmentIndex}"
+        part=${ifDefined(this.inRange(segment, 'segment'))}
+        x-caption-segment-start="${segment.start}"
+        x-caption-segment-end="${segment.end}"
+      >
+        ${this.#renderSegmentWords(segment, segmentIndex)}
+      </p>
+    `;
   }
 
   inRange(
@@ -250,13 +302,6 @@ export class Text extends LitElement {
     }
   }
 
-  segmentStyle() {
-    if (!this.isInteractive()) return {};
-    return {
-      cursor: 'pointer',
-    };
-  }
-
   wordStyle(inRange: boolean) {
     if (!inRange || !this.highlight) return {};
     return {
@@ -272,35 +317,8 @@ export class Text extends LitElement {
 
         return html`
           <div>
-            ${this.captions.segments.map(
-              (segment, segmentIndex) => html`
-                <p
-                  data-segment-id="segment-${segmentIndex}"
-                  role=${ifDefined(this.isInteractive() ? 'button' : undefined)}
-                  style=${styleMap(this.segmentStyle())}
-                  tabindex=${ifDefined(this.isInteractive() ? '0' : undefined)}
-                  @click=${this.isInteractive() ? this.#jumpToSegment : nothing}
-                  @keydown=${this.isInteractive() ? this.#jumpToSegmentKeydown : nothing}
-                  part=${ifDefined(this.inRange(segment, 'segment'))}
-                  x-caption-segment-start="${segment.start}"
-                  x-caption-segment-end="${segment.end}"
-                >
-                  ${segment.words.map(
-                    (word, wordIndex) => html`
-                      <span
-                        data-word-id="word-${segmentIndex}-${wordIndex}"
-                        style=${styleMap(this.wordStyle(this.inRange(word) as boolean))}
-                        part=${ifDefined(
-                          this.inRange(word, 'word', segmentIndex, wordIndex),
-                        )}
-                        x-caption-word-start="${word.start}"
-                        x-caption-word-end="${word.end}"
-                        >${word.word.trim()}</span
-                      >
-                    `,
-                  )}
-                </p>
-              `,
+            ${this.captions.segments.map((segment, segmentIndex) =>
+              this.#renderSegment(segment, segmentIndex),
             )}
           </div>
         `;
