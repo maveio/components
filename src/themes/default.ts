@@ -273,6 +273,7 @@ export function build(name, LitElement, html, css) {
         width: 100%;
         height: 50px;
         bottom: 0;
+        z-index: 5;
         pointer-events: none;
         background: var(
           --mave-control-bg,
@@ -290,6 +291,8 @@ export function build(name, LitElement, html, css) {
 
       div[slot='centered-chrome'] {
         display: var(--big-button-display, none);
+        position: relative;
+        z-index: 20;
         justify-content: center;
         align-items: center;
         border-radius: 1000px;
@@ -315,6 +318,8 @@ export function build(name, LitElement, html, css) {
       div[slot='top-chrome'] {
         width: 100%;
         display: flex;
+        position: relative;
+        z-index: 20;
         padding: 0;
         flex-direction: row-reverse;
       }
@@ -521,7 +526,9 @@ export function build(name, LitElement, html, css) {
         max-width: 80%;
         color: white;
         line-height: 1.5rem;
-        transition: margin 300ms ease-out, transform 200ms ease-in-out,
+        transition: margin-bottom 300ms ease-out
+            var(--mave-subtitle-margin-transition-delay, 0s),
+          transform 200ms ease-in-out,
           opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
         background: rgba(0, 0, 0, 0.4);
@@ -535,6 +542,10 @@ export function build(name, LitElement, html, css) {
       media-controller[mediapaused] .subtitles > div,
       media-controller:not([userinactive]) .subtitles > div {
         margin-bottom: 64px;
+      }
+
+      media-controller[userinactive]:not([mediapaused]) .subtitles > div {
+        --mave-subtitle-margin-transition-delay: 650ms;
       }
 
       media-controller[mediaisfullscreen] .subtitles > div {
@@ -592,11 +603,11 @@ export function build(name, LitElement, html, css) {
 
       @container (max-width: 480px) {
         media-control-bar {
-          position: static;
+          position: relative;
           flex-wrap: wrap;
           gap: 0 2px;
           padding: 0 4px 2px 2px;
-          z-index: auto;
+          z-index: 20;
         }
 
         media-captions-menu,
@@ -969,7 +980,7 @@ export function build(name, LitElement, html, css) {
               </svg>
             </media-fullscreen-button>
           </media-control-bar>
-          <div class="subtitles">
+          <div class="subtitles" noautohide>
             <div id="subtitles_text"></div>
           </div>
         </media-controller>
