@@ -76,26 +76,13 @@ export class Text extends LitElement {
     if (this._wordIndex != value) {
       this._wordIndex = value;
       if (this.autoscroll) {
-        const span = this.shadowRoot?.querySelector(
-          `[data-word-id="word-${this.segmentIndex}-${this.wordIndex}"]`,
-        );
-        if (span && this._lastScrollTime + 2500 < Date.now()) {
-          const thisRect = this.getBoundingClientRect();
-          const spanRect = span.getBoundingClientRect();
-
-          const relativeTop = spanRect.top - thisRect.top;
-
-          if (relativeTop > 0) {
-            const targetScroll = this.scrollTop + relativeTop;
-            this.#smoothScroll(this, targetScroll - spanRect.height / 2);
-          }
-        }
+        this.#scrollActiveWordIntoView();
       }
     }
   }
 
   #smoothScroll(element: HTMLElement, target: number, duration = 500) {
-    const start = this.scrollTop;
+    const start = element.scrollTop;
     const change = target - start;
     let startTime: number | null = null;
     let isScrolling = false;
@@ -124,6 +111,55 @@ export class Text extends LitElement {
     requestAnimationFrame(animateScroll);
   }
 
+  #scrollActiveWordIntoView() {
+    const span = this.shadowRoot?.querySelector(
+      `[data-word-id="word-${this.segmentIndex}-${this.wordIndex}"]`,
+    );
+
+    if (!span || this._lastScrollTime + 2500 >= Date.now()) return;
+
+    const scrollContainer = this.#scrollContainer();
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const spanRect = span.getBoundingClientRect();
+    const relativeTop = spanRect.top - containerRect.top;
+    const relativeBottom = spanRect.bottom - containerRect.top;
+    const topBoundary = Math.min(containerRect.height * 0.25, 80);
+    const bottomBoundary = containerRect.height - topBoundary;
+
+    if (relativeTop >= topBoundary && relativeBottom <= bottomBoundary) return;
+
+    const targetOffset = Math.min(containerRect.height * 0.12, 32);
+    const targetScroll = this.#clampScrollTop(
+      scrollContainer,
+      scrollContainer.scrollTop + relativeTop - targetOffset,
+    );
+    this.#smoothScroll(scrollContainer, targetScroll);
+  }
+
+  #clampScrollTop(element: HTMLElement, scrollTop: number) {
+    const maxScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
+    return Math.min(maxScrollTop, Math.max(0, scrollTop));
+  }
+
+  #scrollContainer() {
+    let element: HTMLElement | null = this;
+
+    while (element) {
+      if (this.#isScrollable(element)) return element;
+      element = element.parentElement;
+    }
+
+    return this;
+  }
+
+  #isScrollable(element: HTMLElement) {
+    const { overflowY } = window.getComputedStyle(element);
+    return (
+      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      element.scrollHeight > element.clientHeight
+    );
+  }
+
   private _segmentIndex: number;
   get segmentIndex(): number {
     return this._segmentIndex;
@@ -131,6 +167,9 @@ export class Text extends LitElement {
   set segmentIndex(value: number) {
     if (this._segmentIndex != value) {
       this._segmentIndex = value;
+      if (this.autoscroll) {
+        this.#scrollActiveWordIntoView();
+      }
     }
   }
 
@@ -427,8 +466,8 @@ export class Text extends LitElement {
   ) {
     const withinValue = this.#isInRange({ start, end });
     if (withinValue) {
-      if (wordIndex !== undefined) this.wordIndex = wordIndex;
       if (segmentIndex !== undefined) this.segmentIndex = segmentIndex;
+      if (wordIndex !== undefined) this.wordIndex = wordIndex;
       return part ? part : true;
     } else {
       return undefined;
