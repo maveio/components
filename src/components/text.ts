@@ -141,7 +141,12 @@ export class Text extends LitElement {
     }
 
     [part='word'] {
-      background-color: rgba(255, 210, 42, 0.5);
+      background-color: var(--mave-text-highlight-background, #f9daaf);
+      border-radius: 0.15em;
+      box-decoration-break: clone;
+      box-shadow: 0 0 0 2px var(--mave-text-highlight-outline, #a66f00);
+      color: var(--mave-text-highlight-color, inherit);
+      -webkit-box-decoration-break: clone;
     }
   `;
 
@@ -226,9 +231,9 @@ export class Text extends LitElement {
   }
 
   wordStyle(inRange: boolean) {
-    if (!inRange) return {};
+    if (!inRange || !this.highlight) return {};
     return {
-      'background-color': this.highlight,
+      '--mave-text-highlight-background': this.highlight,
     };
   }
 
