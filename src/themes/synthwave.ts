@@ -117,12 +117,13 @@ export function build(name, LitElement, html, css) {
       }
 
       media-time-range {
+        position: relative;
         width: 100%;
         margin: 0 0 -4px 0;
         padding: 0;
         height: 4px;
         border-radius: 0;
-        z-index: 20;
+        z-index: 25;
 
         --media-control-hover-background: transparent;
 
