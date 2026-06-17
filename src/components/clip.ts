@@ -245,12 +245,16 @@ export class Clip extends LitElement {
     return this._videoElement?.currentTime;
   }
 
-  play() {
+  play(): Promise<void> {
     if (this._videoElement) {
-      this.#handlePlay();
-    } else {
-      this._queue.push(() => this.#handlePlay());
+      return this.#playVideo();
     }
+
+    return new Promise((resolve, reject) => {
+      this._queue.push(() => {
+        this.#playVideo().then(resolve, reject);
+      });
+    });
   }
 
   pause() {
@@ -262,13 +266,21 @@ export class Clip extends LitElement {
   }
 
   #handlePlay() {
-    this._metricsInstance?.monitor();
-    if (this._videoElement) {
-      this._videoElement.muted = true;
-      this._videoElement.play().catch(() => {
-        this._failedPlay = true;
-      });
+    void this.#playVideo().catch(() => undefined);
+  }
+
+  #playVideo(): Promise<void> {
+    if (!this._videoElement) {
+      return Promise.reject(new Error('[mave-clip]: video element is not ready'));
     }
+
+    this._metricsInstance?.monitor();
+    this._videoElement.muted = true;
+
+    return this._videoElement.play().catch((error) => {
+      this._failedPlay = true;
+      throw error;
+    });
   }
 
   #handleVideo(videoElement?: Element) {
