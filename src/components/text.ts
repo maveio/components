@@ -22,6 +22,7 @@ export class Text extends LitElement {
   }
 
   @property() highlight: string;
+  @property({ attribute: 'transcript-label' }) transcriptLabel: string = 'Transcript';
 
   private _clickable: boolean = true;
   @property()
@@ -60,6 +61,12 @@ export class Text extends LitElement {
 
   @state()
   private player?: Player;
+
+  @state()
+  private rovingSegmentIndex: number = 0;
+
+  @state()
+  private transcriptHasFocus: boolean = false;
 
   private _wordIndex: number;
   get wordIndex(): number {
@@ -192,6 +199,7 @@ export class Text extends LitElement {
     this.currentTime = 0;
     this.wordIndex = 0;
     this.segmentIndex = 0;
+    this.rovingSegmentIndex = 0;
     const player = document.querySelector(`mave-player[embed="${this.embed}"]`) as Player | null;
     this.player = player ?? undefined;
 
@@ -229,6 +237,39 @@ export class Text extends LitElement {
     this.#seekToSegment(event.currentTarget as HTMLElement | null);
   }
 
+  #navigateSegments(event: KeyboardEvent) {
+    if (!this.isInteractive()) return;
+
+    const segmentCount = this.captions?.segments.length ?? 0;
+    if (segmentCount === 0) return;
+
+    const keyActions: Record<string, number> = {
+      ArrowDown: 1,
+      ArrowRight: 1,
+      ArrowUp: -1,
+      ArrowLeft: -1,
+    };
+
+    let nextIndex: number | undefined;
+
+    if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = segmentCount - 1;
+    } else if (event.key in keyActions) {
+      const direction = keyActions[event.key];
+      const currentIndex = this.#segmentIndexFromElement(event.currentTarget);
+      const baseIndex = currentIndex ?? this.rovingSegmentIndex;
+      nextIndex = (baseIndex + direction + segmentCount) % segmentCount;
+    }
+
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    this.rovingSegmentIndex = nextIndex;
+    this.updateComplete.then(() => this.#focusSegment(nextIndex));
+  }
+
   #seekToSegment(segment: HTMLElement | null) {
     if (segment && this.player) {
       const time = segment.getAttribute('x-caption-segment-start');
@@ -241,6 +282,82 @@ export class Text extends LitElement {
 
   private isInteractive() {
     return this.clickable && Boolean(this.player);
+  }
+
+  #focusSegment(segmentIndex: number) {
+    this.shadowRoot
+      ?.querySelector<HTMLButtonElement>(`button[data-segment-index="${segmentIndex}"]`)
+      ?.focus();
+  }
+
+  #handleTranscriptFocusIn(event: FocusEvent) {
+    this.transcriptHasFocus = true;
+    const segmentIndex = this.#segmentIndexFromElement(event.target);
+    if (segmentIndex !== undefined) {
+      this.rovingSegmentIndex = segmentIndex;
+    }
+  }
+
+  #handleTranscriptFocusOut(event: FocusEvent) {
+    const nextTarget = event.relatedTarget as Node | null;
+    if (!nextTarget || !this.shadowRoot?.contains(nextTarget)) {
+      this.transcriptHasFocus = false;
+    }
+  }
+
+  #isInRange({ start, end }: { start: number; end: number }) {
+    return this.currentTime >= start && this.currentTime <= end;
+  }
+
+  #activeSegmentIndex() {
+    return this.captions?.segments.findIndex((segment) => this.#isInRange(segment)) ?? -1;
+  }
+
+  #segmentIndexFromElement(target: EventTarget | null) {
+    if (!(target instanceof HTMLElement)) return undefined;
+
+    const segmentIndex = Number(target.dataset.segmentIndex);
+    return Number.isNaN(segmentIndex) ? undefined : segmentIndex;
+  }
+
+  #segmentText(segment: Caption['segments'][number]) {
+    return segment.text || segment.words.map((word) => word.word.trim()).join(' ');
+  }
+
+  #unit(value: number, singular: string, plural: string) {
+    return `${value} ${value === 1 ? singular : plural}`;
+  }
+
+  #formatTimeLabel(time: number) {
+    const totalSeconds = Math.max(0, Math.floor(time));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const parts: string[] = [];
+
+    if (hours > 0) parts.push(this.#unit(hours, 'hour', 'hours'));
+    if (minutes > 0) parts.push(this.#unit(minutes, 'minute', 'minutes'));
+    if (seconds > 0 || parts.length === 0) parts.push(this.#unit(seconds, 'second', 'seconds'));
+
+    return parts.join(', ');
+  }
+
+  #segmentAriaLabel(segment: Caption['segments'][number]) {
+    return `Jump to ${this.#formatTimeLabel(segment.start)}: ${this.#segmentText(segment)}`;
+  }
+
+  #transcriptLabel() {
+    return this.getAttribute('aria-label') || this.transcriptLabel;
+  }
+
+  #segmentTabIndex(segmentIndex: number, activeSegmentIndex: number) {
+    const tabbableSegmentIndex = this.transcriptHasFocus
+      ? this.rovingSegmentIndex
+      : activeSegmentIndex >= 0
+        ? activeSegmentIndex
+        : this.rovingSegmentIndex;
+
+    return tabbableSegmentIndex === segmentIndex ? '0' : '-1';
   }
 
   #renderSegmentWords(segment: Caption['segments'][number], segmentIndex: number) {
@@ -258,14 +375,28 @@ export class Text extends LitElement {
     );
   }
 
-  #renderSegment(segment: Caption['segments'][number], segmentIndex: number) {
+  #renderSegment(
+    segment: Caption['segments'][number],
+    segmentIndex: number,
+    activeSegmentIndex: number,
+  ) {
+    const isCurrentSegment = segmentIndex === activeSegmentIndex;
+    const segmentPart = isCurrentSegment ? 'segment' : undefined;
+    const ariaCurrent = isCurrentSegment ? 'time' : undefined;
+
     if (this.isInteractive()) {
       return html`
         <button
           type="button"
           data-segment-id="segment-${segmentIndex}"
+          data-segment-index="${segmentIndex}"
+          aria-current=${ifDefined(ariaCurrent)}
+          aria-keyshortcuts="ArrowDown ArrowLeft ArrowRight ArrowUp End Home"
+          aria-label=${this.#segmentAriaLabel(segment)}
+          tabindex=${this.#segmentTabIndex(segmentIndex, activeSegmentIndex)}
           @click=${this.#jumpToSegment}
-          part=${ifDefined(this.inRange(segment, 'segment'))}
+          @keydown=${this.#navigateSegments}
+          part=${ifDefined(segmentPart)}
           x-caption-segment-start="${segment.start}"
           x-caption-segment-end="${segment.end}"
         >
@@ -277,7 +408,9 @@ export class Text extends LitElement {
     return html`
       <p
         data-segment-id="segment-${segmentIndex}"
-        part=${ifDefined(this.inRange(segment, 'segment'))}
+        data-segment-index="${segmentIndex}"
+        aria-current=${ifDefined(ariaCurrent)}
+        part=${ifDefined(segmentPart)}
         x-caption-segment-start="${segment.start}"
         x-caption-segment-end="${segment.end}"
       >
@@ -292,10 +425,10 @@ export class Text extends LitElement {
     segmentIndex?: number,
     wordIndex?: number,
   ) {
-    const withinValue = this.currentTime >= start && this.currentTime <= end;
+    const withinValue = this.#isInRange({ start, end });
     if (withinValue) {
-      if (wordIndex) this.wordIndex = wordIndex;
-      if (segmentIndex) this.segmentIndex = segmentIndex;
+      if (wordIndex !== undefined) this.wordIndex = wordIndex;
+      if (segmentIndex !== undefined) this.segmentIndex = segmentIndex;
       return part ? part : true;
     } else {
       return undefined;
@@ -314,11 +447,17 @@ export class Text extends LitElement {
     return this.captionController.render({
       complete: (data) => {
         this.captions = data as Caption;
+        const activeSegmentIndex = this.#activeSegmentIndex();
 
         return html`
-          <div>
+          <div
+            role="region"
+            aria-label=${this.#transcriptLabel()}
+            @focusin=${this.#handleTranscriptFocusIn}
+            @focusout=${this.#handleTranscriptFocusOut}
+          >
             ${this.captions.segments.map((segment, segmentIndex) =>
-              this.#renderSegment(segment, segmentIndex),
+              this.#renderSegment(segment, segmentIndex, activeSegmentIndex),
             )}
           </div>
         `;
