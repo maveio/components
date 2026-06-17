@@ -466,12 +466,16 @@ export class Player extends MaveElement {
     return this._videoElement.paused;
   }
 
-  play() {
+  play(): Promise<void> {
     if (this._videoElement && !this.embedController.loading) {
-      this.#requestPlay();
-    } else {
-      this._queue.push(() => this.#requestPlay());
+      return this.#playVideo();
     }
+
+    return new Promise((resolve, reject) => {
+      this._queue.push(() => {
+        this.#playVideo().then(resolve, reject);
+      });
+    });
   }
 
   restart() {
@@ -1317,11 +1321,19 @@ export class Player extends MaveElement {
 
   #requestPlay() {
     if (this._videoElement?.paused) {
-      this._metricsInstance?.monitor();
-      this._videoElement?.play();
+      void this.#playVideo().catch(() => undefined);
     } else {
       this._videoElement?.pause();
     }
+  }
+
+  #playVideo(): Promise<void> {
+    if (!this._videoElement) {
+      return Promise.reject(new Error('[mave-player]: video element is not ready'));
+    }
+
+    this._metricsInstance?.monitor();
+    return this._videoElement.play();
   }
 
   // Used for updating the embed settings
