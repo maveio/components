@@ -99,16 +99,21 @@ export function build(name, LitElement, html, css) {
       }
 
       media-control-bar {
+        position: relative;
         width: 100%;
         height: 48px;
         padding: 0 8px;
-        z-index: 10;
+        z-index: 20;
         user-select: none;
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
 
         background: var(--mave-control-bg, var(--primary-color, transparent));
 
         --media-control-hover-background: transparent;
+      }
+
+      .mave-gradient-bottom {
+        z-index: 5;
       }
 
       media-time-range {
@@ -303,6 +308,11 @@ export function build(name, LitElement, html, css) {
         opacity: 1;
       }
 
+      div[slot='centered-chrome'] {
+        position: relative;
+        z-index: 20;
+      }
+
       div[slot='centered-chrome'] media-play-button {
         opacity: 0;
         --media-control-background: var(
@@ -358,7 +368,9 @@ export function build(name, LitElement, html, css) {
         max-width: 80%;
         color: white;
         line-height: 1.5rem;
-        transition: margin 300ms ease-out, transform 200ms ease-in-out,
+        transition: margin-bottom 300ms ease-out
+            var(--mave-subtitle-margin-transition-delay, 0s),
+          transform 200ms ease-in-out,
           opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
         background: rgba(0, 0, 0, 0.4);
@@ -372,6 +384,10 @@ export function build(name, LitElement, html, css) {
       media-controller[mediapaused] .subtitles > div,
       media-controller:not([userinactive]) .subtitles > div {
         margin-bottom: 76px;
+      }
+
+      media-controller[userinactive]:not([mediapaused]) .subtitles > div {
+        --mave-subtitle-margin-transition-delay: 650ms;
       }
 
       media-controller[mediaisfullscreen] .subtitles > div {
@@ -423,10 +439,10 @@ export function build(name, LitElement, html, css) {
 
       @container (max-width: 480px) {
         media-control-bar {
-          position: static;
+          position: relative;
           padding: 0 2px;
           transform: none;
-          z-index: auto;
+          z-index: 20;
         }
 
         media-captions-menu,
@@ -514,7 +530,7 @@ export function build(name, LitElement, html, css) {
     render() {
       return html`
         <media-controller novolumepref>
-          <div class="subtitles">
+          <div class="subtitles" noautohide>
             <div id="subtitles_text">subtitles</div>
           </div>
           <slot name="media" slot="media"></slot>
