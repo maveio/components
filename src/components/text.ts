@@ -56,8 +56,10 @@ export class Text extends LitElement {
   }
 
   private captionController: CaptionController;
-  private player: Player;
   private loop: boolean;
+
+  @state()
+  private player?: Player;
 
   private _wordIndex: number;
   get wordIndex(): number {
@@ -148,6 +150,12 @@ export class Text extends LitElement {
       color: var(--mave-text-highlight-color, inherit);
       -webkit-box-decoration-break: clone;
     }
+
+    [data-segment-id][role='button']:focus-visible {
+      border-radius: 0.25em;
+      outline: 2px solid var(--mave-text-segment-focus-outline, #2563eb);
+      outline-offset: 3px;
+    }
   `;
 
   connectedCallback(): void {
@@ -164,16 +172,15 @@ export class Text extends LitElement {
     this.currentTime = 0;
     this.wordIndex = 0;
     this.segmentIndex = 0;
-    const player = document.querySelector(`mave-player[embed="${this.embed}"]`) as Player;
+    const player = document.querySelector(`mave-player[embed="${this.embed}"]`) as Player | null;
+    this.player = player ?? undefined;
 
-    if (player) {
-      this.player = player;
-
-      player.addEventListener('play', () => {
+    if (this.player) {
+      this.player.addEventListener('play', () => {
         this.loop = true;
         this.loopUpdateTime();
       });
-      player.addEventListener('pause', () => {
+      this.player.addEventListener('pause', () => {
         this.loop = false;
       });
     }
@@ -184,6 +191,7 @@ export class Text extends LitElement {
   }
 
   updateTime() {
+    if (!this.player) return;
     this.currentTime = this.player.currentTime;
   }
 
@@ -197,14 +205,33 @@ export class Text extends LitElement {
   }
 
   #jumpToSegment(event: Event) {
-    if (this.clickable) {
-      const segment = (event.target as HTMLElement).closest('p');
-      if (segment && this.player) {
-        const time = segment.getAttribute('x-caption-segment-start');
-        this.player.currentTime = Number(time);
-        if (this.player.paused) this.player.play();
+    if (!this.isInteractive()) return;
+    this.#seekToSegment(event.currentTarget as HTMLElement | null);
+  }
+
+  #jumpToSegmentKeydown(event: KeyboardEvent) {
+    if (
+      !this.isInteractive() ||
+      (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar')
+    ) {
+      return;
+    }
+    event.preventDefault();
+    this.#seekToSegment(event.currentTarget as HTMLElement | null);
+  }
+
+  #seekToSegment(segment: HTMLElement | null) {
+    if (segment && this.player) {
+      const time = segment.getAttribute('x-caption-segment-start');
+      this.player.currentTime = Number(time);
+      if (this.player.paused) {
+        this.player.play();
       }
     }
+  }
+
+  private isInteractive() {
+    return this.clickable && Boolean(this.player);
   }
 
   inRange(
@@ -224,7 +251,7 @@ export class Text extends LitElement {
   }
 
   segmentStyle() {
-    if (!this.clickable) return {};
+    if (!this.isInteractive()) return {};
     return {
       cursor: 'pointer',
     };
@@ -249,8 +276,11 @@ export class Text extends LitElement {
               (segment, segmentIndex) => html`
                 <p
                   data-segment-id="segment-${segmentIndex}"
+                  role=${ifDefined(this.isInteractive() ? 'button' : undefined)}
                   style=${styleMap(this.segmentStyle())}
-                  @click=${this.clickable ? this.#jumpToSegment : nothing}
+                  tabindex=${ifDefined(this.isInteractive() ? '0' : undefined)}
+                  @click=${this.isInteractive() ? this.#jumpToSegment : nothing}
+                  @keydown=${this.isInteractive() ? this.#jumpToSegmentKeydown : nothing}
                   part=${ifDefined(this.inRange(segment, 'segment'))}
                   x-caption-segment-start="${segment.start}"
                   x-caption-segment-end="${segment.end}"
