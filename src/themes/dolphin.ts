@@ -409,13 +409,13 @@ export function build(name, LitElement, html, css) {
 
       @container (max-width: 480px) {
         media-control-bar {
-          position: relative;
+          position: static;
           flex-wrap: wrap;
           height: auto;
           row-gap: 0;
           padding: 0 4px 2px 2px;
           transform: none;
-          z-index: 20;
+          z-index: auto;
         }
 
         media-captions-menu,
@@ -444,6 +444,11 @@ export function build(name, LitElement, html, css) {
           display: none;
         }
 
+        .mave-control-bar-wrapper {
+          position: static;
+          z-index: auto;
+        }
+
         media-control-bar > div[style*='flex-grow: 1'] {
           display: none;
         }
@@ -455,7 +460,7 @@ export function build(name, LitElement, html, css) {
         media-time-display {
           position: absolute;
           top: 8px;
-          right: 16px;
+          left: 8px;
           font-size: 14px;
           min-width: 0;
           margin: 0;

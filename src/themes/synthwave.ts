@@ -440,10 +440,10 @@ export function build(name, LitElement, html, css) {
 
       @container (max-width: 480px) {
         media-control-bar {
-          position: relative;
+          position: static;
           padding: 0 2px;
           transform: none;
-          z-index: 20;
+          z-index: auto;
         }
 
         media-captions-menu,
