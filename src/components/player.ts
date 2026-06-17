@@ -626,7 +626,7 @@ export class Player extends MaveElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.languageController.locale = this.locale || 'en';
+    this.languageController.locale = this.locale;
     this.loadTheme();
     this.#syncHostLayout();
     this.updateStylePoster();
@@ -654,7 +654,7 @@ export class Player extends MaveElement {
 
   requestUpdate(name?: PropertyKey, oldValue?: unknown) {
     if (name === 'locale') {
-      this.languageController.locale = this.locale || 'en';
+      this.languageController.locale = this.locale;
     }
     if (name === 'aspect_ratio' || name === 'width' || name === 'height') {
       this.#syncHostLayout();

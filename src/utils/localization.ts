@@ -1,10 +1,12 @@
 import { configureLocalization, localized, msg } from '@lit/localize';
+import type { LocaleModule } from '@lit/localize/internal/types.js';
 import { ReactiveControllerHost } from 'lit';
 
 import { potentialDistFolder } from '../utils/origin';
 export { localized, msg };
 
 type SupportedLocale = 'en' | 'nl' | 'de' | 'fr';
+const SOURCE_LOCALE = 'default';
 
 // Bundlers need explicit references to locale modules so they are included
 // in the output chunks. Keep this mapping in sync with `targetLocales`.
@@ -20,7 +22,7 @@ function resolveLoader(locale: string) {
   return localeLoaders[normalized];
 }
 
-async function loadFromDist(locale: string) {
+async function loadFromDist(locale: string): Promise<LocaleModule | null> {
   const base = potentialDistFolder();
   if (!base || typeof base !== 'string') return null;
 
@@ -34,17 +36,16 @@ async function loadFromDist(locale: string) {
     ).href;
     if (!href || href.endsWith('/undefined')) return null;
 
-    return await import(/* @vite-ignore */ href);
+    return (await import(/* @vite-ignore */ href)) as LocaleModule;
   } catch (err) {
     return null;
   }
 }
 
 export const localization = configureLocalization({
-  sourceLocale: 'default',
+  sourceLocale: SOURCE_LOCALE,
   targetLocales: ['en', 'nl', 'de', 'fr'],
   loadLocale: async (locale) => {
-
     if (potentialDistFolder()) {
       const distModule = await loadFromDist(locale);
       if (distModule) {
@@ -56,7 +57,7 @@ export const localization = configureLocalization({
 
     if (loader) {
       try {
-        return await loader();
+        return (await loader()) as LocaleModule;
       } catch (err) {
         console.error(`[mave-player]: failed to load locale ${locale}`, err);
       }
@@ -68,25 +69,25 @@ export const localization = configureLocalization({
     }
 
     console.log(`[mave-player]: locale not loaded for ${locale}`);
-    return null;
+    throw new Error(`[mave-player]: failed to load locale ${locale}`);
   },
 });
 
-let loaded = false;
+let localizationReady = true;
 
 export class LanguageController {
   private host: ReactiveControllerHost;
   private _locale: string;
 
   get loaded() {
-    return loaded;
+    return localizationReady;
   }
 
   _onLoad = (event: CustomEvent) => {
     if (event.detail.status === 'loading') {
-      loaded = false;
-    } else if (event.detail.status === 'ready') {
-      loaded = true;
+      localizationReady = false;
+    } else if (event.detail.status === 'ready' || event.detail.status === 'error') {
+      localizationReady = true;
     }
     this.host.requestUpdate();
   };
@@ -96,9 +97,23 @@ export class LanguageController {
     host.addController(this);
   }
 
-  set locale(value: string) {
-    if (this._locale !== value) {
-      localization.setLocale(value);
+  set locale(value: string | undefined) {
+    const locale = value || SOURCE_LOCALE;
+
+    if (this._locale !== locale) {
+      try {
+        void localization
+          .setLocale(locale)
+          .then(() => {
+            this._locale = locale;
+          })
+          .catch((err) => {
+            console.error(`[mave-player]: failed to set locale ${locale}`, err);
+          });
+      } catch (err) {
+        console.error(`[mave-player]: failed to set locale ${locale}`, err);
+      }
+
       this.host.requestUpdate();
     }
   }

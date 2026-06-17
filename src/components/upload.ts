@@ -225,7 +225,7 @@ export class Upload extends LitElement {
     this.addEventListener('click', this.handleActionClick);
     this.addEventListener('keydown', this.handleActionKeyDown);
 
-    this.languageController.locale = this.locale || 'en';
+    this.languageController.locale = this.locale;
     this.updateHasErrorSlot();
     if (typeof MutationObserver !== 'undefined') {
       this.slotObserver = new MutationObserver(() => {
