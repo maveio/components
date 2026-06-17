@@ -603,7 +603,7 @@ export function build(name, LitElement, html, css) {
 
       @container (max-width: 480px) {
         media-control-bar {
-          position: relative;
+          position: static;
           flex-wrap: wrap;
           gap: 0 2px;
           padding: 0 4px 2px 2px;
