@@ -6,7 +6,14 @@ import { Caption } from '../embed/api';
 import { CaptionController } from '../embed/caption';
 import { Player } from './player';
 
+type HighlightMode = 'sentence' | 'word';
+type ActiveWordRange = { startIndex: number; endIndex: number };
+type SentenceWordRange = ActiveWordRange & { start: number; end: number; nextStart?: number };
+type HighlightPosition = 'single' | 'start' | 'middle' | 'end';
+
 export class Text extends LitElement {
+  private static readonly SENTENCE_HIGHLIGHT_HOLD_SECONDS = 0.35;
+
   private _embedId: string;
   @property()
   get embed(): string {
@@ -22,6 +29,7 @@ export class Text extends LitElement {
   }
 
   @property() highlight: string;
+  @property({ attribute: 'highlight-mode' }) highlightMode: HighlightMode = 'sentence';
   @property({ attribute: 'transcript-label' }) transcriptLabel: string = 'Transcript';
 
   private _clickable: boolean = true;
@@ -192,9 +200,30 @@ export class Text extends LitElement {
       background-color: var(--mave-text-highlight-background, #f9daaf);
       border-radius: 0.15em;
       box-decoration-break: clone;
-      box-shadow: 0 0 0 2px var(--mave-text-highlight-outline, #a66f00);
       color: var(--mave-text-highlight-color, inherit);
+      text-decoration-color: var(
+        --mave-text-highlight-underline,
+        var(--mave-text-highlight-outline, #8a5a00)
+      );
+      text-decoration-line: underline;
+      text-decoration-skip-ink: auto;
+      text-decoration-thickness: var(--mave-text-highlight-underline-thickness, 0.12em);
+      text-underline-offset: var(--mave-text-highlight-underline-offset, 0.16em);
       -webkit-box-decoration-break: clone;
+    }
+
+    [data-highlight-position='start'] {
+      border-bottom-right-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    [data-highlight-position='middle'] {
+      border-radius: 0;
+    }
+
+    [data-highlight-position='end'] {
+      border-bottom-left-radius: 0;
+      border-top-left-radius: 0;
     }
 
     [data-segment-id] {
@@ -273,7 +302,10 @@ export class Text extends LitElement {
 
   #jumpToSegment(event: Event) {
     if (!this.isInteractive()) return;
-    this.#seekToSegment(event.currentTarget as HTMLElement | null);
+    this.#seekToSegment(
+      event.currentTarget as HTMLElement | null,
+      event instanceof MouseEvent ? this.#sentenceStartFromEvent(event) : undefined,
+    );
   }
 
   #navigateSegments(event: KeyboardEvent) {
@@ -309,14 +341,30 @@ export class Text extends LitElement {
     this.updateComplete.then(() => this.#focusSegment(nextIndex));
   }
 
-  #seekToSegment(segment: HTMLElement | null) {
+  #seekToSegment(segment: HTMLElement | null, preferredStart?: number) {
     if (segment && this.player) {
-      const time = segment.getAttribute('x-caption-segment-start');
-      this.player.currentTime = Number(time);
+      const segmentStart = Number(segment.getAttribute('x-caption-segment-start'));
+      const time = preferredStart ?? segmentStart;
+
+      if (!Number.isFinite(time)) return;
+
+      this.player.currentTime = time;
       if (this.player.paused) {
         this.player.play();
       }
     }
+  }
+
+  #sentenceStartFromEvent(event: Event) {
+    const wordElement = event
+      .composedPath()
+      .find(
+        (target): target is HTMLElement =>
+          target instanceof HTMLElement && target.dataset.sentenceStart !== undefined,
+      );
+    const sentenceStart = Number(wordElement?.dataset.sentenceStart);
+
+    return Number.isFinite(sentenceStart) ? sentenceStart : undefined;
   }
 
   private isInteractive() {
@@ -346,6 +394,130 @@ export class Text extends LitElement {
 
   #isInRange({ start, end }: { start: number; end: number }) {
     return this.currentTime >= start && this.currentTime <= end;
+  }
+
+  #normalizedHighlightMode() {
+    return this.highlightMode === 'word' ? 'word' : 'sentence';
+  }
+
+  #wordEndsSentence(word: string) {
+    return /[.!?][)"'\]\u2019\u201d]*$/.test(word.trim());
+  }
+
+  #activeSingleWordRange(segment: Caption['segments'][number]): ActiveWordRange | undefined {
+    const activeWordIndex = segment.words.findIndex((word) => this.#isInRange(word));
+
+    if (activeWordIndex < 0) return undefined;
+
+    return {
+      startIndex: activeWordIndex,
+      endIndex: activeWordIndex,
+    };
+  }
+
+  #sentenceWordRanges(segment: Caption['segments'][number]): SentenceWordRange[] {
+    const { words } = segment;
+    let sentenceStartIndex = 0;
+    const sentenceWordRanges: SentenceWordRange[] = [];
+
+    for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+      const word = words[wordIndex];
+      const isSentenceEnd = this.#wordEndsSentence(word.word) || wordIndex === words.length - 1;
+
+      if (!isSentenceEnd) continue;
+
+      sentenceWordRanges.push({
+        startIndex: sentenceStartIndex,
+        endIndex: wordIndex,
+        start: words[sentenceStartIndex].start,
+        end: word.end,
+        nextStart: words[wordIndex + 1]?.start,
+      });
+
+      sentenceStartIndex = wordIndex + 1;
+    }
+
+    return sentenceWordRanges;
+  }
+
+  #activeSentenceWordRange(
+    segment: Caption['segments'][number],
+    sentenceWordRanges: SentenceWordRange[],
+  ): ActiveWordRange | undefined {
+    const { words } = segment;
+
+    for (const sentenceWordRange of sentenceWordRanges) {
+      const { startIndex, endIndex, start, end, nextStart } = sentenceWordRange;
+
+      if (this.currentTime >= start && this.currentTime <= end) {
+        let activeWordIndex = startIndex;
+
+        for (
+          let candidateWordIndex = startIndex;
+          candidateWordIndex <= endIndex;
+          candidateWordIndex++
+        ) {
+          if (this.currentTime < words[candidateWordIndex].start) break;
+          activeWordIndex = candidateWordIndex;
+        }
+
+        return {
+          startIndex,
+          endIndex: activeWordIndex,
+        };
+      }
+
+      if (
+        this.currentTime > end &&
+        this.currentTime <= end + Text.SENTENCE_HIGHLIGHT_HOLD_SECONDS &&
+        (nextStart === undefined || this.currentTime < nextStart)
+      ) {
+        return {
+          startIndex,
+          endIndex,
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  #sentenceWordRangeForWord(sentenceWordRanges: SentenceWordRange[], wordIndex: number) {
+    return sentenceWordRanges.find(
+      ({ startIndex, endIndex }) => wordIndex >= startIndex && wordIndex <= endIndex,
+    );
+  }
+
+  #isWordHighlighted(activeWordRange: ActiveWordRange | undefined, wordIndex: number) {
+    return (
+      !!activeWordRange &&
+      wordIndex >= activeWordRange.startIndex &&
+      wordIndex <= activeWordRange.endIndex
+    );
+  }
+
+  #highlightPosition(
+    activeWordRange: ActiveWordRange | undefined,
+    wordIndex: number,
+  ): HighlightPosition | undefined {
+    if (!this.#isWordHighlighted(activeWordRange, wordIndex)) return undefined;
+    if (!activeWordRange || activeWordRange.startIndex === activeWordRange.endIndex) {
+      return 'single';
+    }
+
+    if (wordIndex === activeWordRange.startIndex) return 'start';
+    if (wordIndex === activeWordRange.endIndex) return 'end';
+
+    return 'middle';
+  }
+
+  #shouldHighlightSeparator(activeWordRange: ActiveWordRange | undefined, wordIndex: number) {
+    return (
+      this.#normalizedHighlightMode() === 'sentence' &&
+      !!activeWordRange &&
+      wordIndex > activeWordRange.startIndex &&
+      wordIndex <= activeWordRange.endIndex
+    );
   }
 
   #activeSegmentIndex() {
@@ -400,17 +572,46 @@ export class Text extends LitElement {
   }
 
   #renderSegmentWords(segment: Caption['segments'][number], segmentIndex: number) {
+    const sentenceWordRanges = this.#sentenceWordRanges(segment);
+    const activeWordRange =
+      this.#normalizedHighlightMode() === 'word'
+        ? this.#activeSingleWordRange(segment)
+        : this.#activeSentenceWordRange(segment, sentenceWordRanges);
+
+    if (activeWordRange) {
+      this.segmentIndex = segmentIndex;
+      this.wordIndex = activeWordRange.endIndex;
+    }
+
     return segment.words.map(
-      (word, wordIndex) => html`
-        <span
+      (word, wordIndex) => {
+        const isHighlighted = this.#isWordHighlighted(activeWordRange, wordIndex);
+        const highlightPosition = this.#highlightPosition(activeWordRange, wordIndex);
+        const highlightSeparator = this.#shouldHighlightSeparator(activeWordRange, wordIndex);
+        const sentenceWordRange = this.#sentenceWordRangeForWord(sentenceWordRanges, wordIndex);
+        const separatorSpan =
+          wordIndex > 0
+            ? html`<span
+                data-highlight-position=${ifDefined(highlightSeparator ? 'middle' : undefined)}
+                data-sentence-start=${ifDefined(sentenceWordRange?.start)}
+                part=${ifDefined(highlightSeparator ? 'word' : undefined)}
+                x-caption-sentence-start=${ifDefined(sentenceWordRange?.start)}
+              >${' '}</span>`
+            : nothing;
+
+        const wordSpan = html`<span
+          data-highlight-position=${ifDefined(highlightPosition)}
+          data-sentence-start=${ifDefined(sentenceWordRange?.start)}
           data-word-id="word-${segmentIndex}-${wordIndex}"
-          style=${styleMap(this.wordStyle(this.inRange(word) as boolean))}
-          part=${ifDefined(this.inRange(word, 'word', segmentIndex, wordIndex))}
+          style=${styleMap(this.wordStyle(isHighlighted))}
+          part=${ifDefined(isHighlighted ? 'word' : undefined)}
+          x-caption-sentence-start=${ifDefined(sentenceWordRange?.start)}
           x-caption-word-start="${word.start}"
           x-caption-word-end="${word.end}"
-          >${word.word.trim()}</span
-        >
-      `,
+        >${word.word.trim()}</span>`;
+
+        return html`${separatorSpan}${wordSpan}`;
+      },
     );
   }
 
