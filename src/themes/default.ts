@@ -367,11 +367,11 @@ export function build(name, LitElement, html, css) {
         pointer-events: auto;
       }
 
-      media-airplay-button[media-airplay-unavailable].small-button {
+      media-airplay-button[mediaairplayunavailable].small-button {
         display: none;
       }
 
-      media-cast-button[media-cast-unavailable].small-button {
+      media-cast-button[mediacastunavailable].small-button {
         display: none;
       }
 
@@ -594,6 +594,14 @@ export function build(name, LitElement, html, css) {
 
       media-fullscreen-button.small-button {
         display: var(--fullscreen-display, flex);
+      }
+
+      media-airplay-button.small-button {
+        display: var(--media-airplay-button-display, var(--airplay-display, none));
+      }
+
+      media-cast-button.small-button {
+        display: var(--media-cast-button-display, var(--cast-display, none));
       }
 
       media-playback-rate-button {
@@ -947,6 +955,56 @@ export function build(name, LitElement, html, css) {
                 <media-volume-range></media-volume-range>
               </div>
             </div>
+            <media-airplay-button class="small-button">
+              <svg
+                slot="icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"></path>
+                <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
+              </svg>
+            </media-airplay-button>
+            <media-cast-button class="small-button">
+              <svg
+                slot="enter"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3.75 18.75v1.5h1.5"></path>
+                <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+                <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+                <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
+              </svg>
+              <svg
+                slot="exit"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3.75 18.75v1.5h1.5"></path>
+                <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+                <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+                <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
+              </svg>
+            </media-cast-button>
             <media-fullscreen-button class="small-button">
               <svg
                 slot="enter"

@@ -50,6 +50,35 @@ type MediaTimeRangeElement = HTMLElement & {
   range?: HTMLInputElement;
 };
 
+type AudioTrackMenuOption = {
+  id: string;
+  label: string;
+  language?: string;
+  enabled?: boolean;
+};
+
+type AudioTrackMenuElement = Element & {
+  tracks?: AudioTrackMenuOption[];
+  selected?: string;
+};
+
+type NativeMediaAudioTrack = {
+  id?: string;
+  kind?: string;
+  label?: string;
+  language?: string;
+  enabled?: boolean;
+};
+
+type NativeMediaAudioTrackList = EventTarget & {
+  length: number;
+  [index: number]: NativeMediaAudioTrack | undefined;
+};
+
+type HTMLMediaElementWithAudioTracks = HTMLMediaElement & {
+  audioTracks?: NativeMediaAudioTrackList;
+};
+
 @localized()
 export class Player extends MaveElement {
   private _embedId: string;
@@ -218,9 +247,14 @@ export class Player extends MaveElement {
   private _subtitlesText: HTMLElement;
   private _audioTrackCount = 0;
   private _cleanupHlsAudioTracks?: () => void;
+  private _cleanupNativeAudioTracks?: () => void;
   private _hlsAudioTracks: MediaPlaylist[] = [];
   private _hlsAudioTrackIdMap = new Map<string, number>();
+  private _nativeAudioTrackIdMap = new Map<string, NativeMediaAudioTrack>();
+  private _nativeAudioTrackList?: NativeMediaAudioTrackList;
   private _pendingAudioTrackSetup?: number;
+  private _cleanupNativeHlsSubtitleState?: () => void;
+  private _activeSubtitleApplied = false;
   private _currentAudioTrackMenu?: Element | null;
   private _themeMutationObserver?: MutationObserver;
   private _themeMutationObserverRoot?: Node;
@@ -669,6 +703,12 @@ export class Player extends MaveElement {
       this._timeRangeAccessibilitySetupAttempts = 0;
       this.#queueTimeRangeAccessibilitySetup();
     }
+
+    if (changedProperties.has('active_subtitle') || changedProperties.has('subtitles')) {
+      this._activeSubtitleApplied = false;
+      this.#applyActiveSubtitle();
+      this.#syncNativeHlsSubtitleState();
+    }
   }
 
   #applySubtitleStyles() {
@@ -694,14 +734,9 @@ export class Player extends MaveElement {
     this._contrastQueryHandler = undefined;
     this._metricsInstance?.demonitor();
     this.#clearProcessingRefresh();
-    this._cleanupHlsAudioTracks?.();
-    this._cleanupHlsAudioTracks = undefined;
-    if (this._pendingAudioTrackSetup != null) {
-      cancelAnimationFrame(this._pendingAudioTrackSetup);
-      this._pendingAudioTrackSetup = undefined;
-    }
-    this._hlsAudioTrackIdMap.clear();
-    this._hlsAudioTracks = [];
+    this.#clearNativeHlsSubtitleState();
+    this.#clearNativeAudioTracks();
+    this.#resetHlsAudioTracks();
     this._currentAudioTrackMenu = undefined;
     this._themeMutationObserver?.disconnect();
     this._themeMutationObserver = undefined;
@@ -841,6 +876,214 @@ export class Player extends MaveElement {
     this.hls = undefined;
   }
 
+  #shouldUseNativeHlsPlayback() {
+    if (typeof navigator === 'undefined') return false;
+
+    const userAgent = navigator.userAgent;
+    const isIOS =
+      /iPad|iPhone|iPod/.test(userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isSafari =
+      /Safari/.test(userAgent) &&
+      !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Android/.test(userAgent);
+
+    return isIOS || isSafari;
+  }
+
+  #resetHlsAudioTracks() {
+    this._cleanupHlsAudioTracks?.();
+    this._cleanupHlsAudioTracks = undefined;
+    if (this._pendingAudioTrackSetup != null) {
+      cancelAnimationFrame(this._pendingAudioTrackSetup);
+      this._pendingAudioTrackSetup = undefined;
+    }
+    this._hlsAudioTrackIdMap.clear();
+    this._hlsAudioTracks = [];
+  }
+
+  #clearNativeHlsSubtitleState() {
+    this._cleanupNativeHlsSubtitleState?.();
+    this._cleanupNativeHlsSubtitleState = undefined;
+  }
+
+  #guardNativeHlsSubtitleState() {
+    if (!this._videoElement) return;
+
+    this.#clearNativeHlsSubtitleState();
+
+    const sync = () => this.#syncNativeHlsSubtitleState();
+    const textTracks = this._videoElement.textTracks;
+    const timers: number[] = [];
+
+    this._videoElement.addEventListener('loadstart', sync);
+    this._videoElement.addEventListener('loadedmetadata', sync);
+    textTracks?.addEventListener('addtrack', sync);
+    textTracks?.addEventListener('removetrack', sync);
+    textTracks?.addEventListener('change', sync);
+
+    if (typeof window !== 'undefined') {
+      [0, 100, 500, 1500].forEach((delay) => {
+        timers.push(window.setTimeout(sync, delay));
+      });
+    }
+
+    this._cleanupNativeHlsSubtitleState = () => {
+      this._videoElement?.removeEventListener('loadstart', sync);
+      this._videoElement?.removeEventListener('loadedmetadata', sync);
+      textTracks?.removeEventListener('addtrack', sync);
+      textTracks?.removeEventListener('removetrack', sync);
+      textTracks?.removeEventListener('change', sync);
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }
+
+  #syncNativeHlsSubtitleState() {
+    if (!this._videoElement) return;
+
+    this.#applyActiveSubtitle();
+
+    const subtitles = this.#renderedSubtitleTracks();
+    const subtitleList = subtitles.map(this.#formatMediaChromeTextTrack).join(' ');
+    const showing = new Set<string>();
+
+    Array.from(this._videoElement.textTracks ?? []).forEach((track) => {
+      if (!['subtitles', 'captions'].includes(track.kind)) return;
+
+      const match = this.#findRenderedSubtitleTrack(subtitles, track);
+
+      if (!match) {
+        track.mode = 'disabled';
+        return;
+      }
+
+      if (track.mode === 'showing') {
+        showing.add(this.#formatMediaChromeTextTrack(match));
+      }
+    });
+
+    const showingList = Array.from(showing).join(' ');
+    this.#setSubtitleStateAttribute('mediasubtitleslist', subtitleList);
+    this.#setSubtitleStateAttribute('mediasubtitlesshowing', showingList);
+  }
+
+  #setSubtitleStateAttribute(name: string, value: string) {
+    const themeRoot = this.shadowRoot
+      ?.querySelector(`theme-${this._themeLoaded}`)
+      ?.shadowRoot;
+
+    themeRoot
+      ?.querySelectorAll(
+        'media-controller, media-captions-menu, media-captions-menu-button, mave-captions-menu-button',
+      )
+      .forEach((element) => {
+        if (value) {
+          element.setAttribute(name, value);
+        } else {
+          element.removeAttribute(name);
+        }
+      });
+  }
+
+  #renderedSubtitleTracks() {
+    if (!this._embedObj?.subtitles?.length) return [];
+
+    return this._embedObj.subtitles
+      .filter((track) => this.#shouldRenderSubtitleTrack(track))
+      .map((track) => ({
+        kind: 'subtitles',
+        language: track.language,
+        label: track.label || track.language,
+      }));
+  }
+
+  #findRenderedSubtitleTrack(
+    subtitles: Array<{ language: string; label: string; kind: string }>,
+    track: TextTrack,
+  ) {
+    return subtitles.find((subtitle) => {
+      const languageMatches = track.language
+        ? subtitle.language === track.language
+        : false;
+      const labelMatches = track.label ? subtitle.label === track.label : false;
+
+      return (
+        (languageMatches && (!track.label || labelMatches)) ||
+        (!track.language && labelMatches)
+      );
+    });
+  }
+
+  #shouldRenderSubtitleTrack(track: { language: string }) {
+    return (
+      (this.subtitles && this.subtitles.includes(track.language)) ||
+      (this.active_subtitle && this.active_subtitle == track.language) ||
+      this.subtitles == 'all' ||
+      ((this.subtitles == 'original' || this.active_subtitle == 'original') &&
+        this._embedObj.video.language == track.language) ||
+      !this.subtitles
+    );
+  }
+
+  #activeSubtitleLanguage() {
+    if (!this.active_subtitle) return undefined;
+
+    if (this.active_subtitle == 'original' || this.subtitles == 'original') {
+      return this._embedObj?.video.language;
+    }
+
+    return this.active_subtitle;
+  }
+
+  #applyActiveSubtitle() {
+    if (!this.active_subtitle || this._activeSubtitleApplied || !this._videoElement) {
+      return false;
+    }
+
+    const activeLanguage = this.#activeSubtitleLanguage();
+    if (!activeLanguage) return false;
+
+    const subtitles = this.#renderedSubtitleTracks();
+    const activeSubtitle = subtitles.find(
+      (subtitle) => subtitle.language === activeLanguage,
+    );
+
+    if (!activeSubtitle) return false;
+
+    let applied = false;
+
+    Array.from(this._videoElement.textTracks ?? []).forEach((track) => {
+      if (!['subtitles', 'captions'].includes(track.kind)) return;
+
+      const match = this.#findRenderedSubtitleTrack(subtitles, track);
+      if (!match) return;
+
+      const shouldShow =
+        match.language === activeSubtitle.language &&
+        match.label === activeSubtitle.label;
+
+      if (shouldShow) {
+        if (track.mode !== 'showing') track.mode = 'showing';
+        applied = true;
+      } else if (track.mode === 'showing') {
+        track.mode = 'disabled';
+      }
+    });
+
+    this._activeSubtitleApplied = applied;
+    return applied;
+  }
+
+  #formatMediaChromeTextTrack(track: {
+    kind: string;
+    language: string;
+    label?: string;
+  }) {
+    if (!track.label) return track.language;
+    return `${track.kind === 'captions' ? 'cc' : 'sb'}:${track.language}:${encodeURIComponent(
+      track.label,
+    )}`;
+  }
+
   #getImageRendition(
     type: 'poster' | 'thumbnail' | 'custom_thumbnail',
     container: 'webp' | 'avif' | 'jpg',
@@ -943,6 +1186,16 @@ export class Player extends MaveElement {
           if (event == 'play') this.#videoPlayed();
           if (event == 'playing') this.#hidePosterSurfaces();
           if (event == 'ended') this.#showEndscreen();
+
+          if (
+            event === 'loadstart' ||
+            event === 'loadedmetadata' ||
+            event === 'loadeddata' ||
+            event === 'canplay'
+          ) {
+            this.#applyActiveSubtitle();
+          }
+
           if (
             event == 'timeupdate' &&
             this._videoElement &&
@@ -1034,19 +1287,27 @@ export class Player extends MaveElement {
         space_id: this._embedObj.space_id,
       };
 
-      const isIOS = /iPhone|iPad/.test(navigator.userAgent);
+      const canPlayNativeHls =
+        !!this.#hlsPath &&
+        !!this._videoElement.canPlayType('application/vnd.apple.mpegurl');
+      const shouldUseNativeHls =
+        canPlayNativeHls && this.#shouldUseNativeHlsPlayback();
 
       this.#destroyHlsInstance();
 
-      if (Hls.isSupported() && this.#hlsPath && !isIOS) {
-        this._cleanupHlsAudioTracks?.();
-        this._cleanupHlsAudioTracks = undefined;
-        if (this._pendingAudioTrackSetup != null) {
-          cancelAnimationFrame(this._pendingAudioTrackSetup);
-          this._pendingAudioTrackSetup = undefined;
-        }
-        this._hlsAudioTrackIdMap.clear();
-        this._hlsAudioTracks = [];
+      if (shouldUseNativeHls) {
+        this.#resetHlsAudioTracks();
+        this._videoElement.src = this.#hlsPath;
+        this.#guardNativeHlsSubtitleState();
+        this.#setupNativeAudioTracks();
+        if (Config.metrics.enabled)
+          this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+            component: 'player',
+          });
+      } else if (Hls.isSupported() && this.#hlsPath) {
+        this.#clearNativeHlsSubtitleState();
+        this.#clearNativeAudioTracks();
+        this.#resetHlsAudioTracks();
 
         this.hls = new Hls({
           startLevel: this.#getStartLevel(),
@@ -1064,32 +1325,19 @@ export class Player extends MaveElement {
           this._metricsInstance = new Metrics(this.hls, this.embed, {
             component: 'player',
           });
-      } else if (
-        this._videoElement.canPlayType('application/vnd.apple.mpegurl') &&
-        this.#hlsPath
-      ) {
-        this._cleanupHlsAudioTracks?.();
-        this._cleanupHlsAudioTracks = undefined;
-        if (this._pendingAudioTrackSetup != null) {
-          cancelAnimationFrame(this._pendingAudioTrackSetup);
-          this._pendingAudioTrackSetup = undefined;
-        }
-        this._hlsAudioTrackIdMap.clear();
-        this._hlsAudioTracks = [];
+      } else if (canPlayNativeHls) {
+        this.#resetHlsAudioTracks();
         this._videoElement.src = this.#hlsPath;
+        this.#guardNativeHlsSubtitleState();
+        this.#setupNativeAudioTracks();
         if (Config.metrics.enabled)
           this._metricsInstance = new Metrics(this._videoElement, this.embed, {
             component: 'player',
           });
       } else {
-        this._cleanupHlsAudioTracks?.();
-        this._cleanupHlsAudioTracks = undefined;
-        if (this._pendingAudioTrackSetup != null) {
-          cancelAnimationFrame(this._pendingAudioTrackSetup);
-          this._pendingAudioTrackSetup = undefined;
-        }
-        this._hlsAudioTrackIdMap.clear();
-        this._hlsAudioTracks = [];
+        this.#clearNativeHlsSubtitleState();
+        this.#clearNativeAudioTracks();
+        this.#resetHlsAudioTracks();
         if (this.#srcPath) this._videoElement.src = this.#srcPath;
         if (Config.metrics.enabled)
           this._metricsInstance = new Metrics(this._videoElement, this.embed, {
@@ -1102,6 +1350,7 @@ export class Player extends MaveElement {
         this._queue = [];
       }
 
+      this.#applyActiveSubtitle();
       this.#handleAutoplay();
       this.#hideEndscreen();
     }
@@ -1121,22 +1370,8 @@ export class Player extends MaveElement {
   }
 
   #videoPlayed() {
-    if (this.active_subtitle && !this._startedPlaying) {
-      let trackElement;
-      if (this.active_subtitle == 'original' || this.subtitles == 'original') {
-        const language = this._embedObj.video.language;
-        trackElement = this._videoElement?.querySelector(
-          `track[srclang="${language}"]`,
-        ) as HTMLTrackElement;
-      } else {
-        trackElement = this._videoElement?.querySelector(
-          `track[srclang="${this.active_subtitle}"]`,
-        ) as HTMLTrackElement;
-      }
-
-      if (trackElement) {
-        trackElement.track.mode = 'showing';
-      }
+    if (!this._startedPlaying) {
+      this.#applyActiveSubtitle();
     }
 
     this._startedPlaying = true;
@@ -1341,6 +1576,7 @@ export class Player extends MaveElement {
     const posterOverlaySourceKey = Player.posterOverlaySourceKey(embed);
     if (this._posterOverlaySourceKey !== posterOverlaySourceKey) {
       this._posterOverlaySourceKey = posterOverlaySourceKey;
+      this._activeSubtitleApplied = false;
       this.#resetPosterSurfaces();
     }
 
@@ -1495,7 +1731,7 @@ export class Player extends MaveElement {
 
     const observer = new MutationObserver(() => {
       this.#queueTimeRangeAccessibilitySetup();
-      this.#queueHlsAudioTrackSetup();
+      this.#queueAudioTrackSetup();
     });
     observer.observe(root, { childList: true, subtree: true });
 
@@ -1707,7 +1943,7 @@ export class Player extends MaveElement {
   }
 
   #getAudioTrackElements(): {
-    menu: (Element & { tracks?: any; selected?: string }) | null;
+    menu: AudioTrackMenuElement | null;
     button: Element | null;
   } {
     const root = this.#mediaChromeRoot;
@@ -1716,20 +1952,26 @@ export class Player extends MaveElement {
     }
 
     return {
-      menu: root.querySelector('mave-audio-track-menu') as Element & {
-        tracks?: any;
-        selected?: string;
-      },
+      menu: root.querySelector('mave-audio-track-menu') as AudioTrackMenuElement,
       button: root.querySelector('mave-audio-track-menu-button'),
     };
   }
 
-  #queueHlsAudioTrackSetup() {
+  #queueAudioTrackSetup() {
     if (this._pendingAudioTrackSetup != null) return;
     this._pendingAudioTrackSetup = requestAnimationFrame(() => {
       this._pendingAudioTrackSetup = undefined;
-      this.#setupHlsAudioTracks();
+      this.#setupAudioTracks();
     });
+  }
+
+  #setupAudioTracks() {
+    if (this.hls) {
+      this.#setupHlsAudioTracks();
+      return;
+    }
+
+    this.#setupNativeAudioTracks();
   }
 
   #setupHlsAudioTracks() {
@@ -1742,7 +1984,7 @@ export class Player extends MaveElement {
 
     const { menu, button } = this.#getAudioTrackElements();
     if (!menu || !button) {
-      this.#queueHlsAudioTrackSetup();
+      this.#queueAudioTrackSetup();
       return;
     }
 
@@ -1769,6 +2011,8 @@ export class Player extends MaveElement {
 
       const onAudioTrackRequest = (event: Event) => {
         if (event.type !== MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST) return;
+        event.stopPropagation();
+
         const detail = (event as CustomEvent<string>).detail;
         if (detail == null) return;
 
@@ -1813,28 +2057,144 @@ export class Player extends MaveElement {
     this.#updateAudioTrackMenuFromHls(tracks, activeId);
   }
 
-  #updateAudioTrackMenuFromHls(tracks: MediaPlaylist[], activeId?: number) {
+  #clearNativeAudioTracks() {
+    this._cleanupNativeAudioTracks?.();
+    this._cleanupNativeAudioTracks = undefined;
+    this._nativeAudioTrackList = undefined;
+    this._nativeAudioTrackIdMap.clear();
+  }
+
+  #setupNativeAudioTracks() {
+    const video = this._videoElement as HTMLMediaElementWithAudioTracks | undefined;
+    if (!video) return;
+
+    const root = this.#mediaChromeRoot;
+    if (root) {
+      this.#observeThemeRoot(root);
+    }
+
     const { menu, button } = this.#getAudioTrackElements();
     if (!menu || !button) {
-      this.#queueHlsAudioTrackSetup();
+      this.#queueAudioTrackSetup();
       return;
     }
 
+    const audioTracks = video.audioTracks;
+    const shouldBind =
+      menu !== this._currentAudioTrackMenu ||
+      audioTracks !== this._nativeAudioTrackList ||
+      !this._cleanupNativeAudioTracks;
+
+    if (shouldBind) {
+      this.#clearNativeAudioTracks();
+
+      const sync = () => this.#updateAudioTrackMenuFromNative(audioTracks);
+      const setup = () => this.#queueAudioTrackSetup();
+
+      const onAudioTrackRequest = (event: Event) => {
+        if (event.type !== MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST) {
+          return;
+        }
+        event.stopPropagation();
+
+        if (!audioTracks) return;
+
+        const detail = (event as CustomEvent<string>).detail;
+        const selectedTrack = this._nativeAudioTrackIdMap.get(String(detail));
+        if (!selectedTrack) return;
+
+        this.#selectNativeAudioTrack(audioTracks, selectedTrack);
+      };
+
+      menu.addEventListener(
+        MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST,
+        onAudioTrackRequest as EventListener,
+      );
+      video.addEventListener('loadstart', setup);
+      video.addEventListener('loadedmetadata', setup);
+      audioTracks?.addEventListener('addtrack', sync);
+      audioTracks?.addEventListener('removetrack', sync);
+      audioTracks?.addEventListener('change', sync);
+
+      this._cleanupNativeAudioTracks = () => {
+        menu.removeEventListener(
+          MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST,
+          onAudioTrackRequest as EventListener,
+        );
+        video.removeEventListener('loadstart', setup);
+        video.removeEventListener('loadedmetadata', setup);
+        audioTracks?.removeEventListener('addtrack', sync);
+        audioTracks?.removeEventListener('removetrack', sync);
+        audioTracks?.removeEventListener('change', sync);
+      };
+
+      this._currentAudioTrackMenu = menu;
+      this._nativeAudioTrackList = audioTracks;
+    }
+
+    this.#updateAudioTrackMenuFromNative(audioTracks);
+  }
+
+  #nativeAudioTracks(audioTracks?: NativeMediaAudioTrackList) {
+    if (!audioTracks?.length) return [];
+
+    return Array.from({ length: audioTracks.length }, (_, index) => audioTracks[index])
+      .filter((track): track is NativeMediaAudioTrack => !!track);
+  }
+
+  #nativeAudioTrackId(track: NativeMediaAudioTrack, index: number) {
+    const id = typeof track.id === 'string' ? track.id.trim() : '';
+    return id ? `native:${index}:${encodeURIComponent(id)}` : `native:${index}`;
+  }
+
+  #selectNativeAudioTrack(
+    audioTracks: NativeMediaAudioTrackList,
+    selectedTrack: NativeMediaAudioTrack,
+  ) {
+    const tracks = this.#nativeAudioTracks(audioTracks);
+
+    selectedTrack.enabled = true;
+    tracks.forEach((track) => {
+      if (track !== selectedTrack) {
+        track.enabled = false;
+      }
+    });
+
+    this.#updateAudioTrackMenuFromNative(audioTracks);
+    requestAnimationFrame(() => this.#updateAudioTrackMenuFromNative(audioTracks));
+  }
+
+  #updateAudioTrackMenuFromNative(audioTracks?: NativeMediaAudioTrackList) {
+    const tracks = this.#nativeAudioTracks(audioTracks);
+    this._nativeAudioTrackIdMap.clear();
+
+    if (tracks.length && !tracks.some((track) => track.enabled)) {
+      tracks[0].enabled = true;
+    }
+
+    const list = tracks.map((track, index) => {
+      const id = this.#nativeAudioTrackId(track, index);
+      this._nativeAudioTrackIdMap.set(id, track);
+
+      const language = track.language?.trim() || undefined;
+      const label = track.label?.trim() || language || `Track ${index + 1}`;
+
+      return {
+        id,
+        language,
+        label,
+        enabled: !!track.enabled,
+      };
+    });
+
+    this.#updateAudioTrackMenu(list);
+  }
+
+  #updateAudioTrackMenuFromHls(tracks: MediaPlaylist[], activeId?: number) {
     this._hlsAudioTracks = tracks ?? [];
     this._hlsAudioTrackIdMap.clear();
 
-    if (!tracks?.length) {
-      if ('tracks' in menu) {
-        (menu as any).tracks = [];
-        (menu as any).selected = undefined;
-      }
-
-      this._audioTrackCount = 0;
-      this.requestUpdate();
-      return;
-    }
-
-    const list = tracks.map((track: MediaPlaylist, index: number) => {
+    const list = this._hlsAudioTracks.map((track: MediaPlaylist, index: number) => {
       const rawId = track?.id ?? index;
       const id = String(rawId);
       this._hlsAudioTrackIdMap.set(id, rawId);
@@ -1855,15 +2215,32 @@ export class Player extends MaveElement {
       };
     });
 
+    this.#updateAudioTrackMenu(list);
+  }
+
+  #updateAudioTrackMenu(list: AudioTrackMenuOption[]) {
+    const { menu, button } = this.#getAudioTrackElements();
+    if (!menu || !button) {
+      this.#queueAudioTrackSetup();
+      return;
+    }
+
+    if (!list.length) {
+      menu.tracks = [];
+      menu.selected = undefined;
+
+      this._audioTrackCount = 0;
+      this.requestUpdate();
+      return;
+    }
+
     if (!list.some((track) => track.enabled) && list.length) {
       list[0].enabled = true;
     }
 
     const enabledTrack = list.find((track) => track.enabled) ?? list[0];
-    if ('tracks' in menu) {
-      (menu as any).tracks = list;
-      (menu as any).selected = enabledTrack?.id;
-    }
+    menu.tracks = list;
+    menu.selected = enabledTrack?.id;
     this._audioTrackCount = list.length;
     this.requestUpdate();
   }
@@ -1889,6 +2266,9 @@ export class Player extends MaveElement {
           'fullscreen',
           'subtitles',
           'rate',
+          'airplay',
+          'cast',
+          'chromecast',
         ].includes(control),
       );
 
@@ -1946,6 +2326,11 @@ export class Player extends MaveElement {
     }
 
     style['--playbackrate-display'] = this.controls.includes('rate') ? 'flex' : 'none';
+    style['--airplay-display'] = this.controls.includes('airplay') ? 'flex' : 'none';
+    style['--media-airplay-button-display'] = style['--airplay-display'];
+    style['--cast-display'] =
+      this.controls.includes('cast') || this.controls.includes('chromecast') ? 'flex' : 'none';
+    style['--media-cast-button-display'] = style['--cast-display'];
 
     if (
       subtitlesDisabled ||
@@ -2267,6 +2652,7 @@ export class Player extends MaveElement {
       <video
         @click=${this.#requestPlay}
         playsinline
+        x-webkit-airplay="allow"
         ?loop=${this.loop || this._embedObj.settings.loop}
         poster=${this.poster}
         width=${videoDimensions.width}
@@ -2331,14 +2717,7 @@ export class Player extends MaveElement {
       }
 
       return this._embedObj.subtitles.map((track) => {
-        if (
-          (this.subtitles && this.subtitles.includes(track.language)) ||
-          (this.active_subtitle && this.active_subtitle == track.language) ||
-          this.subtitles == 'all' ||
-          ((this.subtitles == 'original' || this.active_subtitle == 'original') &&
-            this._embedObj.video.language == track.language) ||
-          !this.subtitles
-        ) {
+        if (this.#shouldRenderSubtitleTrack(track)) {
           return html`
             <track mode="hidden" @cuechange=${this.#cuechange} label=${
             track.label
