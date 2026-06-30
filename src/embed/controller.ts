@@ -10,25 +10,40 @@ export enum EmbedType {
 }
 
 export class EmbedController {
+  private static readonly MANIFEST_RETRY_DELAYS_MS = [500, 1500, 3500];
+  private static readonly MANIFEST_RETRY_STATUSES = new Set([
+    408, 409, 425, 429, 500, 502, 503, 504,
+  ]);
+
   host: ReactiveControllerHost;
   private task: Task;
   private type: EmbedType;
   private _embed: string;
   private _token: string;
   private _version: number;
+  private _enabled: boolean;
   private _embedData: Partial<API.Embed>;
   caching: boolean = true;
   loading: boolean = true;
 
-  constructor(host: ReactiveControllerHost, embedType: EmbedType = EmbedType.Embed) {
+  constructor(
+    host: ReactiveControllerHost,
+    embedType: EmbedType = EmbedType.Embed,
+    enabled = true,
+  ) {
     this.host = host;
     this.type = embedType;
+    this._enabled = enabled;
 
     this.loading = true;
     this.task = new Task(
       this.host,
       async () => {
         try {
+          if (!this.enabled) {
+            return;
+          }
+
           if (this.type == EmbedType.Embed && !this.embed) {
             return;
           }
@@ -37,12 +52,21 @@ export class EmbedController {
             return;
           }
 
-          const response = await fetch(this.manifest_url);
-          const data = await response.json();
+          const requestEmbed = this.embed;
+          const requestToken = this.token;
+          const data = await this.fetchManifestWithRetry(() => {
+            if (!this.enabled) return;
+            if (this.embed !== requestEmbed || this.token !== requestToken) return;
+
+            return this.manifest_url;
+          });
+
+          if (!data) return;
+
           this.loading = false;
 
           if (this.type == EmbedType.Embed) {
-            this._embedData = data;
+            this._embedData = data as Partial<API.Embed>;
             this.version = this._embedData.video?.version || 0;
             return this._embedData;
           } else {
@@ -53,8 +77,74 @@ export class EmbedController {
           throw new Error(`Failed to fetch "${this.embed}"`);
         }
       },
-      () => [this.embed],
+      () => [this.embed, this.token, this.enabled],
     );
+  }
+
+  private async fetchManifestWithRetry(
+    manifestUrl: () => string | undefined,
+  ): Promise<unknown | undefined> {
+    let lastError: unknown;
+
+    for (
+      let attempt = 0;
+      attempt <= EmbedController.MANIFEST_RETRY_DELAYS_MS.length;
+      attempt++
+    ) {
+      const url = manifestUrl();
+      if (!url) return;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw EmbedController.responseError(response, url);
+        }
+
+        return await response.json();
+      } catch (error) {
+        lastError = error;
+
+        const retryDelay = EmbedController.MANIFEST_RETRY_DELAYS_MS[attempt];
+        if (retryDelay == null || !EmbedController.shouldRetryManifestError(error)) {
+          break;
+        }
+
+        await EmbedController.delay(EmbedController.withJitter(retryDelay));
+      }
+    }
+
+    throw lastError;
+  }
+
+  private static responseError(response: Response, url: string) {
+    const error = new Error(
+      `Manifest request failed with status ${response.status}`,
+    ) as Error & {
+      status?: number;
+      url?: string;
+    };
+    error.status = response.status;
+    error.url = url;
+    return error;
+  }
+
+  private static shouldRetryManifestError(error: unknown) {
+    const status =
+      typeof error === 'object' && error
+        ? (error as { status?: number }).status
+        : undefined;
+
+    if (typeof status !== 'number') return true;
+
+    return EmbedController.MANIFEST_RETRY_STATUSES.has(status);
+  }
+
+  private static withJitter(delay: number) {
+    return delay + Math.floor(Math.random() * 250);
+  }
+
+  private static delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   get manifest_url(): string {
@@ -91,6 +181,18 @@ export class EmbedController {
     return this._token;
   }
 
+  set enabled(value: boolean) {
+    if (this._enabled != value) {
+      this._enabled = value;
+      if (value) this.loading = true;
+      this.host.requestUpdate();
+    }
+  }
+
+  get enabled() {
+    return this._enabled;
+  }
+
   get spaceId(): string {
     return this.embed?.substring(0, 5);
   }
@@ -118,6 +220,7 @@ export class EmbedController {
   }
 
   refresh(): Promise<unknown> {
+    this.enabled = true;
     this.loading = true;
     return this.task?.run();
   }
