@@ -147,6 +147,8 @@ export function build(name, LitElement, html, css) {
       media-play-button,
       media-fullscreen-button,
       media-mute-button,
+      media-airplay-button,
+      media-cast-button,
       mave-captions-menu-button,
       media-settings-menu-button,
       media-audio-track-menu-button,
@@ -160,6 +162,8 @@ export function build(name, LitElement, html, css) {
       media-play-button:hover,
       media-fullscreen-button:hover,
       media-mute-button:hover,
+      media-airplay-button:hover,
+      media-cast-button:hover,
       mave-captions-menu-button:hover,
       media-settings-menu-button:hover,
       media-audio-track-menu-button:hover,
@@ -170,7 +174,9 @@ export function build(name, LitElement, html, css) {
 
       media-play-button div,
       media-fullscreen-button div,
-      media-mute-button div {
+      media-mute-button div,
+      media-airplay-button div,
+      media-cast-button div {
         width: 26px;
         padding-top: 7px;
       }
@@ -188,6 +194,8 @@ export function build(name, LitElement, html, css) {
       media-settings-menu-button svg,
       media-fullscreen-button svg,
       media-mute-button svg,
+      media-airplay-button svg,
+      media-cast-button svg,
       media-audio-track-menu-button svg,
       mave-audio-track-menu-button svg {
         width: 23px;
@@ -396,6 +404,19 @@ export function build(name, LitElement, html, css) {
 
       media-fullscreen-button {
         display: var(--fullscreen-display, flex);
+      }
+
+      media-airplay-button {
+        display: var(--media-airplay-button-display, var(--airplay-display, none));
+      }
+
+      media-cast-button {
+        display: var(--media-cast-button-display, var(--cast-display, none));
+      }
+
+      media-airplay-button[mediaairplayunavailable],
+      media-cast-button[mediacastunavailable] {
+        display: none;
       }
 
       media-playback-rate-button {
@@ -712,6 +733,74 @@ export function build(name, LitElement, html, css) {
                   </svg>
                 </div>
               </media-mute-button>
+              <media-airplay-button>
+                <div slot="enter">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"></path>
+                    <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
+                  </svg>
+                </div>
+                <div slot="exit">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"></path>
+                    <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
+                  </svg>
+                </div>
+              </media-airplay-button>
+              <media-cast-button>
+                <div slot="enter">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3.75 18.75v1.5h1.5"></path>
+                    <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+                    <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+                    <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
+                  </svg>
+                </div>
+                <div slot="exit">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3.75 18.75v1.5h1.5"></path>
+                    <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+                    <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+                    <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
+                  </svg>
+                </div>
+              </media-cast-button>
               <media-fullscreen-button>
                 <div slot="enter">
                   <svg
