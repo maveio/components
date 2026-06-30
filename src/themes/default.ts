@@ -339,6 +339,7 @@ export function build(name, LitElement, html, css) {
         height: 34px;
         overflow: hidden;
         opacity: 0;
+        pointer-events: none;
         transform: rotate(-90deg);
         position: absolute;
         top: -74px;
@@ -352,15 +353,18 @@ export function build(name, LitElement, html, css) {
         background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
         --media-range-track-width: 80px;
         backdrop-filter: blur(12px);
+        pointer-events: none;
       }
 
-      media-mute-button:hover + .media-volume-range-wrapper,
-      media-mute-button:focus + .media-volume-range-wrapper,
-      media-mute-button:focus-within + .media-volume-range-wrapper,
-      .media-volume-range-wrapper:hover,
-      .media-volume-range-wrapper:focus,
-      .media-volume-range-wrapper:focus-within {
+      .media-volume-wrapper:hover .media-volume-range-wrapper,
+      .media-volume-wrapper:focus-within .media-volume-range-wrapper {
         opacity: 1;
+        pointer-events: auto;
+      }
+
+      .media-volume-wrapper:hover media-volume-range,
+      .media-volume-wrapper:focus-within media-volume-range {
+        pointer-events: auto;
       }
 
       media-airplay-button[media-airplay-unavailable].small-button {
