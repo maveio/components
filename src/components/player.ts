@@ -21,7 +21,7 @@ import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 
 import { Config } from '../config';
 import { Embed } from '../embed/api';
-import { EmbedController } from '../embed/controller';
+import { EmbedController, EmbedType } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
@@ -88,11 +88,12 @@ export class Player extends MaveElement {
   }
   set embed(value: string) {
     if (this._embedId != value) {
+      this.#resetDeferredMediaLoadState();
       this._embedId = value;
-      // this.requestUpdate('embed');
       this.embedController.embed = this.embed;
       this.updateStylePoster();
       this.loadTheme();
+      this.#queueMediaLoadSync();
     }
   }
 
@@ -228,13 +229,14 @@ export class Player extends MaveElement {
       const oldPoster = this._poster;
       this._poster = nextPoster;
       this.requestUpdate('poster', oldPoster);
-      void this.#warmPoster();
+      this.#preparePoster();
     }
   }
 
   @state() popped = false;
   @state() private _isProcessing = false;
   @state() private _posterOverlayHidden = false;
+  @state() private _mediaLoadRequested = false;
 
   @query("slot[name='end-screen']") endScreenElement: HTMLElement;
   @query("slot[name='start-screen']") startScreenElement: HTMLElement;
@@ -243,6 +245,9 @@ export class Player extends MaveElement {
   private _themeLoaded: string;
   private static readonly PROCESSING_REFRESH_INTERVAL = 5000;
   private static readonly POSTER_AUTOPLAY_WAIT_MS = 800;
+  private static readonly AUTO_LAZY_PLAYER_THRESHOLD = 4;
+  private static readonly AUTO_LAZY_ROOT_MARGIN_PX = 300;
+  private static readonly AUTO_LAZY_ROOT_MARGIN = '300px 0px';
 
   private _subtitlesText: HTMLElement;
   private _audioTrackCount = 0;
@@ -255,6 +260,9 @@ export class Player extends MaveElement {
   private _pendingAudioTrackSetup?: number;
   private _cleanupNativeHlsSubtitleState?: () => void;
   private _activeSubtitleApplied = false;
+  private _mediaSourceLoaded = false;
+  private _pendingMediaLoadSync?: number;
+  private _mediaLoadObserver?: IntersectionObserver;
   private _currentAudioTrackMenu?: Element | null;
   private _themeMutationObserver?: MutationObserver;
   private _themeMutationObserverRoot?: Node;
@@ -408,7 +416,7 @@ export class Player extends MaveElement {
     callback: this.#intersected.bind(this),
   });
 
-  private embedController = new EmbedController(this);
+  private embedController = new EmbedController(this, EmbedType.Embed, false);
   private _videoElement?: HTMLMediaElement;
 
   @state()
@@ -501,7 +509,25 @@ export class Player extends MaveElement {
   }
 
   play(): Promise<void> {
+    if (!this._mediaLoadRequested) {
+      return new Promise((resolve, reject) => {
+        this._queue.push(() => {
+          this.#playVideo().then(resolve, reject);
+        });
+        this.#requestMediaLoad();
+      });
+    }
+
     if (this._videoElement && !this.embedController.loading) {
+      if (!this._mediaSourceLoaded) {
+        return new Promise((resolve, reject) => {
+          this._queue.push(() => {
+            this.#playVideo().then(resolve, reject);
+          });
+          this.#requestMediaLoad();
+        });
+      }
+
       return this.#playVideo();
     }
 
@@ -530,10 +556,17 @@ export class Player extends MaveElement {
   }
 
   updateStylePoster() {
+    if (!this.#shouldLoadMediaNow()) {
+      if (this._managedPosterBackgroundSrc) {
+        this._managedPosterBackgroundSrc = undefined;
+        this.style.removeProperty('background');
+      }
+      return;
+    }
+
     const poster = this.poster;
     const currentBackground = this.style.getPropertyValue('background').trim();
-    const hasAuthorBackground =
-      currentBackground && !this._managedPosterBackgroundSrc;
+    const hasAuthorBackground = currentBackground && !this._managedPosterBackgroundSrc;
 
     if (hasAuthorBackground) return;
 
@@ -546,6 +579,147 @@ export class Player extends MaveElement {
       this._managedPosterBackgroundSrc = undefined;
       this.style.removeProperty('background');
     }
+  }
+
+  #preparePoster() {
+    if (!this.#shouldLoadMediaNow()) {
+      this.#setPosterReadySrc(undefined);
+      return;
+    }
+
+    void this.#warmPoster();
+  }
+
+  #shouldLoadMediaNow() {
+    return (
+      this._mediaSourceLoaded || this._mediaLoadRequested || !this.#shouldDeferMediaLoad()
+    );
+  }
+
+  #shouldDeferMediaLoad() {
+    if (typeof document === 'undefined') return false;
+
+    const playerCount = document.querySelectorAll('mave-player').length;
+    if (playerCount <= Player.AUTO_LAZY_PLAYER_THRESHOLD) return false;
+
+    return !this.#isNearViewport();
+  }
+
+  #isNearViewport() {
+    if (typeof window === 'undefined') return true;
+
+    const rect = this.getBoundingClientRect();
+    const margin = Player.AUTO_LAZY_ROOT_MARGIN_PX;
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight || 0;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+
+    return (
+      rect.bottom >= -margin &&
+      rect.top <= viewportHeight + margin &&
+      rect.right >= -margin &&
+      rect.left <= viewportWidth + margin
+    );
+  }
+
+  #syncMediaLoadState() {
+    if (!this.isConnected || !this.embed || this._mediaLoadRequested) return;
+
+    if (!this.#shouldDeferMediaLoad()) {
+      this.#requestMediaLoad();
+      return;
+    }
+
+    this.#observeDeferredMediaLoad();
+  }
+
+  #queueMediaLoadSync() {
+    if (typeof window === 'undefined') {
+      this.#syncMediaLoadState();
+      return;
+    }
+
+    if (this._pendingMediaLoadSync != null) return;
+
+    this._pendingMediaLoadSync = requestAnimationFrame(() => {
+      this._pendingMediaLoadSync = undefined;
+      this.#syncMediaLoadState();
+    });
+  }
+
+  #clearQueuedMediaLoadSync() {
+    if (this._pendingMediaLoadSync == null) return;
+
+    cancelAnimationFrame(this._pendingMediaLoadSync);
+    this._pendingMediaLoadSync = undefined;
+  }
+
+  #observeDeferredMediaLoad() {
+    if (this._mediaSourceLoaded || this._mediaLoadRequested) return;
+
+    if (!this.#shouldDeferMediaLoad()) {
+      this.#requestMediaLoad();
+      return;
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      this.#requestMediaLoad();
+      return;
+    }
+
+    if (this._mediaLoadObserver) return;
+
+    this._mediaLoadObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          this.#requestMediaLoad();
+        }
+      },
+      { rootMargin: Player.AUTO_LAZY_ROOT_MARGIN },
+    );
+    this._mediaLoadObserver.observe(this);
+  }
+
+  #clearDeferredMediaLoadObserver() {
+    this._mediaLoadObserver?.disconnect();
+    this._mediaLoadObserver = undefined;
+  }
+
+  #resetDeferredMediaLoadState() {
+    this.#clearQueuedMediaLoadSync();
+    this.#clearDeferredMediaLoadObserver();
+    this.embedController.enabled = false;
+    this._mediaLoadRequested = false;
+    this._mediaSourceLoaded = false;
+    this.#clearMediaSource();
+    this.#resetPosterSurfaces();
+    this.#setPosterReadySrc(undefined);
+  }
+
+  #clearMediaSource() {
+    this._metricsInstance?.demonitor();
+    this._metricsInstance = undefined;
+    this.#destroyHlsInstance();
+    this.#clearNativeHlsSubtitleState();
+    this.#clearNativeAudioTracks();
+    this.#resetHlsAudioTracks();
+
+    if (this._videoElement?.src) {
+      this._videoElement.removeAttribute('src');
+      this._videoElement.load();
+    }
+  }
+
+  #requestMediaLoad() {
+    if (this._mediaSourceLoaded || this._mediaLoadRequested || !this.embed) return;
+
+    this._mediaLoadRequested = true;
+    this.#clearDeferredMediaLoadObserver();
+    this.embedController.enabled = true;
+    this.#preparePoster();
+    this.updateStylePoster();
+    this.requestUpdate('_mediaLoadRequested');
+    void this.updateComplete.then(() => this.#setupMediaSource());
   }
 
   #warmPoster() {
@@ -615,9 +789,7 @@ export class Player extends MaveElement {
 
       image.decoding = 'async';
       if ('fetchPriority' in image) {
-        (
-          image as HTMLImageElement & { fetchPriority: string }
-        ).fetchPriority = 'high';
+        (image as HTMLImageElement & { fetchPriority: string }).fetchPriority = 'high';
       }
       image.onload = finishAfterDecode;
       image.onerror = () => finish(false);
@@ -664,6 +836,7 @@ export class Player extends MaveElement {
     this.loadTheme();
     this.#syncHostLayout();
     this.updateStylePoster();
+    this.#queueMediaLoadSync();
 
     if (typeof window !== 'undefined' && window.matchMedia) {
       this._contrastQuery = window.matchMedia('(prefers-contrast: more)');
@@ -709,6 +882,16 @@ export class Player extends MaveElement {
       this.#applyActiveSubtitle();
       this.#syncNativeHlsSubtitleState();
     }
+
+    if (changedProperties.has('autoplay')) {
+      this.#queueMediaLoadSync();
+
+      if (this._embedObj && this.#shouldLoadMediaNow()) {
+        this.#requestMediaLoad();
+      } else if (this._embedObj) {
+        this.#observeDeferredMediaLoad();
+      }
+    }
   }
 
   #applySubtitleStyles() {
@@ -734,6 +917,8 @@ export class Player extends MaveElement {
     this._contrastQueryHandler = undefined;
     this._metricsInstance?.demonitor();
     this.#clearProcessingRefresh();
+    this.#clearQueuedMediaLoadSync();
+    this.#clearDeferredMediaLoadObserver();
     this.#clearNativeHlsSubtitleState();
     this.#clearNativeAudioTracks();
     this.#resetHlsAudioTracks();
@@ -967,9 +1152,9 @@ export class Player extends MaveElement {
   }
 
   #setSubtitleStateAttribute(name: string, value: string) {
-    const themeRoot = this.shadowRoot
-      ?.querySelector(`theme-${this._themeLoaded}`)
-      ?.shadowRoot;
+    const themeRoot = this.shadowRoot?.querySelector(
+      `theme-${this._themeLoaded}`,
+    )?.shadowRoot;
 
     themeRoot
       ?.querySelectorAll(
@@ -1073,15 +1258,11 @@ export class Player extends MaveElement {
     return applied;
   }
 
-  #formatMediaChromeTextTrack(track: {
-    kind: string;
-    language: string;
-    label?: string;
-  }) {
+  #formatMediaChromeTextTrack(track: { kind: string; language: string; label?: string }) {
     if (!track.label) return track.language;
-    return `${track.kind === 'captions' ? 'cc' : 'sb'}:${track.language}:${encodeURIComponent(
-      track.label,
-    )}`;
+    return `${track.kind === 'captions' ? 'cc' : 'sb'}:${
+      track.language
+    }:${encodeURIComponent(track.label)}`;
   }
 
   #getImageRendition(
@@ -1277,83 +1458,95 @@ export class Player extends MaveElement {
         });
       });
 
-      Metrics.config = {
-        apiEndpoint: Config.metrics.endpoint,
-      };
+      this.#setupMediaSource();
+    }
+  }
 
-      const metadata = {
-        component: 'player',
-        video_id: this._embedObj.video.id,
-        space_id: this._embedObj.space_id,
-      };
+  #setupMediaSource() {
+    if (!this._videoElement || !this._embedObj || this._mediaSourceLoaded) return;
 
-      const canPlayNativeHls =
-        !!this.#hlsPath &&
-        !!this._videoElement.canPlayType('application/vnd.apple.mpegurl');
-      const shouldUseNativeHls =
-        canPlayNativeHls && this.#shouldUseNativeHlsPlayback();
-
-      this.#destroyHlsInstance();
-
-      if (shouldUseNativeHls) {
-        this.#resetHlsAudioTracks();
-        this._videoElement.src = this.#hlsPath;
-        this.#guardNativeHlsSubtitleState();
-        this.#setupNativeAudioTracks();
-        if (Config.metrics.enabled)
-          this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-            component: 'player',
-          });
-      } else if (Hls.isSupported() && this.#hlsPath) {
-        this.#clearNativeHlsSubtitleState();
-        this.#clearNativeAudioTracks();
-        this.#resetHlsAudioTracks();
-
-        this.hls = new Hls({
-          startLevel: this.#getStartLevel(),
-          capLevelToPlayerSize: true,
-          xhrSetup: this.#xhrHLSSetup.bind(this),
-          maxBufferLength: 20,
-          maxBufferSize: 20,
-          backBufferLength: 60,
-        });
-
-        this.hls?.loadSource(this.#hlsPath);
-        this.hls?.attachMedia(this._videoElement);
-        this.#setupHlsAudioTracks();
-        if (Config.metrics.enabled)
-          this._metricsInstance = new Metrics(this.hls, this.embed, {
-            component: 'player',
-          });
-      } else if (canPlayNativeHls) {
-        this.#resetHlsAudioTracks();
-        this._videoElement.src = this.#hlsPath;
-        this.#guardNativeHlsSubtitleState();
-        this.#setupNativeAudioTracks();
-        if (Config.metrics.enabled)
-          this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-            component: 'player',
-          });
-      } else {
-        this.#clearNativeHlsSubtitleState();
-        this.#clearNativeAudioTracks();
-        this.#resetHlsAudioTracks();
-        if (this.#srcPath) this._videoElement.src = this.#srcPath;
-        if (Config.metrics.enabled)
-          this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-            component: 'player',
-          });
-      }
-
-      if (this._queue.length) {
-        this._queue.forEach((fn) => fn());
-        this._queue = [];
-      }
-
-      this.#applyActiveSubtitle();
+    if (!this.#shouldLoadMediaNow()) {
+      this.#observeDeferredMediaLoad();
       this.#handleAutoplay();
       this.#hideEndscreen();
+      return;
     }
+
+    this._mediaLoadRequested = true;
+    this._mediaSourceLoaded = true;
+    this.#clearDeferredMediaLoadObserver();
+    this.#preparePoster();
+    this.updateStylePoster();
+
+    Metrics.config = {
+      apiEndpoint: Config.metrics.endpoint,
+    };
+
+    const canPlayNativeHls =
+      !!this.#hlsPath &&
+      !!this._videoElement.canPlayType('application/vnd.apple.mpegurl');
+    const shouldUseNativeHls = canPlayNativeHls && this.#shouldUseNativeHlsPlayback();
+
+    this.#destroyHlsInstance();
+
+    if (shouldUseNativeHls) {
+      this.#resetHlsAudioTracks();
+      this._videoElement.src = this.#hlsPath;
+      this.#guardNativeHlsSubtitleState();
+      this.#setupNativeAudioTracks();
+      if (Config.metrics.enabled)
+        this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+          component: 'player',
+        });
+    } else if (Hls.isSupported() && this.#hlsPath) {
+      this.#clearNativeHlsSubtitleState();
+      this.#clearNativeAudioTracks();
+      this.#resetHlsAudioTracks();
+
+      this.hls = new Hls({
+        startLevel: this.#getStartLevel(),
+        capLevelToPlayerSize: true,
+        xhrSetup: this.#xhrHLSSetup.bind(this),
+        maxBufferLength: 20,
+        maxBufferSize: 20,
+        backBufferLength: 60,
+      });
+
+      this.hls?.loadSource(this.#hlsPath);
+      this.hls?.attachMedia(this._videoElement);
+      this.#setupHlsAudioTracks();
+      if (Config.metrics.enabled)
+        this._metricsInstance = new Metrics(this.hls, this.embed, {
+          component: 'player',
+        });
+    } else if (canPlayNativeHls) {
+      this.#resetHlsAudioTracks();
+      this._videoElement.src = this.#hlsPath;
+      this.#guardNativeHlsSubtitleState();
+      this.#setupNativeAudioTracks();
+      if (Config.metrics.enabled)
+        this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+          component: 'player',
+        });
+    } else {
+      this.#clearNativeHlsSubtitleState();
+      this.#clearNativeAudioTracks();
+      this.#resetHlsAudioTracks();
+      if (this.#srcPath) this._videoElement.src = this.#srcPath;
+      if (Config.metrics.enabled)
+        this._metricsInstance = new Metrics(this._videoElement, this.embed, {
+          component: 'player',
+        });
+    }
+
+    if (this._queue.length) {
+      this._queue.forEach((fn) => fn());
+      this._queue = [];
+    }
+
+    this.#applyActiveSubtitle();
+    this.#handleAutoplay();
+    this.#hideEndscreen();
   }
 
   #intersected(entries: IntersectionObserverEntry[]) {
@@ -1488,6 +1681,11 @@ export class Player extends MaveElement {
     if (!this._embedObj) return;
 
     if (this.#shouldAutoplayNow()) {
+      if (!this._mediaSourceLoaded) {
+        this.#requestMediaLoad();
+        return;
+      }
+
       this.#requestAutoplayPlay();
       return;
     }
@@ -1555,6 +1753,14 @@ export class Player extends MaveElement {
   }
 
   #requestPlay() {
+    if (this._videoElement && !this._mediaSourceLoaded) {
+      this._queue.push(() => {
+        void this.#playVideo().catch(() => undefined);
+      });
+      this.#requestMediaLoad();
+      return;
+    }
+
     if (this._videoElement?.paused) {
       void this.#playVideo().catch(() => undefined);
     } else {
@@ -1577,13 +1783,16 @@ export class Player extends MaveElement {
     if (this._posterOverlaySourceKey !== posterOverlaySourceKey) {
       this._posterOverlaySourceKey = posterOverlaySourceKey;
       this._activeSubtitleApplied = false;
+      this._mediaSourceLoaded = false;
+      this.#clearDeferredMediaLoadObserver();
+      this.#clearMediaSource();
       this.#resetPosterSurfaces();
     }
 
     this._embedObj = embed;
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.poster = this._embedObj.settings.poster;
-    void this.#warmPoster();
+    this.#preparePoster();
     this.#updateLoadingState();
 
     if (!this.attributes.getNamedItem('color')) {
@@ -1634,16 +1843,12 @@ export class Player extends MaveElement {
   #syncHostLayout() {
     this.#syncHostAspectRatio(this.#placeholderAspectRatio());
     this.#syncHostDimension('--width', this.width ?? this._embedObj?.settings.width);
-    this.#syncHostDimension(
-      '--height',
-      this.height ?? this._embedObj?.settings.height,
-    );
+    this.#syncHostDimension('--height', this.height ?? this._embedObj?.settings.height);
   }
 
   #syncHostAspectRatio(value: string) {
     const currentValue = this.style.getPropertyValue('--aspect-ratio').trim();
-    const hasAuthorValue =
-      currentValue && currentValue !== this._managedAspectRatio;
+    const hasAuthorValue = currentValue && currentValue !== this._managedAspectRatio;
 
     if (hasAuthorValue) return;
 
@@ -2138,8 +2343,10 @@ export class Player extends MaveElement {
   #nativeAudioTracks(audioTracks?: NativeMediaAudioTrackList) {
     if (!audioTracks?.length) return [];
 
-    return Array.from({ length: audioTracks.length }, (_, index) => audioTracks[index])
-      .filter((track): track is NativeMediaAudioTrack => !!track);
+    return Array.from(
+      { length: audioTracks.length },
+      (_, index) => audioTracks[index],
+    ).filter((track): track is NativeMediaAudioTrack => !!track);
   }
 
   #nativeAudioTrackId(track: NativeMediaAudioTrack, index: number) {
@@ -2329,7 +2536,9 @@ export class Player extends MaveElement {
     style['--airplay-display'] = this.controls.includes('airplay') ? 'flex' : 'none';
     style['--media-airplay-button-display'] = style['--airplay-display'];
     style['--cast-display'] =
-      this.controls.includes('cast') || this.controls.includes('chromecast') ? 'flex' : 'none';
+      this.controls.includes('cast') || this.controls.includes('chromecast')
+        ? 'flex'
+        : 'none';
     style['--media-cast-button-display'] = style['--cast-display'];
 
     if (
@@ -2466,16 +2675,14 @@ export class Player extends MaveElement {
 
   #parseAlpha(value: string): number {
     const trimmed = value.trim();
-    const alpha = trimmed.endsWith('%')
-      ? parseFloat(trimmed) / 100
-      : parseFloat(trimmed);
+    const alpha = trimmed.endsWith('%') ? parseFloat(trimmed) / 100 : parseFloat(trimmed);
     if (Number.isNaN(alpha)) return 1;
     return Math.min(1, Math.max(0, alpha));
   }
 
   #pickContrastColor(r: number, g: number, b: number): ParsedColor {
     const luminance = this.#relativeLuminance(r, g, b);
-    const contrastWithWhite = (1.05) / (luminance + 0.05);
+    const contrastWithWhite = 1.05 / (luminance + 0.05);
     const contrastWithBlack = (luminance + 0.05) / 0.05;
 
     return contrastWithBlack >= contrastWithWhite
@@ -2571,10 +2778,7 @@ export class Player extends MaveElement {
     const settingsAspectRatio = this._embedObj?.settings.aspect_ratio;
 
     if (settingsAspectRatio && settingsAspectRatio !== 'auto') {
-      if (
-        videoAspectRatio &&
-        this.#isDefaultLandscapeAspectRatio(settingsAspectRatio)
-      ) {
+      if (videoAspectRatio && this.#isDefaultLandscapeAspectRatio(settingsAspectRatio)) {
         return videoAspectRatio;
       }
 
@@ -2647,6 +2851,7 @@ export class Player extends MaveElement {
   #renderVideoTemplate() {
     if (!this._embedObj) return nothing;
     const videoDimensions = this.#videoIntrinsicDimensions();
+    const shouldLoadMedia = this.#shouldLoadMediaNow();
 
     return staticHtml`<theme-${unsafeStatic(this._themeLoaded)} style=${this.styles}>
       <video
@@ -2654,16 +2859,17 @@ export class Player extends MaveElement {
         playsinline
         x-webkit-airplay="allow"
         ?loop=${this.loop || this._embedObj.settings.loop}
-        poster=${this.poster}
+        preload=${shouldLoadMedia ? nothing : 'none'}
+        poster=${shouldLoadMedia ? this.poster : nothing}
         width=${videoDimensions.width}
         height=${videoDimensions.height}
         ${ref(this.#handleVideo)}
         slot="media"
         crossorigin="anonymous"
       >
-        ${this.#storyboard} ${this.#subtitles}
+        ${shouldLoadMedia ? html`${this.#storyboard} ${this.#subtitles}` : nothing}
       </video>
-      ${this.#posterTemplate}
+      ${shouldLoadMedia ? this.#posterTemplate : nothing}
     </theme-${unsafeStatic(this._themeLoaded)}>`;
   }
 
@@ -2741,18 +2947,8 @@ export class Player extends MaveElement {
     const startScreen = this.querySelector(
       '[slot="start-screen"], [data-slot="start-screen"]',
     ) as HTMLElement;
-
-    return html`
-      <slot
-        name="video"
-        style=${styleMap({
-          display:
-            startScreen && !this._startedPlaying && !this._isProcessing
-              ? 'none'
-              : 'block',
-        })}
-      >
-        ${this.embedController.render({
+    const playerTemplate = this._mediaLoadRequested
+      ? this.embedController.render({
           pending: () => nothing,
           error: () => this.#renderErrorPlaceholder(),
           complete: (data) => {
@@ -2764,7 +2960,20 @@ export class Player extends MaveElement {
 
             return this.#renderVideoTemplate();
           },
+        })
+      : nothing;
+
+    return html`
+      <slot
+        name="video"
+        style=${styleMap({
+          display:
+            startScreen && !this._startedPlaying && !this._isProcessing
+              ? 'none'
+              : 'block',
         })}
+      >
+        ${playerTemplate}
       </slot>
       ${this._embedObj && this._isProcessing
         ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
