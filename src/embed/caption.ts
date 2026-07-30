@@ -40,6 +40,7 @@ export class CaptionController {
   private task: Task;
   private _embed: string;
   private _token: string;
+  private _signedUrl: string;
   private _version: number;
 
   constructor(host: ReactiveControllerHost, embed: string) {
@@ -162,7 +163,7 @@ export class CaptionController {
           throw new Error();
         }
       },
-      () => [this.embed],
+      () => [this.embed, this.token, this.signedUrl],
     );
   }
 
@@ -186,6 +187,17 @@ export class CaptionController {
 
   get token() {
     return this._token;
+  }
+
+  set signedUrl(value: string) {
+    if (this._signedUrl != value) {
+      this._signedUrl = value;
+      this.host.requestUpdate();
+    }
+  }
+
+  get signedUrl() {
+    return this._signedUrl;
   }
 
   get spaceId(): string {
@@ -214,14 +226,19 @@ export class CaptionController {
     return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
   }
 
+  get mediaRoot(): string {
+    return this.signedUrl || `${this.cdnRoot}/${this.embedId}`;
+  }
+
   embedFile(file: string, params = new URLSearchParams()): string {
-    const url = new URL(
-      `${this.cdnRoot}/${this.embedId}${
-        file == 'manifest.json' ? '/' : this.version
-      }${file}`,
-    );
-    if (this.token) params.append('token', this.token);
-    url.search = params.toString();
+    const url = new URL(this.mediaRoot);
+    const versionPath = file == 'manifest.json' ? '' : this.version;
+    url.pathname = `${url.pathname.replace(/\/$/, '')}/${`${versionPath}${file}`.replace(
+      /^\//,
+      '',
+    )}`;
+    if (this.token) params.set('token', this.token);
+    params.forEach((value, key) => url.searchParams.set(key, value));
     return url.toString();
   }
 

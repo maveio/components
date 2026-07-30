@@ -95,6 +95,16 @@ Once you have uploaded your first video you can show your videos in different fo
 
 You can either change the settings through our interface or provide it as attributes. To learn which attributes you can use to change the appearance of your player, go to [our docs](https://docs.mave.io).
 
+#### Signed, expiring media URLs
+
+Signed delivery is opt-in. Request a media root from the authenticated Mave API and pass the returned `url` to the `signed-url` attribute together with the matching embed ID:
+
+```html
+<mave-player embed="{embed id}" signed-url="{signed media root}"></mave-player>
+```
+
+The component uses that root for the manifest, HLS playlists and segments, video renditions, posters, subtitles, and storyboards. The same attribute is supported by `<mave-clip>` and `<mave-text>`. Existing embeds without `signed-url` continue to use the public CDN.
+
 ### Clip
 
 ```html

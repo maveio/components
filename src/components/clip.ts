@@ -51,12 +51,14 @@ export class Clip extends LitElement {
   private _poster?: string;
   @property()
   get poster(): string | undefined {
-    return selectClipPosterSource({
+    const source = selectClipPosterSource({
       explicitPoster: this._poster,
       fallback: this.fallback,
       poster: this._embed?.poster,
       toSrc: (file) => this.embedController.embedFile(file),
     });
+
+    return this.embedController.authorizeUrl(source) ?? undefined;
   }
   set poster(value: string | null) {
     if (value) {
@@ -76,6 +78,19 @@ export class Clip extends LitElement {
       this._token = value;
       this.requestUpdate('token');
       this.embedController.token = this._token;
+    }
+  }
+
+  private _signedUrl: string;
+  @property({ attribute: 'signed-url' })
+  get signedUrl(): string {
+    return this._signedUrl;
+  }
+  set signedUrl(value: string) {
+    if (this._signedUrl != value) {
+      this._signedUrl = value;
+      this.requestUpdate('signedUrl');
+      this.embedController.signedUrl = value;
     }
   }
 

@@ -20,6 +20,7 @@ export class EmbedController {
   private type: EmbedType;
   private _embed: string;
   private _token: string;
+  private _signedUrl: string;
   private _version: number;
   private _enabled: boolean;
   private _embedData: Partial<API.Embed>;
@@ -54,9 +55,15 @@ export class EmbedController {
 
           const requestEmbed = this.embed;
           const requestToken = this.token;
+          const requestSignedUrl = this.signedUrl;
           const data = await this.fetchManifestWithRetry(() => {
             if (!this.enabled) return;
-            if (this.embed !== requestEmbed || this.token !== requestToken) return;
+            if (
+              this.embed !== requestEmbed ||
+              this.token !== requestToken ||
+              this.signedUrl !== requestSignedUrl
+            )
+              return;
 
             return this.manifest_url;
           });
@@ -77,7 +84,7 @@ export class EmbedController {
           throw new Error(`Failed to fetch "${this.embed}"`);
         }
       },
-      () => [this.embed, this.token, this.enabled],
+      () => [this.embed, this.token, this.signedUrl, this.enabled],
     );
   }
 
@@ -181,6 +188,18 @@ export class EmbedController {
     return this._token;
   }
 
+  set signedUrl(value: string) {
+    if (this._signedUrl != value) {
+      this._signedUrl = value;
+      this.loading = true;
+      this.host.requestUpdate();
+    }
+  }
+
+  get signedUrl() {
+    return this._signedUrl;
+  }
+
   set enabled(value: boolean) {
     if (this._enabled != value) {
       this._enabled = value;
@@ -219,6 +238,10 @@ export class EmbedController {
     return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
   }
 
+  get mediaRoot(): string {
+    return this.signedUrl || `${this.cdnRoot}/${this.embedId}`;
+  }
+
   refresh(): Promise<unknown> {
     this.enabled = true;
     this.loading = true;
@@ -226,33 +249,54 @@ export class EmbedController {
   }
 
   embedFile(file: string, params = new URLSearchParams()): string {
-    const url = new URL(
-      `${this.cdnRoot}/${this.embedId}${
-        file == 'manifest.json' ? '/' : this.version
-      }${file}`,
-    );
+    const parsedFile = new URL(file, 'https://media.invalid/');
+    const versionPath = file.split('?')[0] == 'manifest.json' ? '' : this.version;
+    const url = this.mediaUrl(`${versionPath}${parsedFile.pathname.slice(1)}`);
 
-    if (file.includes('?')) {
-      const [_file, query] = file.split('?');
-      const query_params = new URLSearchParams(query);
-      query_params.forEach((value, key) => {
-        params.append(key, value);
-      });
-    }
-
-    if (this.token) params.append('token', this.token);
+    parsedFile.searchParams.forEach((value, key) => params.set(key, value));
+    if (this.token) params.set('token', this.token);
     if (file == 'manifest.json') {
       if (params.has('e')) params.delete('e');
-      params.append('e', new Date().getTime().toString());
+      params.set('e', new Date().getTime().toString());
     }
     if (file !== 'manifest.json' && !this.caching) {
       // const e = !this.caching ? new Date() : new Date(this._embedData.created_at);
       if (!params.has('e')) {
-        params.append('e', new Date().getTime().toString());
+        params.set('e', new Date().getTime().toString());
       }
     }
-    url.search = params.toString();
+
+    params.forEach((value, key) => url.searchParams.set(key, value));
     return url.toString();
+  }
+
+  authorizeUrl(source: string | null | undefined): string | null | undefined {
+    if (!source || !this.signedUrl) return source;
+
+    try {
+      const publicUrl = new URL(source);
+      const embedMarker = `/${this.embedId}/`;
+      const markerIndex = publicUrl.pathname.indexOf(embedMarker);
+      if (markerIndex < 0) return source;
+
+      const relativePath = publicUrl.pathname.slice(markerIndex + embedMarker.length);
+      const signedUrl = this.mediaUrl(relativePath);
+      publicUrl.searchParams.forEach((value, key) =>
+        signedUrl.searchParams.set(key, value),
+      );
+      return signedUrl.toString();
+    } catch {
+      return source;
+    }
+  }
+
+  private mediaUrl(relativePath: string): URL {
+    const url = new URL(this.mediaRoot);
+    url.pathname = `${url.pathname.replace(/\/$/, '')}/${relativePath.replace(
+      /^\//,
+      '',
+    )}`;
+    return url;
   }
 
   render(renderFunctions: StatusRenderer<unknown>) {

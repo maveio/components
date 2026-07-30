@@ -23,8 +23,22 @@ export class Text extends LitElement {
     if (this._embedId != value) {
       this._embedId = value;
       this.captionController = new CaptionController(this, this.embed);
+      this.captionController.signedUrl = this._signedUrl;
       this.reset();
       this.requestUpdate('embed');
+    }
+  }
+
+  private _signedUrl: string;
+  @property({ attribute: 'signed-url' })
+  get signedUrl(): string {
+    return this._signedUrl;
+  }
+  set signedUrl(value: string) {
+    if (this._signedUrl != value) {
+      this._signedUrl = value;
+      this.requestUpdate('signedUrl');
+      if (this.captionController) this.captionController.signedUrl = value;
     }
   }
 

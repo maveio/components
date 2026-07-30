@@ -110,6 +110,21 @@ export class Player extends MaveElement {
     }
   }
 
+  private _signedUrl: string;
+  @property({ attribute: 'signed-url' })
+  get signedUrl(): string {
+    return this._signedUrl;
+  }
+  set signedUrl(value: string) {
+    if (this._signedUrl != value) {
+      this.#resetDeferredMediaLoadState();
+      this._signedUrl = value;
+      this.requestUpdate('signedUrl');
+      this.embedController.signedUrl = value;
+      this.#queueMediaLoadSync();
+    }
+  }
+
   @property() locale?: string;
 
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
@@ -1286,9 +1301,11 @@ export class Player extends MaveElement {
 
   #manifestPoster() {
     return (
-      this._embedObj?.poster?.image_src ||
-      this._embedObj?.poster?.initial_frame_src ||
-      null
+      this.embedController.authorizeUrl(
+        this._embedObj?.poster?.image_src ||
+          this._embedObj?.poster?.initial_frame_src ||
+          null,
+      ) ?? null
     );
   }
 
@@ -2898,7 +2915,7 @@ export class Player extends MaveElement {
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
       : this._embedObj.video.original;
 
-    return src;
+    return this.embedController.authorizeUrl(src);
   }
 
   get #subtitles() {
@@ -2927,7 +2944,9 @@ export class Player extends MaveElement {
           return html`
             <track mode="hidden" @cuechange=${this.#cuechange} label=${
             track.label
-          } kind="subtitles" srclang=${track.language} src=${track.path}></track>
+          } kind="subtitles" srclang=${
+            track.language
+          } src=${this.embedController.authorizeUrl(track.path)}></track>
           `;
         }
       });
