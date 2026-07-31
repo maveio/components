@@ -3,6 +3,7 @@ import { ReactiveControllerHost } from 'lit';
 
 import { Config } from '../config';
 import * as API from './api';
+import { PlaybackSession, playbackSession } from './playback';
 
 export enum EmbedType {
   Collection,
@@ -20,6 +21,7 @@ export class EmbedController {
   private type: EmbedType;
   private _embed: string;
   private _token: string;
+  private _playbackSession?: PlaybackSession;
   private _version: number;
   private _enabled: boolean;
   private _embedData: Partial<API.Embed>;
@@ -54,6 +56,14 @@ export class EmbedController {
 
           const requestEmbed = this.embed;
           const requestToken = this.token;
+          const session =
+            this.type == EmbedType.Embed && requestToken
+              ? await playbackSession(requestToken, requestEmbed)
+              : undefined;
+
+          if (this.embed !== requestEmbed || this.token !== requestToken) return;
+          this._playbackSession = session;
+
           const data = await this.fetchManifestWithRetry(() => {
             if (!this.enabled) return;
             if (this.embed !== requestEmbed || this.token !== requestToken) return;
@@ -95,7 +105,7 @@ export class EmbedController {
       if (!url) return;
 
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, this.fetchOptions);
         if (!response.ok) {
           throw EmbedController.responseError(response, url);
         }
@@ -151,7 +161,7 @@ export class EmbedController {
     if (this.type == EmbedType.Embed) {
       return this.embedFile('manifest.json');
     } else {
-      const url = new URL(`${API.baseUrl()}/collection/${this.token}`);
+      const url = new URL(`${API.baseUrl().replace(/\/$/, '')}/collection`);
       if (this.embed && this.embed?.length > 1)
         url.searchParams.append('embed', this.embed);
       return url.toString();
@@ -161,6 +171,7 @@ export class EmbedController {
   set embed(value: string) {
     if (this._embed != value) {
       this._embed = value;
+      this._playbackSession = undefined;
       this.loading = true;
       this.host.requestUpdate();
     }
@@ -173,6 +184,7 @@ export class EmbedController {
   set token(value: string) {
     if (this._token != value) {
       this._token = value;
+      this._playbackSession = undefined;
       this.host.requestUpdate();
     }
   }
@@ -219,6 +231,17 @@ export class EmbedController {
     return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
   }
 
+  private get fetchOptions(): RequestInit | undefined {
+    if (this.type != EmbedType.Collection || !this.token) return undefined;
+
+    return {
+      headers: { Authorization: `Bearer ${this.token}` },
+      cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+    };
+  }
+
   refresh(): Promise<unknown> {
     this.enabled = true;
     this.loading = true;
@@ -226,8 +249,9 @@ export class EmbedController {
   }
 
   embedFile(file: string, params = new URLSearchParams()): string {
+    const mediaBaseUrl = this._playbackSession?.media_base_url.replace(/\/$/, '');
     const url = new URL(
-      `${this.cdnRoot}/${this.embedId}${
+      `${mediaBaseUrl || `${this.cdnRoot}/${this.embedId}`}${
         file == 'manifest.json' ? '/' : this.version
       }${file}`,
     );
@@ -240,7 +264,7 @@ export class EmbedController {
       });
     }
 
-    if (this.token) params.append('token', this.token);
+    if (this._playbackSession) params.append('token', this._playbackSession.token);
     if (file == 'manifest.json') {
       if (params.has('e')) params.delete('e');
       params.append('e', new Date().getTime().toString());
@@ -252,6 +276,19 @@ export class EmbedController {
       }
     }
     url.search = params.toString();
+    return url.toString();
+  }
+
+  dynamicImage(time: string | number, format = 'jpg'): string {
+    if (!this._playbackSession) {
+      return `https://image.mave.io/${this.spaceId}${this.embedId}.${format}?time=${time}`;
+    }
+
+    const url = new URL(
+      `${this._playbackSession.media_base_url.replace(/\/$/, '')}/dynamic.${format}`,
+    );
+    url.searchParams.set('time', String(time));
+    url.searchParams.set('token', this._playbackSession.token);
     return url.toString();
   }
 
