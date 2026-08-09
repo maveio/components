@@ -972,10 +972,11 @@ export class Player extends MaveElement {
     const status = this.#manifestStatus();
     const hasStatus = typeof status === 'string';
     const lacksSource = !this.#hasPlayableSource();
+    const needsRefresh = this.#manifestNeedsRefresh(status);
     const needsProcessing = this.#manifestNeedsProcessing(status);
     const awaitingMetadata = hasStatus && this.#awaitingMetadata();
 
-    if (needsProcessing) {
+    if (needsRefresh) {
       this.#scheduleProcessingRefresh();
     } else {
       this.#clearProcessingRefresh();
@@ -1032,9 +1033,16 @@ export class Player extends MaveElement {
     return this._embedObj?.video?.status;
   }
 
-  #manifestNeedsProcessing(status = this.#manifestStatus()) {
+  #manifestNeedsRefresh(status = this.#manifestStatus()) {
     if (typeof status === 'string') {
       return status !== 'ready';
+    }
+    return false;
+  }
+
+  #manifestNeedsProcessing(status = this.#manifestStatus()) {
+    if (typeof status === 'string') {
+      return !['ready', 'playable'].includes(status);
     }
     return false;
   }
