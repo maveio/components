@@ -842,6 +842,11 @@ export class Player extends MaveElement {
       this.#prepareEndedVideoForReplay,
       true,
     );
+    this.addEventListener(
+      MediaUIEvents.MEDIA_SEEK_REQUEST,
+      this.#handleMediaSeekRequest,
+      true,
+    );
 
     if (typeof window !== 'undefined' && window.matchMedia) {
       this._contrastQuery = window.matchMedia('(prefers-contrast: more)');
@@ -914,6 +919,11 @@ export class Player extends MaveElement {
     this.removeEventListener(
       MediaUIEvents.MEDIA_PLAY_REQUEST,
       this.#prepareEndedVideoForReplay,
+      true,
+    );
+    this.removeEventListener(
+      MediaUIEvents.MEDIA_SEEK_REQUEST,
+      this.#handleMediaSeekRequest,
       true,
     );
     if (this._contrastQuery && this._contrastQueryHandler) {
@@ -1622,6 +1632,10 @@ export class Player extends MaveElement {
   #hidePosterSurfaces() {
     this.#hidePosterOverlay();
     this.#hideRootPosterBackground();
+  }
+
+  #handleMediaSeekRequest() {
+    this.#hidePosterSurfaces();
   }
 
   #hidePosterOverlay() {
