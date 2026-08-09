@@ -837,6 +837,11 @@ export class Player extends MaveElement {
     this.#syncHostLayout();
     this.updateStylePoster();
     this.#queueMediaLoadSync();
+    this.addEventListener(
+      MediaUIEvents.MEDIA_PLAY_REQUEST,
+      this.#prepareEndedVideoForReplay,
+      true,
+    );
 
     if (typeof window !== 'undefined' && window.matchMedia) {
       this._contrastQuery = window.matchMedia('(prefers-contrast: more)');
@@ -906,6 +911,11 @@ export class Player extends MaveElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.removeEventListener(
+      MediaUIEvents.MEDIA_PLAY_REQUEST,
+      this.#prepareEndedVideoForReplay,
+      true,
+    );
     if (this._contrastQuery && this._contrastQueryHandler) {
       if (this._contrastQuery.removeEventListener) {
         this._contrastQuery.removeEventListener('change', this._contrastQueryHandler);
@@ -1794,8 +1804,23 @@ export class Player extends MaveElement {
       return Promise.reject(new Error('[mave-player]: video element is not ready'));
     }
 
+    this.#prepareEndedVideoForReplay();
     this._metricsInstance?.monitor();
     return this._videoElement.play();
+  }
+
+  #prepareEndedVideoForReplay() {
+    const video = this._videoElement;
+    if (!video?.paused || video.currentTime <= 0) return;
+
+    const seekableEnd = video.seekable.length
+      ? video.seekable.end(video.seekable.length - 1)
+      : video.duration;
+    const reachedPlaybackEnd =
+      video.ended ||
+      (Number.isFinite(seekableEnd) && video.currentTime >= seekableEnd - 1);
+
+    if (reachedPlaybackEnd) video.currentTime = 0;
   }
 
   // Used for updating the embed settings
