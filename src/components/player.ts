@@ -955,7 +955,7 @@ export class Player extends MaveElement {
     const needsProcessing = this.#manifestNeedsProcessing(status);
     const awaitingMetadata = hasStatus && this.#awaitingMetadata();
 
-    if (needsProcessing && lacksSource) {
+    if (needsProcessing) {
       this.#scheduleProcessingRefresh();
     } else {
       this.#clearProcessingRefresh();
@@ -1014,7 +1014,7 @@ export class Player extends MaveElement {
 
   #manifestNeedsProcessing(status = this.#manifestStatus()) {
     if (typeof status === 'string') {
-      return !['ready', 'playable'].includes(status);
+      return status !== 'ready';
     }
     return false;
   }
