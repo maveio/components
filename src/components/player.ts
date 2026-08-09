@@ -1130,9 +1130,16 @@ export class Player extends MaveElement {
     const subtitles = this.#renderedSubtitleTracks();
     const subtitleList = subtitles.map(this.#formatMediaChromeTextTrack).join(' ');
     const showing = new Set<string>();
+    const managedTracks = this.#managedSubtitleTracks();
+    let showingTrack: TextTrack | undefined;
 
     Array.from(this._videoElement.textTracks ?? []).forEach((track) => {
       if (!['subtitles', 'captions'].includes(track.kind)) return;
+
+      if (!managedTracks.has(track)) {
+        if (track.mode !== 'disabled') track.mode = 'disabled';
+        return;
+      }
 
       const match = this.#findRenderedSubtitleTrack(subtitles, track);
 
@@ -1143,12 +1150,14 @@ export class Player extends MaveElement {
 
       if (track.mode === 'showing') {
         showing.add(this.#formatMediaChromeTextTrack(match));
+        showingTrack = track;
       }
     });
 
     const showingList = Array.from(showing).join(' ');
     this.#setSubtitleStateAttribute('mediasubtitleslist', subtitleList);
     this.#setSubtitleStateAttribute('mediasubtitlesshowing', showingList);
+    this.#renderSubtitleCue(showingTrack);
   }
 
   #setSubtitleStateAttribute(name: string, value: string) {
@@ -1167,6 +1176,16 @@ export class Player extends MaveElement {
           element.removeAttribute(name);
         }
       });
+  }
+
+  #managedSubtitleTracks() {
+    if (!this._videoElement) return new Set<TextTrack>();
+
+    return new Set(
+      Array.from(this._videoElement.querySelectorAll('track'))
+        .map((element) => element.track)
+        .filter((track) => ['subtitles', 'captions'].includes(track.kind)),
+    );
   }
 
   #renderedSubtitleTracks() {
@@ -1235,9 +1254,11 @@ export class Player extends MaveElement {
     if (!activeSubtitle) return false;
 
     let applied = false;
+    const managedTracks = this.#managedSubtitleTracks();
 
     Array.from(this._videoElement.textTracks ?? []).forEach((track) => {
       if (!['subtitles', 'captions'].includes(track.kind)) return;
+      if (!managedTracks.has(track)) return;
 
       const match = this.#findRenderedSubtitleTrack(subtitles, track);
       if (!match) return;
@@ -1874,9 +1895,11 @@ export class Player extends MaveElement {
 
   #cuechange(e: Event) {
     const track = (e.target as HTMLTrackElement & { track: TextTrack }).track;
-    const cues = track.activeCues as TextTrackCueList;
+    this.#renderSubtitleCue(track);
+  }
 
-    if (track.mode == 'showing') {
+  #renderSubtitleCue(track?: TextTrack) {
+    if (track?.mode == 'showing') {
       this._currentTrackLanguage = track.language;
     }
 
@@ -1889,7 +1912,11 @@ export class Player extends MaveElement {
       }
     }
 
-    if (cues.length) {
+    if (!this._subtitlesText) return;
+
+    const cues = track?.activeCues;
+
+    if (cues?.length) {
       const cue = cues[0] as VTTCue;
       this._subtitlesText.style.opacity = '1';
       this._subtitlesText.style.transform = 'scale(1)';
