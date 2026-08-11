@@ -1437,7 +1437,18 @@ export class Player extends MaveElement {
       videoElement.tagName == 'VIDEO' &&
       (this.#hlsPath || this.#srcPath)
     ) {
-      this._videoElement = videoElement as HTMLMediaElement;
+      const nextVideoElement = videoElement as HTMLMediaElement;
+
+      if (this._videoElement && this._videoElement !== nextVideoElement) {
+        this._intersectionObserver.unobserve(this._videoElement);
+
+        if (this._mediaSourceLoaded) {
+          this._mediaSourceLoaded = false;
+          this.#clearMediaSource();
+        }
+      }
+
+      this._videoElement = nextVideoElement;
 
       this.dispatchEvent(
         new CustomEvent('mave:video_element_ready', {
