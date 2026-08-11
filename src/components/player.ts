@@ -88,6 +88,11 @@ export class Player extends MaveElement {
     qhd: 2560,
     uhd: 3840,
   };
+  private static readonly SUBTITLE_REQUEST_EVENTS = [
+    MediaUIEvents.MEDIA_SHOW_SUBTITLES_REQUEST,
+    MediaUIEvents.MEDIA_DISABLE_SUBTITLES_REQUEST,
+    MediaUIEvents.MEDIA_TOGGLE_SUBTITLES_REQUEST,
+  ];
 
   private _embedId: string;
   @property()
@@ -269,6 +274,7 @@ export class Player extends MaveElement {
   private _pendingAudioTrackSetup?: number;
   private _cleanupNativeHlsSubtitleState?: () => void;
   private _activeSubtitleApplied = false;
+  private _activeSubtitleUserOverride = false;
   private _mediaSourceLoaded = false;
   private _pendingMediaLoadSync?: number;
   private _mediaLoadObserver?: IntersectionObserver;
@@ -856,6 +862,9 @@ export class Player extends MaveElement {
       this.#handleMediaSeekRequest,
       true,
     );
+    Player.SUBTITLE_REQUEST_EVENTS.forEach((event) => {
+      this.addEventListener(event, this.#handleSubtitleRequest, true);
+    });
 
     if (typeof window !== 'undefined' && window.matchMedia) {
       this._contrastQuery = window.matchMedia('(prefers-contrast: more)');
@@ -898,6 +907,7 @@ export class Player extends MaveElement {
 
     if (changedProperties.has('active_subtitle') || changedProperties.has('subtitles')) {
       this._activeSubtitleApplied = false;
+      this._activeSubtitleUserOverride = false;
       this.#applyActiveSubtitle();
       this.#syncNativeHlsSubtitleState();
     }
@@ -935,6 +945,9 @@ export class Player extends MaveElement {
       this.#handleMediaSeekRequest,
       true,
     );
+    Player.SUBTITLE_REQUEST_EVENTS.forEach((event) => {
+      this.removeEventListener(event, this.#handleSubtitleRequest, true);
+    });
     if (this._contrastQuery && this._contrastQueryHandler) {
       if (this._contrastQuery.removeEventListener) {
         this._contrastQuery.removeEventListener('change', this._contrastQueryHandler);
@@ -1168,7 +1181,6 @@ export class Player extends MaveElement {
     const subtitleList = subtitles.map(this.#formatMediaChromeTextTrack).join(' ');
     const showing = new Set<string>();
     const managedTracks = this.#managedSubtitleTracks();
-    let showingTrack: TextTrack | undefined;
 
     Array.from(this._videoElement.textTracks ?? []).forEach((track) => {
       if (!['subtitles', 'captions'].includes(track.kind)) return;
@@ -1187,14 +1199,12 @@ export class Player extends MaveElement {
 
       if (track.mode === 'showing') {
         showing.add(this.#formatMediaChromeTextTrack(match));
-        showingTrack = track;
       }
     });
 
     const showingList = Array.from(showing).join(' ');
     this.#setSubtitleStateAttribute('mediasubtitleslist', subtitleList);
     this.#setSubtitleStateAttribute('mediasubtitlesshowing', showingList);
-    this.#renderSubtitleCue(showingTrack);
   }
 
   #setSubtitleStateAttribute(name: string, value: string) {
@@ -1211,6 +1221,14 @@ export class Player extends MaveElement {
           element.setAttribute(name, value);
         } else {
           element.removeAttribute(name);
+        }
+
+        if (
+          name === 'mediasubtitlesshowing' &&
+          value &&
+          element.localName === 'media-captions-menu'
+        ) {
+          (element as HTMLElement & { value: string }).value = value;
         }
       });
   }
@@ -1276,12 +1294,27 @@ export class Player extends MaveElement {
   }
 
   #applyActiveSubtitle() {
-    if (!this.active_subtitle || this._activeSubtitleApplied || !this._videoElement) {
+    if (
+      !this.active_subtitle ||
+      this._activeSubtitleUserOverride ||
+      !this._videoElement
+    ) {
       return false;
     }
 
     const activeLanguage = this.#activeSubtitleLanguage();
     if (!activeLanguage) return false;
+
+    if (this._activeSubtitleApplied) {
+      const activeTrack = Array.from(this._videoElement.querySelectorAll('track')).find(
+        (element) =>
+          ['subtitles', 'captions'].includes(element.kind) &&
+          element.srclang === activeLanguage,
+      );
+
+      if (activeTrack?.track.mode === 'showing') return true;
+      this._activeSubtitleApplied = false;
+    }
 
     const subtitles = this.#renderedSubtitleTracks();
     const activeSubtitle = subtitles.find(
@@ -1654,6 +1687,19 @@ export class Player extends MaveElement {
     this.#hidePosterSurfaces();
   }
 
+  #handleSubtitleRequest(event: Event) {
+    this._activeSubtitleUserOverride = true;
+
+    const isDisabling =
+      event.type === MediaUIEvents.MEDIA_DISABLE_SUBTITLES_REQUEST ||
+      (event.type === MediaUIEvents.MEDIA_TOGGLE_SUBTITLES_REQUEST &&
+        Array.from(this.#managedSubtitleTracks()).some(
+          (track) => track.mode === 'showing',
+        ));
+
+    if (isDisabling) this.#renderSubtitleCue();
+  }
+
   #hidePosterOverlay() {
     if (this._posterOverlayHidden) return;
 
@@ -1859,6 +1905,7 @@ export class Player extends MaveElement {
     if (this._posterOverlaySourceKey !== posterOverlaySourceKey) {
       this._posterOverlaySourceKey = posterOverlaySourceKey;
       this._activeSubtitleApplied = false;
+      this._activeSubtitleUserOverride = false;
       this._mediaSourceLoaded = false;
       this.#clearDeferredMediaLoadObserver();
       this.#clearMediaSource();
@@ -2982,25 +3029,6 @@ export class Player extends MaveElement {
 
   get #subtitles() {
     if (this._embedObj.subtitles.length > 0) {
-      const captionMenu = this.shadowRoot
-        ?.querySelector(`theme-${this._themeLoaded}`)
-        ?.shadowRoot?.querySelector('media-captions-menu');
-
-      if (captionMenu) {
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach(() => {
-            if (
-              this._subtitlesText &&
-              captionMenu.getAttribute('mediasubtitlesshowing')
-            ) {
-              this._subtitlesText.style.opacity = '0';
-            }
-          });
-        });
-
-        observer.observe(captionMenu, { attributes: true });
-      }
-
       return this._embedObj.subtitles.map((track) => {
         if (this.#shouldRenderSubtitleTrack(track)) {
           return html`

@@ -102,7 +102,7 @@
     "@maveio/data": "^0.1.1",
     "hls.js": "^1.6.13",
     "lit": "^3.1.2",
-    "media-chrome": "^4.15.0",
+    "media-chrome": "^4.19.2",
     "phoenix": "^1.7.21",
     "tus-js-client": "^4.2.3"
   },
