@@ -147,10 +147,11 @@ export function build(name, LitElement, html, css) {
 
       .small-button svg {
         position: absolute;
+        inset: 0;
         overflow: hidden;
         width: 100%;
         height: 25px;
-        margin: 0 !important;
+        margin: auto !important;
         padding: 0 !important;
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
         transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
