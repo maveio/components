@@ -3023,7 +3023,8 @@ export class Player extends MaveElement {
     ) as HTMLElement;
     const playerTemplate = this._mediaLoadRequested
       ? this.embedController.render({
-          pending: () => nothing,
+          pending: () =>
+            this._embedObj ? this.#renderVideoTemplate() : nothing,
           error: () => this.#renderErrorPlaceholder(),
           complete: (data) => {
             if (!data) return this.#renderPendingPlaceholder();
