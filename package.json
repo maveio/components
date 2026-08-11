@@ -100,7 +100,7 @@
     "@lit/react": "^1.0.5",
     "@lit/task": "^1.0.0",
     "@maveio/data": "^0.1.1",
-    "hls.js": "^1.6.13",
+    "hls.js": "^1.6.17",
     "lit": "^3.1.2",
     "media-chrome": "^4.19.2",
     "phoenix": "^1.7.21",
