@@ -12,7 +12,7 @@ import type {
   MediaPlaylist,
 } from 'hls.js';
 import Hls from 'hls.js';
-import { css, html, nothing, type PropertyValues } from 'lit';
+import { type PropertyValues, css, html, nothing } from 'lit';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
@@ -20,7 +20,7 @@ import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 
 import { Config } from '../config';
-import { Embed } from '../embed/api';
+import { type Rendition, Embed } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
 import { LanguageController, localized, msg } from '../utils/localization';
@@ -81,6 +81,14 @@ type HTMLMediaElementWithAudioTracks = HTMLMediaElement & {
 
 @localized()
 export class Player extends MaveElement {
+  private static readonly QUALITY_LONG_EDGE: Record<Rendition['size'], number> = {
+    sd: 640,
+    hd: 1280,
+    fhd: 1920,
+    qhd: 2560,
+    uhd: 3840,
+  };
+
   private _embedId: string;
   @property()
   get embed(): string {
@@ -186,6 +194,7 @@ export class Player extends MaveElement {
   set quality(value: string) {
     if (this._quality != value) {
       this._quality = value;
+      this.#syncHlsQualityPolicy();
     }
   }
 
@@ -1359,36 +1368,34 @@ export class Player extends MaveElement {
     return !Number.isNaN(parseFloat(value)) || !Number.isNaN(parseInt(value));
   }
 
-  #getStartLevel(): number {
-    const sizes = [
-      {
-        name: 'sd',
-        width: 640,
-      },
-      {
-        name: 'hd',
-        width: 1280,
-      },
-      {
-        name: 'fhd',
-        width: 1920,
-      },
-      {
-        name: 'qhd',
-        width: 2560,
-      },
-      {
-        name: 'uhd',
-        width: 3840,
-      },
-    ];
+  #qualityLimit(): Rendition['size'] | undefined {
+    const quality = this.quality as Rendition['size'];
 
-    const size = sizes.find((size) => size.name == this.quality);
-    if (size) {
-      return sizes.indexOf(size);
-    } else {
-      return 2;
+    return Object.prototype.hasOwnProperty.call(Player.QUALITY_LONG_EDGE, quality)
+      ? quality
+      : undefined;
+  }
+
+  #syncHlsQualityPolicy() {
+    if (!this.hls) return;
+
+    const qualityLimit = this.#qualityLimit();
+    if (!qualityLimit) {
+      this.hls.autoLevelCapping = -1;
+      this.hls.capLevelToPlayerSize = true;
+      return;
     }
+
+    this.hls.capLevelToPlayerSize = false;
+
+    if (!this.hls.levels.length) return;
+
+    const maxLongEdge = Player.QUALITY_LONG_EDGE[qualityLimit];
+    this.hls.autoLevelCapping = this.hls.levels.reduce(
+      (cap, level, index) =>
+        Math.max(level.width, level.height) <= maxLongEdge ? index : cap,
+      0,
+    );
   }
 
   #handleVideo(videoElement?: Element) {
@@ -1553,14 +1560,15 @@ export class Player extends MaveElement {
       this.#resetHlsAudioTracks();
 
       this.hls = new Hls({
-        startLevel: this.#getStartLevel(),
-        capLevelToPlayerSize: true,
+        startLevel: -1,
+        capLevelToPlayerSize: !this.#qualityLimit(),
         xhrSetup: this.#xhrHLSSetup.bind(this),
         maxBufferLength: 20,
         maxBufferSize: 20,
         backBufferLength: 60,
       });
 
+      this.hls.on(Hls.Events.MANIFEST_PARSED, () => this.#syncHlsQualityPolicy());
       this.hls?.loadSource(this.#hlsPath);
       this.hls?.attachMedia(this._videoElement);
       this.#setupHlsAudioTracks();
@@ -2959,10 +2967,7 @@ export class Player extends MaveElement {
   get #hlsPath() {
     const highestRendition = this.#highestRendition('hls');
     if (highestRendition) {
-      const params = new URLSearchParams();
-
-      params.append('quality', highestRendition.size);
-      return this.embedController.embedFile('playlist.m3u8', params);
+      return this.embedController.embedFile('playlist.m3u8');
     }
   }
 
@@ -3023,8 +3028,7 @@ export class Player extends MaveElement {
     ) as HTMLElement;
     const playerTemplate = this._mediaLoadRequested
       ? this.embedController.render({
-          pending: () =>
-            this._embedObj ? this.#renderVideoTemplate() : nothing,
+          pending: () => (this._embedObj ? this.#renderVideoTemplate() : nothing),
           error: () => this.#renderErrorPlaceholder(),
           complete: (data) => {
             if (!data) return this.#renderPendingPlaceholder();
