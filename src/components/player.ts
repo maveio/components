@@ -111,7 +111,7 @@ export class Player extends MaveElement {
   }
 
   private _token: string;
-  @property()
+  @property({ attribute: false })
   get token(): string {
     return this._token;
   }
@@ -836,13 +836,7 @@ export class Player extends MaveElement {
   }
 
   #xhrHLSSetup(xhr: XMLHttpRequest, url: string) {
-    const newUrl = new URL(url);
-    if (this.token && !newUrl.searchParams.get('token')) {
-      const params = new URLSearchParams();
-      params.append('token', this.token);
-      newUrl.search = params.toString();
-    }
-    xhr.open('GET', newUrl.toString());
+    xhr.open('GET', url);
   }
 
   connectedCallback(): void {
@@ -1388,7 +1382,7 @@ export class Player extends MaveElement {
       return this.#manifestPoster();
     }
 
-    return `https://image.mave.io/${this.embedController.spaceId}${this.embedController.embedId}.jpg?time=${time}`;
+    return this.embedController.dynamicImage(time);
   }
 
   #hasPosterValue(value: string | number | null | undefined): value is string | number {

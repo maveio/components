@@ -23,8 +23,23 @@ export class Text extends LitElement {
     if (this._embedId != value) {
       this._embedId = value;
       this.captionController = new CaptionController(this, this.embed);
+      this.captionController.token = this.token;
       this.reset();
       this.requestUpdate('embed');
+    }
+  }
+
+  private _token: string;
+  @property({ attribute: false })
+  get token(): string {
+    return this._token;
+  }
+
+  set token(value: string) {
+    if (this._token !== value) {
+      this._token = value;
+      if (this.captionController) this.captionController.token = value;
+      this.requestUpdate('token');
     }
   }
 
