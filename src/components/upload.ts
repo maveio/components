@@ -29,6 +29,28 @@ interface EmbedChannel {
   upload_id?: string;
 }
 
+interface SingleFileSelection<T> {
+  file?: T;
+  unsupportedFile?: T;
+}
+
+function selectSingleSupportedFile<T>(
+  files: Iterable<T>,
+  isSupported: (file: T) => boolean,
+): SingleFileSelection<T> {
+  let unsupportedFile: T | undefined;
+
+  for (const file of files) {
+    if (isSupported(file)) {
+      return { file };
+    }
+
+    unsupportedFile ??= file;
+  }
+
+  return { unsupportedFile };
+}
+
 type UploadState = 'initial' | 'uploading' | 'processing' | 'done' | 'error';
 
 @localized()
@@ -327,43 +349,29 @@ export class Upload extends LitElement {
       return;
     }
 
-    this._error = null;
-
-    let hasValidFile = false;
-    for (const file of files) {
-      if (this.isSupportedFile(file)) {
-        if (!hasValidFile) {
-          this._progress = 1;
-          hasValidFile = true;
-        }
-        this.upload(file);
-      } else {
-        this.handleUnsupportedFile(file);
-      }
-    }
+    this.handleSelectedFiles(files);
   }
 
   handleForm(event: InputEvent) {
-    // TODO:
-    // split progress into multiple files
     const target = event.target as HTMLInputElement;
     if (target.files) {
-      if (target.files.length) {
-        this._error = null;
-      }
-      let hasValidFile = false;
-      for (const file of target.files) {
-        if (this.isSupportedFile(file)) {
-          if (!hasValidFile) {
-            this._progress = 1;
-            hasValidFile = true;
-          }
-          this.upload(file);
-        } else {
-          this.handleUnsupportedFile(file);
-        }
-      }
+      this.handleSelectedFiles(target.files);
       target.value = '';
+    }
+  }
+
+  private handleSelectedFiles(files: Iterable<File>) {
+    const { file, unsupportedFile } = selectSingleSupportedFile(
+      files,
+      this.isSupportedFile.bind(this),
+    );
+
+    if (file) {
+      this._error = null;
+      this._progress = 1;
+      this.upload(file);
+    } else if (unsupportedFile) {
+      this.handleUnsupportedFile(unsupportedFile);
     }
   }
 
