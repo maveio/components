@@ -2668,6 +2668,7 @@ export class Player extends MaveElement {
         ? 'flex'
         : 'none';
       const captionsDisplay = this.controls.includes('subtitles') ? 'flex' : 'none';
+      style['--captions-display'] = captionsDisplay;
       style['--media-captions-menu-button-display'] = captionsDisplay;
       style['--mave-captions-menu-button-display'] = captionsDisplay;
     }
@@ -2688,6 +2689,7 @@ export class Player extends MaveElement {
         !this.subtitles &&
         !this.active_subtitle)
     ) {
+      style['--captions-display'] = 'none';
       style['--media-captions-menu-button-display'] = 'none';
       style['--mave-captions-menu-button-display'] = 'none';
     }
