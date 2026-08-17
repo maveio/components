@@ -56,7 +56,7 @@ export type Embed = {
     audio: boolean;
     aspect_ratio: string;
     filetype: string;
-    original: string;
+    original?: string | null;
     size: number;
     duration: number;
     language: string;
@@ -71,7 +71,7 @@ export type Embed = {
       };
     };
     renditions: [Rendition];
-    src: string;
+    src?: string | null;
   };
   subtitles: Subtitle[];
   audio_tracks?: AudioTrack[];
