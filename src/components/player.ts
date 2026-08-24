@@ -1156,6 +1156,8 @@ export class Player extends MaveElement {
     textTracks?.addEventListener('removetrack', sync);
     textTracks?.addEventListener('change', sync);
 
+    sync();
+
     if (typeof window !== 'undefined') {
       [0, 100, 500, 1500].forEach((delay) => {
         timers.push(window.setTimeout(sync, delay));
@@ -1218,8 +1220,10 @@ export class Player extends MaveElement {
       )
       .forEach((element) => {
         if (value) {
-          element.setAttribute(name, value);
-        } else {
+          if (element.getAttribute(name) !== value) {
+            element.setAttribute(name, value);
+          }
+        } else if (element.hasAttribute(name)) {
           element.removeAttribute(name);
         }
 
@@ -1607,6 +1611,8 @@ export class Player extends MaveElement {
         startLevel: -1,
         capLevelToPlayerSize: !this.#qualityLimit(),
         xhrSetup: this.#xhrHLSSetup.bind(this),
+        // Uploaded VTT tracks are rendered by the player from the embed manifest.
+        renderTextTracksNatively: !this._embedObj.subtitles.length,
         maxBufferLength: 20,
         maxBufferSize: 20,
         backBufferLength: 60,
@@ -2074,14 +2080,37 @@ export class Player extends MaveElement {
 
     this._themeMutationObserver?.disconnect();
 
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((mutations) => {
       this.#queueTimeRangeAccessibilitySetup();
       this.#queueAudioTrackSetup();
+
+      // Safari may expose an unlabeled native HLS captions track. Media Chrome
+      // serializes it as an empty list entry, so keep the menu on our manifest tracks.
+      if (
+        this._cleanupNativeHlsSubtitleState &&
+        mutations.some(
+          (mutation) =>
+            mutation.type === 'childList' ||
+            mutation.attributeName === 'mediasubtitleslist' ||
+            mutation.attributeName === 'mediasubtitlesshowing',
+        )
+      ) {
+        this.#syncNativeHlsSubtitleState();
+      }
     });
-    observer.observe(root, { childList: true, subtree: true });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['mediasubtitleslist', 'mediasubtitlesshowing'],
+      childList: true,
+      subtree: true,
+    });
 
     this._themeMutationObserver = observer;
     this._themeMutationObserverRoot = root;
+
+    if (this._cleanupNativeHlsSubtitleState) {
+      this.#syncNativeHlsSubtitleState();
+    }
   }
 
   #queueTimeRangeAccessibilitySetup() {
@@ -2682,6 +2711,10 @@ export class Player extends MaveElement {
         : 'none';
     style['--media-cast-button-display'] = style['--cast-display'];
 
+    if (subtitlesDisabled) {
+      style['--captions-display'] = 'none';
+    }
+
     if (
       subtitlesDisabled ||
       // Don't change behaviour of older videos:
@@ -2689,7 +2722,6 @@ export class Player extends MaveElement {
         !this.subtitles &&
         !this.active_subtitle)
     ) {
-      style['--captions-display'] = 'none';
       style['--media-captions-menu-button-display'] = 'none';
       style['--mave-captions-menu-button-display'] = 'none';
     }
