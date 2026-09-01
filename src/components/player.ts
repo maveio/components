@@ -1192,6 +1192,13 @@ export class Player extends MaveElement {
         return;
       }
 
+      // Keep subtitle selection under player control. Safari may otherwise
+      // enable a track from the user's system language or caption preferences.
+      if (!this.active_subtitle && !this._activeSubtitleUserOverride) {
+        if (track.mode !== 'disabled') track.mode = 'disabled';
+        return;
+      }
+
       const match = this.#findRenderedSubtitleTrack(subtitles, track);
 
       if (!match) {
@@ -3077,7 +3084,7 @@ export class Player extends MaveElement {
       return this._embedObj.subtitles.map((track) => {
         if (this.#shouldRenderSubtitleTrack(track)) {
           return html`
-            <track mode="hidden" @cuechange=${this.#cuechange} label=${
+            <track @cuechange=${this.#cuechange} label=${
             track.label
           } kind="subtitles" srclang=${track.language} src=${track.path}></track>
           `;
