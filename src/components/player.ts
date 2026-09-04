@@ -3034,6 +3034,8 @@ export class Player extends MaveElement {
     const videoDimensions = this.#videoIntrinsicDimensions();
     const shouldLoadMedia = this.#shouldLoadMediaNow();
 
+    // Use our poster overlay/background only. Safari can briefly paint a native
+    // video poster at its intrinsic size between play() and the first frame.
     return staticHtml`<theme-${unsafeStatic(this._themeLoaded)} style=${this.styles}>
       <video
         @click=${this.#requestPlay}
@@ -3041,7 +3043,6 @@ export class Player extends MaveElement {
         x-webkit-airplay="allow"
         ?loop=${this.loop || this._embedObj.settings.loop}
         preload=${shouldLoadMedia ? nothing : 'none'}
-        poster=${shouldLoadMedia ? this.poster : nothing}
         width=${videoDimensions.width}
         height=${videoDimensions.height}
         ${ref(this.#handleVideo)}
