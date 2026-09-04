@@ -288,11 +288,19 @@ export function build(name, LitElement, html, css) {
       }
 
       div[slot='centered-chrome'] {
+        --centered-button-size: 96px;
+        --centered-icon-size: 80px;
         position: relative;
         z-index: 20;
       }
 
       div[slot='centered-chrome'] media-play-button {
+        display: var(--play-display, flex);
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        width: var(--centered-button-size);
+        height: var(--centered-button-size);
         opacity: 0;
         --media-control-background: var(
           --mave-control-bg,
@@ -303,20 +311,32 @@ export function build(name, LitElement, html, css) {
           var(--primary-color, rgba(0, 0, 0, 0.25))
         );
         border-radius: 999px;
-        padding: 8px;
+        padding: 0;
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
         backdrop-filter: blur(6px);
       }
 
       div[slot='centered-chrome'] media-play-button div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         padding: 0;
-        width: 80px;
-        height: 80px;
+        width: var(--centered-icon-size);
+        height: var(--centered-icon-size);
+      }
+
+      div[slot='centered-chrome'] media-play-button:hover {
+        transform: scale(1.1);
       }
 
       div[slot='centered-chrome'] media-play-button svg {
-        width: 80px;
-        height: 80px;
+        display: block;
+        width: var(--centered-icon-size);
+        height: var(--centered-icon-size);
+      }
+
+      div[slot='centered-chrome'] media-play-button div[slot='play'] svg {
+        transform: translateX(5%);
       }
 
       .subtitles {
@@ -506,6 +526,8 @@ export function build(name, LitElement, html, css) {
         }
 
         div[slot='centered-chrome'] {
+          --centered-button-size: 64px;
+          --centered-icon-size: 48px;
           display: var(--big-button-display, none);
         }
       }
@@ -530,7 +552,6 @@ export function build(name, LitElement, html, css) {
                   fill="currentColor"
                   xmlns="http://www.w3.org/2000/svg"
                   color="currentColor"
-                  style="transform: translateX(4px);"
                 >
                   <path
                     d="M6.906 4.537A.6.6 0 006 5.053v13.894a.6.6 0 00.906.516l11.723-6.947a.6.6 0 000-1.032L6.906 4.537z"

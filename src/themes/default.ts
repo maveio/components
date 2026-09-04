@@ -194,22 +194,17 @@ export function build(name, LitElement, html, css) {
         height: 30px;
       }
 
-      media-controller[medialoading]:not([mediapaused]) div[slot='centered-chrome'] {
-        background-color: transparent;
-      }
-
       div[slot='centered-chrome'] media-loading-indicator {
         position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         pointer-events: none;
-        top: calc(50% - 40px);
-        width: 80px;
-        height: 80px;
-        margin-top: -10px;
-      }
-
-      div[slot='centered-chrome'] media-loading-indicator svg {
-        width: 96px;
-        height: 96px;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        --media-loading-indicator-icon-width: var(--centered-icon-size);
+        --media-loading-indicator-icon-height: var(--centered-icon-size);
       }
 
       media-controller[medialoading]:not([mediapaused]) media-play-button {
@@ -291,29 +286,51 @@ export function build(name, LitElement, html, css) {
       }
 
       div[slot='centered-chrome'] {
+        --centered-button-size: 96px;
+        --centered-icon-size: 80px;
         display: var(--big-button-display, none);
         position: relative;
         z-index: 20;
         justify-content: center;
         align-items: center;
-        border-radius: 1000px;
-        background-color: var(
-          --mave-control-bg,
-          var(--primary-color, rgba(0, 0, 0, 0.45))
-        );
-        padding: 12px;
       }
 
       div[slot='centered-chrome'] media-play-button {
-        width: 72px;
-        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        width: var(--centered-button-size);
+        height: var(--centered-button-size);
+        padding: 0;
+        border-radius: 999px;
+        --media-control-background: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.45))
+        );
+        --media-control-hover-background: var(--media-control-background);
         --media-icon-color: var(--mave-control-fg, white);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(6px);
+        transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      div[slot='centered-chrome'] media-play-button:hover {
+        transform: scale(1.1);
+      }
+
+      div[slot='centered-chrome'] media-play-button:focus-visible {
+        box-shadow: var(--media-focus-box-shadow);
       }
 
       div[slot='centered-chrome'] media-play-button svg {
-        width: 80px;
-        height: 80px;
-        text: white;
+        display: block;
+        width: var(--centered-icon-size);
+        height: var(--centered-icon-size);
+      }
+
+      div[slot='centered-chrome'] media-play-button svg[slot='play'] {
+        transform: translateX(5%);
       }
 
       div[slot='top-chrome'] {
@@ -685,7 +702,8 @@ export function build(name, LitElement, html, css) {
         }
 
         div[slot='centered-chrome'] {
-          display: var(--big-button-display, none);
+          --centered-button-size: 64px;
+          --centered-icon-size: 48px;
         }
 
         .media-volume-wrapper {
@@ -723,13 +741,10 @@ export function build(name, LitElement, html, css) {
                 height="24"
                 viewBox="0 0 24 24"
                 fill="#fff"
-                stroke="#fff"
-                stroke-width="0.75"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                style="margin-left: 8px;"
               >
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                <path
+                  d="M6.906 4.537A.6.6 0 006 5.053v13.894a.6.6 0 00.906.516l11.723-6.947a.6.6 0 000-1.032L6.906 4.537z"
+                ></path>
               </svg>
               <svg
                 slot="pause"
