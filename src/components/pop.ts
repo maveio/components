@@ -12,6 +12,20 @@ export class Pop extends LitElement {
   @query('.backdrop') _backdrop: HTMLElement;
 
   private _player?: Player;
+  private _token: string;
+
+  @property({ attribute: false })
+  get token(): string {
+    return this._token;
+  }
+
+  set token(value: string) {
+    if (this._token !== value) {
+      this._token = value;
+      if (this._player) this._player.token = value;
+      this.requestUpdate('token');
+    }
+  }
 
   static styles = css`
     :host {
@@ -173,6 +187,7 @@ export class Pop extends LitElement {
 
   open(player: Player) {
     this._player = player;
+    if (this.token !== undefined) player.token = this.token;
     if (player.aspect_ratio) {
       const [w, h] = player.aspect_ratio.split('/');
       this.style.setProperty('--frame-ratio-w', w);

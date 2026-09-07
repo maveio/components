@@ -19,6 +19,20 @@ export class Files extends MaveElement {
     }
   }
 
+  private _token: string;
+  @property({ attribute: false })
+  get token(): string {
+    return this._token;
+  }
+
+  set token(value: string) {
+    if (this._token !== value) {
+      this._token = value;
+      this.requestUpdate('token');
+      this.embedController.token = value;
+    }
+  }
+
   get _slottedChildren() {
     const slot = this.shadowRoot?.querySelector('slot');
     return slot?.assignedElements({ flatten: true }) || [];
@@ -319,7 +333,7 @@ export class Files extends MaveElement {
       this._data?.video?.version && this._data.video.version > 0
         ? `v${this._data.video.version}/`
         : '';
-    return `${this.cdn_root}/${this.embedId}/${versionSegment}${filename}`;
+    return this.embedController.embedFile(`${versionSegment}${filename}`);
   }
 
   #buildVideoDownloadUrl(rendition?: Rendition): string {

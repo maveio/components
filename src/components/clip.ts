@@ -67,7 +67,7 @@ export class Clip extends LitElement {
   }
 
   private _token: string;
-  @property()
+  @property({ attribute: false })
   get token(): string {
     return this._token;
   }

@@ -95,6 +95,18 @@ Once you have uploaded your first video you can show your videos in different fo
 
 You can either change the settings through our interface or provide it as attributes. To learn which attributes you can use to change the appearance of your player, go to [our docs](https://docs.mave.io).
 
+For a space with JWT playback enabled, set the customer JWT as a JavaScript
+property. The component exchanges it once for an embed-scoped media session;
+the customer JWT is never added to media URLs or reflected to an HTML attribute.
+
+```js
+const player = document.querySelector('mave-player');
+player.token = customerJwt;
+```
+
+The same non-reflecting `token` property is available on `mave-clip`,
+`mave-img`, `mave-text`, `mave-files`, `mave-list`, and `mave-pop`.
+
 ### Clip
 
 ```html
@@ -108,12 +120,16 @@ We often find ourselves using simple `.mp4` files, because we just want to show 
 ### List
 
 ```html
-<mave-list token="<token>">
+<mave-list id="videos">
   <template>
     <div slot="item-title"></div>
     <mave-img></mave-img>
   </template>
 </mave-list>
+
+<script type="module">
+  document.querySelector('#videos').token = customerJwt;
+</script>
 ```
 
 <img width="894" alt="Screenshot 2023-05-22 at 15 37 55" src="https://github.com/maveio/components/assets/238946/aa7b04e0-01f1-4ac2-976d-3dfe4157a809">

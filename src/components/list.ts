@@ -7,7 +7,19 @@ import { MaveElement } from '../utils/mave_element';
 import { checkPop } from './pop.js';
 
 export class List extends MaveElement {
-  @property() token: string;
+  private _token: string;
+  @property({ attribute: false })
+  get token(): string {
+    return this._token;
+  }
+
+  set token(value: string) {
+    if (this._token !== value) {
+      this._token = value;
+      this.embedController.token = value;
+      this.requestUpdate('token');
+    }
+  }
   @property() order?: 'oldest' | 'newest' | 'az' | 'za' = 'newest';
 
   static styles = css`
@@ -22,13 +34,6 @@ export class List extends MaveElement {
   connectedCallback() {
     super.connectedCallback();
     this.embedController.token = this.token;
-  }
-
-  requestUpdate(name?: PropertyKey, oldValue?: unknown) {
-    super.requestUpdate(name, oldValue);
-    if (name === 'embed') {
-      this.embedController.token = this.token;
-    }
   }
 
   get _slottedChildren() {
@@ -166,6 +171,11 @@ export class List extends MaveElement {
                   this.#setEmbedAttribute(template, 'mave-clip', video.id);
                   this.#setEmbedAttribute(template, 'mave-player', video.id);
                   this.#setEmbedAttribute(template, 'mave-img', video.id);
+                  this.#setTokenProperty(template, 'mave-clip');
+                  this.#setTokenProperty(template, 'mave-player');
+                  this.#setTokenProperty(template, 'mave-img');
+                  this.#setTokenProperty(template, 'mave-text');
+                  this.#setTokenProperty(template, 'mave-files');
 
                   const clip = template.querySelector('mave-clip');
                   const title = this.#querySlotElement(template, 'item-title');
@@ -227,6 +237,14 @@ export class List extends MaveElement {
     if (!element) return;
     element.setAttribute('embed', embed);
     this.#clearSlotAttributes(element);
+  }
+
+  #setTokenProperty(template: DocumentFragment, selector: string) {
+    const element = template.querySelector(selector) as
+      | (HTMLElement & { token?: string })
+      | null;
+    if (!element || !this.token) return;
+    element.token = this.token;
   }
 
   #setTextContent(template: DocumentFragment, slotName: string, text: string) {
