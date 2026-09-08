@@ -13,10 +13,10 @@ import type {
 } from 'hls.js';
 import Hls from 'hls.js';
 import { type PropertyValues, css, html, nothing } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
 import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 
 import { Config } from '../config';
@@ -256,14 +256,15 @@ export class Player extends MaveElement {
   @query("slot[name='start-screen']") startScreenElement: HTMLElement;
 
   private _startedPlaying = false;
-  private _themeLoaded: string;
+  @state() private _themeLoaded?: string;
+  private _themeRequest?: { theme: string; path: string };
   private static readonly PROCESSING_REFRESH_INTERVAL = 5000;
   private static readonly POSTER_AUTOPLAY_WAIT_MS = 800;
   private static readonly AUTO_LAZY_PLAYER_THRESHOLD = 4;
   private static readonly AUTO_LAZY_ROOT_MARGIN_PX = 300;
   private static readonly AUTO_LAZY_ROOT_MARGIN = '300px 0px';
 
-  private _subtitlesText: HTMLElement;
+  private _subtitlesText?: HTMLElement;
   private _audioTrackCount = 0;
   private _cleanupHlsAudioTracks?: () => void;
   private _cleanupNativeAudioTracks?: () => void;
@@ -897,10 +898,10 @@ export class Player extends MaveElement {
     super.requestUpdate(name, oldValue);
   }
 
-  protected updated(changedProperties: PropertyValues<Player>) {
+  protected updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('controls') || changedProperties.has('theme')) {
+    if (changedProperties.has('controls') || changedProperties.has('_themeLoaded')) {
       this._timeRangeAccessibilitySetupAttempts = 0;
       this.#queueTimeRangeAccessibilitySetup();
     }
@@ -977,14 +978,40 @@ export class Player extends MaveElement {
     this._timeRangeAccessibilityCleanups.clear();
   }
 
-  loadTheme() {
-    if (this.embed && this._themeLoaded != this.theme) {
-      if (this.theme && this.theme.endsWith('.js')) {
-        ThemeLoader.external(this.theme);
-      } else {
-        ThemeLoader.get(this.theme, `${this.embedController.cdnRoot}/themes/player`);
+  async loadTheme() {
+    if (!this.embed) return;
+
+    const request = {
+      theme: this.theme,
+      path: `${this.embedController.cdnRoot}/themes/player`,
+    };
+    if (
+      this._themeRequest?.theme === request.theme &&
+      this._themeRequest.path === request.path
+    ) {
+      return;
+    }
+    this._themeRequest = request;
+
+    try {
+      const theme = await ThemeLoader.get(request.theme, request.path);
+      if (this._themeRequest !== request) return;
+      this._subtitlesText = undefined;
+      this._themeLoaded = theme.name;
+    } catch {
+      if (this._themeRequest !== request) return;
+      console.warn('[mave-player]: theme could not be loaded; using default theme');
+
+      try {
+        const theme = await ThemeLoader.get('default');
+        if (this._themeRequest !== request) return;
+        this._subtitlesText = undefined;
+        this._themeLoaded = theme.name;
+      } catch {
+        console.warn('[mave-player]: default theme could not be loaded');
+      } finally {
+        if (this._themeRequest === request) this._themeRequest = undefined;
       }
-      this._themeLoaded = ThemeLoader.getTheme();
     }
   }
 
@@ -3030,7 +3057,7 @@ export class Player extends MaveElement {
   }
 
   #renderVideoTemplate() {
-    if (!this._embedObj) return nothing;
+    if (!this._embedObj || !this._themeLoaded) return nothing;
     const videoDimensions = this.#videoIntrinsicDimensions();
     const shouldLoadMedia = this.#shouldLoadMediaNow();
 
