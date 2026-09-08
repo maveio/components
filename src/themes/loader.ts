@@ -47,7 +47,7 @@ export class ThemeLoader {
   public static async get(value: string, path?: string): Promise<Theme> {
     const name = value.trim() || 'default';
 
-    // Known names always select the bundled theme, regardless of the space CDN.
+    // Built-in names take precedence over external theme resolution.
     if (Object.prototype.hasOwnProperty.call(bundledThemeLoaders, name)) {
       return this.load(`bundled:${name}`, async () => {
         if (!customElements.get(`theme-${name}`)) {
@@ -57,8 +57,8 @@ export class ThemeLoader {
       });
     }
 
-    // Preserve custom themes stored by name on the space CDN. All other values
-    // are URLs, resolved against the embedding page (including its <base> tag).
+    // Resolve custom names against the supplied base path. Explicit URLs resolve
+    // against the embedding page (including its <base> tag).
     if (path && /^[a-zA-Z0-9_-]+$/.test(name)) {
       return this.external(`${path.replace(/\/$/, '')}/${name}.js`);
     }
