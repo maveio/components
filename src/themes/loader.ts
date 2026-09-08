@@ -6,15 +6,13 @@ interface Theme {
   name: string;
 }
 
-const defaults = ['default', 'synthwave', 'dolphin'];
-
 type ThemeModule = {
   build: (
     name: string,
     element: typeof LitElement,
     strings: typeof html,
     styles: typeof css,
-  ) => void;
+  ) => void | Promise<void>;
 };
 
 const bundledThemeLoaders: Record<string, () => Promise<ThemeModule>> = {
@@ -23,44 +21,16 @@ const bundledThemeLoaders: Record<string, () => Promise<ThemeModule>> = {
   dolphin: () => import('./dolphin'),
 };
 
-async function loadBundledTheme(name: string): Promise<ThemeModule | undefined> {
-  if (!defaults.includes(name)) return undefined;
-
+async function loadBundledTheme(name: string): Promise<ThemeModule> {
   const distFolder = potentialDistFolder();
 
-  if (!distFolder) {
-    const loader = bundledThemeLoaders[name];
-    if (loader) {
-      try {
-        return await loader();
-      } catch {
-        return undefined;
-      }
-    }
+  if (!distFolder) return bundledThemeLoaders[name]();
 
-    return undefined;
-  }
-
-  const relativePath = `./${distFolder}themes/${name}.js`;
-  const url = new URL(relativePath, import.meta.url).href;
-  if (!url || url.endsWith('/undefined')) return undefined;
-
-  try {
-    return await importExternalModule(url);
-  } catch {
-    return undefined;
-  }
+  const url = new URL(`./${distFolder}themes/${name}.js`, import.meta.url);
+  return importExternalModule(url.href);
 }
 
 async function importExternalModule(modulePath: string): Promise<ThemeModule> {
-  if (
-    typeof modulePath !== 'string' ||
-    !modulePath ||
-    modulePath.endsWith('/undefined')
-  ) {
-    throw new Error('[mave-player]: invalid external theme module path');
-  }
-
   return import(
     /* webpackIgnore: true */
     /* @vite-ignore */
@@ -69,111 +39,103 @@ async function importExternalModule(modulePath: string): Promise<ThemeModule> {
 }
 
 export class ThemeLoader {
-  private static instance: ThemeLoader;
-  private themes: Array<Theme> = [];
+  private static themes = new Map<string, Promise<Theme>>();
+  private static externalNames = new Map<string, string>();
+  private static stylesheets = new Map<string, HTMLLinkElement>();
+  private static nextExternalName = 0;
 
-  // expose current theme name
-  public currentTheme: string;
+  public static async get(value: string, path?: string): Promise<Theme> {
+    const name = value.trim() || 'default';
 
-  private constructor() {
-    return;
-  }
-
-  public static async get(name: string, path?: string): Promise<ThemeLoader> {
-    if (!ThemeLoader.instance) {
-      ThemeLoader.instance = new ThemeLoader();
-    }
-
-    if (ThemeLoader.instance.themes.find((theme) => theme.name === name)) {
-      ThemeLoader.instance.currentTheme = name;
-      return Promise.resolve(ThemeLoader.instance);
-    }
-
-    // Add to cache instantaneously to make sure it doesn't load again
-    ThemeLoader.instance.themes.push({ name });
-
-    // set current theme name
-    ThemeLoader.instance.currentTheme = name;
-
-    try {
-      if (typeof document !== 'undefined' && !defaults.includes(name)) {
-        // Inject css for font (Chrome issue)
-        const fontCSS = document.createElement('link');
-        fontCSS.rel = 'stylesheet';
-        fontCSS.href = `${path}/${name}.css`;
-        document.head.appendChild(fontCSS);
-      }
-    } catch (e) {
-      console.log('[mave-player]: theme css not loaded', e);
-    }
-
-    try {
-      if (path && !defaults.includes(name)) {
-        const { build } = await importExternalModule(`${path}/${name}.js`);
-        build(name, LitElement, html, css);
-      } else {
-        const bundledTheme = await loadBundledTheme(name);
-
-        if (bundledTheme) {
-          bundledTheme.build(name, LitElement, html, css);
-        } else {
-          const distFolder = potentialDistFolder();
-          if (distFolder) {
-            const themePath = `./${distFolder}themes/${name}.js`;
-            const { build } = await importExternalModule(themePath);
-            build(name, LitElement, html, css);
-          }
+    // Known names always select the bundled theme, regardless of the space CDN.
+    if (Object.prototype.hasOwnProperty.call(bundledThemeLoaders, name)) {
+      return this.load(`bundled:${name}`, async () => {
+        if (!customElements.get(`theme-${name}`)) {
+          await this.build(name, await loadBundledTheme(name));
         }
-      }
-    } catch (e) {
-      console.log('[mave-player]: theme not loaded', e);
+        return { name };
+      });
     }
 
-    return Promise.resolve(ThemeLoader.instance);
+    // Preserve custom themes stored by name on the space CDN. All other values
+    // are URLs, resolved against the embedding page (including its <base> tag).
+    if (path && /^[a-zA-Z0-9_-]+$/.test(name)) {
+      return this.external(`${path.replace(/\/$/, '')}/${name}.js`);
+    }
+
+    return this.external(name);
   }
 
-  public static async external(path: string): Promise<ThemeLoader> {
-    if (!ThemeLoader.instance) {
-      ThemeLoader.instance = new ThemeLoader();
-    }
+  public static async external(path: string): Promise<Theme> {
+    const url = new URL(path, document.baseURI);
+    url.hash = '';
 
-    // get name from path
-    const name = path.split('/').pop()?.replace('.js', '') || '';
+    const theme = await this.load(url.href, async () => {
+      let name = this.externalNames.get(url.href);
 
-    try {
-      if (typeof document !== 'undefined') {
-        // Inject css for font (Chrome issue)
-        const fontCSS = document.createElement('link');
-        fontCSS.rel = 'stylesheet';
-        fontCSS.href = `${path.replace('.js', '')}.css`;
-        document.head.appendChild(fontCSS);
+      if (!name) {
+        // Filenames are neither unique nor necessarily valid custom element names.
+        do {
+          name = `external-${++this.nextExternalName}`;
+        } while (customElements.get(`theme-${name}`));
+        this.externalNames.set(url.href, name);
       }
-    } catch (e) {
-      console.log('[mave-player]: theme css not loaded', e);
-    }
 
-    if (ThemeLoader.instance.themes.find((theme) => theme.name === name)) {
-      ThemeLoader.instance.currentTheme = name;
-      return Promise.resolve(ThemeLoader.instance);
-    }
+      if (!customElements.get(`theme-${name}`)) {
+        await this.build(name, await importExternalModule(url.href));
+      }
 
-    // Add to cache instantaneously to make sure it doesn't load again
-    ThemeLoader.instance.themes.push({ name });
+      return { name };
+    });
 
-    // set current theme name
-    ThemeLoader.instance.currentTheme = name;
-
-    try {
-      const { build } = await importExternalModule(path);
-      build(name, LitElement, html, css);
-    } catch (e) {
-      console.log('[mave-player]: theme not loaded', e);
-    }
-
-    return Promise.resolve(ThemeLoader.instance);
+    this.loadStylesheet(url);
+    return theme;
   }
 
-  public static getTheme(): string {
-    return ThemeLoader.instance ? ThemeLoader.instance.currentTheme : '';
+  private static load(key: string, loader: () => Promise<Theme>): Promise<Theme> {
+    const cached = this.themes.get(key);
+    if (cached) return cached;
+
+    // Share pending work as well as successful loads. Failed loads can be retried.
+    const pending = Promise.resolve()
+      .then(loader)
+      .catch((error) => {
+        this.themes.delete(key);
+        throw error;
+      });
+    this.themes.set(key, pending);
+    return pending;
+  }
+
+  private static async build(name: string, module: ThemeModule): Promise<void> {
+    if (typeof module.build !== 'function') {
+      throw new Error('[mave-player]: theme must export a build function');
+    }
+
+    await module.build(name, LitElement, html, css);
+
+    if (!customElements.get(`theme-${name}`)) {
+      throw new Error('[mave-player]: theme did not register its custom element');
+    }
+  }
+
+  private static loadStylesheet(moduleURL: URL): void {
+    const url = new URL(moduleURL.href);
+    url.pathname = /\.m?js$/i.test(url.pathname)
+      ? url.pathname.replace(/\.m?js$/i, '.css')
+      : `${url.pathname}.css`;
+    if (this.stylesheets.has(url.href)) return;
+
+    // Optional companion CSS is used for fonts outside the theme's shadow root.
+    // Preserve query parameters and never hold up the controls waiting for fonts.
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url.href;
+    link.onerror = () => {
+      link.remove();
+      this.stylesheets.delete(url.href);
+    };
+    this.stylesheets.set(url.href, link);
+    document.head.appendChild(link);
   }
 }
