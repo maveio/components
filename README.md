@@ -95,6 +95,69 @@ Once you have uploaded your first video you can show your videos in different fo
 
 You can either change the settings through our interface or provide it as attributes. To learn which attributes you can use to change the appearance of your player, go to [our docs](https://docs.mave.io).
 
+### Audio
+
+`<mave-audio>` plays published audio tracks from **audio or video uploads** using
+native `<audio>`. It never fetches a video rendition or original video as a fallback.
+`<mave-player>` automatically uses the same audio presentation for audio-only
+uploads. Existing embeds keep their tag, playback API, events, theme and color.
+Video uploads continue to use the video player; use `<mave-audio>` to play only
+their audio tracks.
+
+```html
+<!-- Both examples accept the same embed id, including a video upload. -->
+<mave-audio embed="{embed id}" type="line"></mave-audio>
+<mave-audio embed="{embed id}" theme="dolphin" type="wave"></mave-audio>
+<!-- Automatically chooses audio or video from the uploaded media. -->
+<mave-player embed="{embed id}" theme="dolphin" type="wave"></mave-player>
+```
+
+`type="line"` (default) shows a progress bar; `type="wave"` shows measured amplitude
+peaks. Independently, `theme="default"`, `theme="dolphin"` and `theme="synthwave"`
+reuse the video themes' buttons, icons, timeline styling, typography and `color`
+contrast colors. Synthwave keeps its timeline above the controls.
+The same audio attributes work on `<mave-player>` when it detects audio-only
+media. Switching its `embed` between audio and video also switches presentation.
+
+Audio defaults to `controls="full"`: play, time, seek, volume, captions and audio
+track selection when available. Use an explicit list for fewer controls, `none`
+to hide the controls or `big` for a large play button. `rate` and `airplay` are
+explicit opt-ins, just as in the video player. Video-only controls are ignored.
+`thumbnail` is always opt-in, including with `full`; omitting it hides the image
+and avoids loading it. For example:
+
+```html
+<mave-audio embed="{embed id}" theme="dolphin" type="wave"
+  controls="full rate thumbnail"></mave-audio>
+<mave-audio embed="{embed id}" theme="synthwave" type="line"
+  controls="play time seek volume"></mave-audio>
+```
+
+Optional `audio-title`, `audio-subtitle` and `audio-artwork` customize metadata.
+The title defaults to the embed name and artwork to its poster. The public
+playback methods, events, tokens and analytics are shared with Player. Audio
+sizes to its content and shows an unavailable message for sources without a
+published audio track. Changing `type` keeps the current playback position.
+The same component is exported as `Audio` from `@maveio/components`,
+`@maveio/components/react` and `@maveio/components/vue`:
+
+```jsx
+import { Audio } from '@maveio/components/react';
+
+<Audio embed="{embed id}" theme="dolphin" type="wave" controls="full thumbnail" />
+```
+
+Additional CSS overrides: `--mave-audio-background` and `--mave-audio-radius`,
+alongside the existing theme's control variables.
+
+Waveforms use the optional manifest field
+`waveform: {version: 1, duration, audio_track, peaks}`. Peaks are amplitudes from
+0 to 1; `audio_track` identifies the analyzed track's filename. Core generates them
+from the processed primary track of audio and video uploads. Missing, invalid,
+mismatched-duration or different-track peaks fall back to the line timeline.
+Switching language tracks preserves position and speed. Existing uploads need
+reprocessing with the updated publishing preset to gain waveform data.
+
 ### Clip
 
 ```html

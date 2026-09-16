@@ -1,9 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
+import { createAudioTheme } from './audio';
+
 export function build(name, LitElement, html, css) {
-  class Theme extends LitElement {
-    static styles = css`
+  class Theme extends createAudioTheme(LitElement, html, css, 'dolphin') {
+    static themeStyles = css`
       :host {
         all: initial !important;
         width: 100% !important;
@@ -62,7 +64,10 @@ export function build(name, LitElement, html, css) {
         --media-focus-box-shadow: inset 0 0 0 2px rgb(27 127 204 / 0.9);
         --media-menu-item-focus-shadow: inset 0 0 0 2px rgb(27 127 204 / 0.9);
 
-        --media-range-track-background: var(--mave-control-fg-weak, rgba(255, 255, 255, 0.35));
+        --media-range-track-background: var(
+          --mave-control-fg-weak,
+          rgba(255, 255, 255, 0.35)
+        );
         --media-range-track-pointer-background: var(
           --mave-control-fg-muted,
           rgba(255, 255, 255, 0.6)
@@ -369,8 +374,7 @@ export function build(name, LitElement, html, css) {
         line-height: 1.5rem;
         transition: margin-bottom 300ms ease-out
             var(--mave-subtitle-margin-transition-delay, 0s),
-          transform 200ms ease-in-out,
-          opacity 200ms ease-in-out;
+          transform 200ms ease-in-out, opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(12px);
@@ -474,8 +478,14 @@ export function build(name, LitElement, html, css) {
           overflow-y: auto;
           border-radius: 0;
           background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
-          --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
-          --media-settings-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.85)));
+          --media-menu-background: var(
+            --mave-control-bg,
+            var(--primary-color, rgba(0, 0, 0, 0.85))
+          );
+          --media-settings-menu-background: var(
+            --mave-control-bg,
+            var(--primary-color, rgba(0, 0, 0, 0.85))
+          );
           backdrop-filter: blur(16px);
           transform-origin: bottom center;
           z-index: 30;
@@ -533,7 +543,10 @@ export function build(name, LitElement, html, css) {
       }
     `;
 
+    static styles = [this.themeStyles, super.styles];
+
     render() {
+      if (this.audio) return this.renderAudio();
       return html`
         <media-controller novolumepref>
           <div class="subtitles" noautohide>
@@ -569,295 +582,311 @@ export function build(name, LitElement, html, css) {
             class="mave-gradient-bottom"
             style="position: absolute; bottom: 0; width: 100%; height: 50%; background: linear-gradient(0deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%); pointer-events: none;"
           ></div>
-          <div class="mave-control-bar-wrapper" style="width: calc(100% - 32px); padding: 16px;">
-            <media-control-bar>
-              <media-play-button>
-                <div slot="play">
-                  <svg
-                    width="24px"
-                    height="24px"
-                    stroke-width="1.5"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                    color="currentColor"
-                  >
-                    <path
-                      d="M6.906 4.537A.6.6 0 006 5.053v13.894a.6.6 0 00.906.516l11.723-6.947a.6.6 0 000-1.032L6.906 4.537z"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    ></path>
-                  </svg>
-                </div>
-                <div slot="pause">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </media-play-button>
-              <media-loading-indicator loading-delay="0"></media-loading-indicator>
-              <media-time-range></media-time-range>
-              <media-time-display showduration></media-time-display>
-              <div style="flex-grow: 1;"></div>
-              <media-playback-rate-button></media-playback-rate-button>
-              <mave-captions-menu-button id="mave-captions" aria-expanded="false">
-                <div slot="off">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.3"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
-                    />
-                  </svg>
-                </div>
-                <div slot="on">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223zM8.25 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM10.875 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.875-1.125a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </mave-captions-menu-button>
-              <media-captions-menu hidden anchor="mave-captions"></media-captions-menu>
-              <mave-audio-track-menu
-                hidden
-                anchor="mave-audio-tracks"
-              ></mave-audio-track-menu>
-              <mave-audio-track-menu-button id="mave-audio-tracks" aria-expanded="false">
-                <div slot="icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 10.5v3M8 7.5v9M11 4.75v14.5M14 7.5v9M17 5.75v12.5M20 9.5v5"></path>
-                  </svg>
-                </div>
-              </mave-audio-track-menu-button>
-              <media-settings-menu-button id="mave-settings" aria-expanded="false">
-                <div slot="icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <circle cx="5" cy="12" r="2"></circle>
-                    <circle cx="12" cy="12" r="2"></circle>
-                    <circle cx="19" cy="12" r="2"></circle>
-                  </svg>
-                </div>
-              </media-settings-menu-button>
-              <media-settings-menu hidden anchor="mave-settings">
-                <media-settings-menu-item style="display: var(--playbackrate-display, flex);">
-                  <span>Playback speed</span>
-                  <media-playback-rate-menu slot="submenu" hidden></media-playback-rate-menu>
-                </media-settings-menu-item>
-                <media-settings-menu-item
-                  style="display: var(--mave-captions-menu-button-display, flex);"
-                >
-                  <span>Captions</span>
-                  <media-captions-menu slot="submenu" hidden></media-captions-menu>
-                </media-settings-menu-item>
-                <media-settings-menu-item
-                  style="display: var(--media-audio-track-menu-button-display, none);"
-                >
-                  <span>Audio tracks</span>
-                  <mave-audio-track-menu slot="submenu" hidden></mave-audio-track-menu>
-                </media-settings-menu-item>
-              </media-settings-menu>
-              <media-mute-button>
-                <div slot="high">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.3"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
-                    />
-                  </svg>
-                </div>
-                <div slot="medium">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.3"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
-                    />
-                  </svg>
-                </div>
-                <div slot="low">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.3"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
-                    />
-                  </svg>
-                </div>
-                <div slot="off">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.3"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.531V19.94a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.506-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.395C2.806 8.757 3.63 8.25 4.51 8.25H6.75z"
-                    />
-                  </svg>
-                </div>
-              </media-mute-button>
-              <media-airplay-button>
-                <div slot="enter">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"></path>
-                    <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
-                  </svg>
-                </div>
-                <div slot="exit">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"></path>
-                    <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
-                  </svg>
-                </div>
-              </media-airplay-button>
-              <media-cast-button>
-                <div slot="enter">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M3.75 18.75v1.5h1.5"></path>
-                    <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
-                    <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
-                    <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
-                  </svg>
-                </div>
-                <div slot="exit">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M3.75 18.75v1.5h1.5"></path>
-                    <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
-                    <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
-                    <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
-                  </svg>
-                </div>
-              </media-cast-button>
-              <media-fullscreen-button>
-                <div slot="enter">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.3"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5"
-                    />
-                  </svg>
-                </div>
-                <div slot="exit">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.3"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5"
-                    />
-                  </svg>
-                </div>
-              </media-fullscreen-button>
-            </media-control-bar>
+          <div
+            class="mave-control-bar-wrapper"
+            style="width: calc(100% - 32px); padding: 16px;"
+          >
+            ${this.renderControls()}
           </div>
         </media-controller>
       `;
+    }
+
+    renderControls() {
+      return html`<media-control-bar>
+        <media-play-button>
+          <div slot="play">
+            <svg
+              width="24px"
+              height="24px"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+              color="currentColor"
+            >
+              <path
+                d="M6.906 4.537A.6.6 0 006 5.053v13.894a.6.6 0 00.906.516l11.723-6.947a.6.6 0 000-1.032L6.906 4.537z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
+            </svg>
+          </div>
+          <div slot="pause">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+        </media-play-button>
+        <media-loading-indicator loading-delay="0"></media-loading-indicator>
+        ${this.audio
+          ? this.renderAudioTimeline()
+          : html`<media-time-range></media-time-range>`}
+        <media-time-display showduration></media-time-display>
+        <div style="flex-grow: 1;"></div>
+        <media-playback-rate-button></media-playback-rate-button>
+        <mave-captions-menu-button id="mave-captions" aria-expanded="false">
+          <div slot="off">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.3"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+              />
+            </svg>
+          </div>
+          <div slot="on">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223zM8.25 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM10.875 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.875-1.125a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+        </mave-captions-menu-button>
+        <media-captions-menu hidden anchor="mave-captions"></media-captions-menu>
+        <mave-audio-track-menu hidden anchor="mave-audio-tracks"></mave-audio-track-menu>
+        <mave-audio-track-menu-button id="mave-audio-tracks" aria-expanded="false">
+          <div slot="icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M5 10.5v3M8 7.5v9M11 4.75v14.5M14 7.5v9M17 5.75v12.5M20 9.5v5"
+              ></path>
+            </svg>
+          </div>
+        </mave-audio-track-menu-button>
+        <media-settings-menu-button id="mave-settings" aria-expanded="false">
+          <div slot="icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <circle cx="5" cy="12" r="2"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+              <circle cx="19" cy="12" r="2"></circle>
+            </svg>
+          </div>
+        </media-settings-menu-button>
+        <media-settings-menu hidden anchor="mave-settings">
+          <media-settings-menu-item style="display: var(--playbackrate-display, flex);">
+            <span>Playback speed</span>
+            <media-playback-rate-menu slot="submenu" hidden></media-playback-rate-menu>
+          </media-settings-menu-item>
+          <media-settings-menu-item
+            style="display: var(--mave-captions-menu-button-display, flex);"
+          >
+            <span>Captions</span>
+            <media-captions-menu slot="submenu" hidden></media-captions-menu>
+          </media-settings-menu-item>
+          <media-settings-menu-item
+            style="display: var(--media-audio-track-menu-button-display, none);"
+          >
+            <span>Audio tracks</span>
+            <mave-audio-track-menu slot="submenu" hidden></mave-audio-track-menu>
+          </media-settings-menu-item>
+        </media-settings-menu>
+        <media-mute-button>
+          <div slot="high">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.3"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
+              />
+            </svg>
+          </div>
+          <div slot="medium">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.3"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
+              />
+            </svg>
+          </div>
+          <div slot="low">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.3"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
+              />
+            </svg>
+          </div>
+          <div slot="off">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.3"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.531V19.94a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.506-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.395C2.806 8.757 3.63 8.25 4.51 8.25H6.75z"
+              />
+            </svg>
+          </div>
+        </media-mute-button>
+        <media-airplay-button>
+          <div slot="enter">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"
+              ></path>
+              <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
+            </svg>
+          </div>
+          <div slot="exit">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"
+              ></path>
+              <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
+            </svg>
+          </div>
+        </media-airplay-button>
+        <media-cast-button>
+          <div slot="enter">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3.75 18.75v1.5h1.5"></path>
+              <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+              <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+              <path
+                d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"
+              ></path>
+            </svg>
+          </div>
+          <div slot="exit">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3.75 18.75v1.5h1.5"></path>
+              <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+              <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+              <path
+                d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"
+              ></path>
+            </svg>
+          </div>
+        </media-cast-button>
+        <media-fullscreen-button>
+          <div slot="enter">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.3"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5"
+              />
+            </svg>
+          </div>
+          <div slot="exit">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.3"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5"
+              />
+            </svg>
+          </div>
+        </media-fullscreen-button>
+      </media-control-bar>`;
     }
   }
   customElements.define(`theme-${name}`, Theme);

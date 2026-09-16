@@ -1,3 +1,4 @@
+export { Audio } from './components/audio.js';
 export { Clip } from './components/clip.js';
 export { Files } from './components/files.js';
 export { Image } from './components/img.js';

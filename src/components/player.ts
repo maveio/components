@@ -23,6 +23,14 @@ import { Config } from '../config';
 import { type Rendition, Embed } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
+import {
+  audioControls,
+  audioSourceURL,
+  defaultAudioTrack,
+  isAudioOnlyEmbed,
+  playableAudioTracks,
+  waveformPeaks,
+} from '../utils/audio';
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
 import { videoEvents } from '../utils/video_events';
@@ -144,7 +152,8 @@ export class Player extends MaveElement {
     return this._loop;
   }
 
-  private _controls: string[] = [
+  private _controls?: string[];
+  private readonly _defaultControls: string[] = [
     'play',
     'time',
     'seek',
@@ -155,11 +164,14 @@ export class Player extends MaveElement {
   ];
   @property()
   get controls(): string[] {
-    return this._controls;
+    if (this._controls) return this._controls;
+    if (this.isAudio) return ['full'];
+    const configured = this._embedObj?.settings.controls;
+    return configured ? [configured] : this._defaultControls;
   }
   set controls(value: string | string[]) {
     if (typeof value === 'string') {
-      this._controls = value.split(' ');
+      this._controls = value.trim().split(/\s+/).filter(Boolean);
     } else if (Array.isArray(value)) {
       this._controls = value;
     } else {
@@ -171,6 +183,28 @@ export class Player extends MaveElement {
   _previousControls?: string[];
 
   @property({ attribute: 'audiotracks' }) audioTracks?: 'auto' | 'on' | 'off';
+
+  @property({ attribute: 'audio-title' }) audioTitle?: string;
+  @property({ attribute: 'audio-subtitle' }) audioSubtitle?: string;
+  @property({ attribute: 'audio-artwork' }) audioArtwork?: string;
+  @property() type: 'line' | 'wave' = 'line';
+
+  protected get audioOptions() {
+    return {
+      type: this.type === 'wave' ? ('wave' as const) : ('line' as const),
+      title: this.audioTitle,
+      subtitle: this.audioSubtitle,
+      artwork: this.audioArtwork,
+    };
+  }
+
+  protected get isAudio(): boolean {
+    return isAudioOnlyEmbed(this._embedObj);
+  }
+
+  protected get defaultTheme(): string {
+    return 'default';
+  }
 
   private _cache: boolean;
   @property()
@@ -206,7 +240,7 @@ export class Player extends MaveElement {
   private _theme: string;
   @property()
   get theme(): string {
-    const theme = this._theme || 'default';
+    const theme = this._theme || this.defaultTheme;
     return theme;
   }
   set theme(value: string) {
@@ -302,6 +336,7 @@ export class Player extends MaveElement {
   private _managedHostDimensions = new Map<'--width' | '--height', string>();
   private _posterOverlaySourceKey?: string;
   private _hiddenPosterBackground?: string;
+  private _audioTrackPath?: string;
 
   static styles = css`
     :host {
@@ -343,6 +378,27 @@ export class Player extends MaveElement {
       position: absolute;
       inset: 0;
       height: 100%;
+    }
+
+    .audio-unavailable {
+      padding: 20px;
+      font: 14px/1.5 system-ui, sans-serif;
+    }
+
+    :host([data-audio]) {
+      height: auto;
+      aspect-ratio: auto;
+      max-height: none;
+    }
+
+    :host([data-audio]) slot[name='video'] {
+      position: relative;
+      height: auto;
+    }
+
+    :host([data-audio]) slot[name='video'] > * {
+      aspect-ratio: auto;
+      max-height: none;
     }
 
     slot[name='video'] > *,
@@ -572,7 +628,7 @@ export class Player extends MaveElement {
   }
 
   updateStylePoster() {
-    if (!this.#shouldLoadMediaNow()) {
+    if (this.isAudio || !this.#shouldLoadMediaNow()) {
       if (this._managedPosterBackgroundSrc) {
         this._managedPosterBackgroundSrc = undefined;
         this.style.removeProperty('background');
@@ -598,7 +654,7 @@ export class Player extends MaveElement {
   }
 
   #preparePoster() {
-    if (!this.#shouldLoadMediaNow()) {
+    if (this.isAudio || !this.#shouldLoadMediaNow()) {
       this.#setPosterReadySrc(undefined);
       return;
     }
@@ -615,7 +671,9 @@ export class Player extends MaveElement {
   #shouldDeferMediaLoad() {
     if (typeof document === 'undefined') return false;
 
-    const playerCount = document.querySelectorAll('mave-player').length;
+    const playerCount = document.querySelectorAll(
+      this.isAudio ? 'mave-audio' : 'mave-player',
+    ).length;
     if (playerCount <= Player.AUTO_LAZY_PLAYER_THRESHOLD) return false;
 
     return !this.#isNearViewport();
@@ -901,7 +959,11 @@ export class Player extends MaveElement {
   protected updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('controls') || changedProperties.has('_themeLoaded')) {
+    if (
+      changedProperties.has('controls') ||
+      changedProperties.has('_themeLoaded') ||
+      changedProperties.has('type')
+    ) {
       this._timeRangeAccessibilitySetupAttempts = 0;
       this.#queueTimeRangeAccessibilitySetup();
     }
@@ -983,7 +1045,7 @@ export class Player extends MaveElement {
 
     const request = {
       theme: this.theme,
-      path: `${this.embedController.cdnRoot}/themes/player`,
+      path: `${this.embedController.cdnRoot}/themes/${this.isAudio ? 'audio' : 'player'}`,
     };
     if (
       this._themeRequest?.theme === request.theme &&
@@ -1003,7 +1065,7 @@ export class Player extends MaveElement {
       console.warn('[mave-player]: theme could not be loaded; using default theme');
 
       try {
-        const theme = await ThemeLoader.get('default');
+        const theme = await ThemeLoader.get(this.defaultTheme);
         if (this._themeRequest !== request) return;
         this._subtitlesText = undefined;
         this._themeLoaded = theme.name;
@@ -1042,6 +1104,7 @@ export class Player extends MaveElement {
   #hasPlayableSource() {
     const video = this._embedObj?.video;
     if (!video) return false;
+    if (this.isAudio) return !!this.#audioSrcPath;
 
     const renditions = Array.isArray(video.renditions) ? video.renditions : [];
     const hasHls = renditions.some(
@@ -1115,6 +1178,11 @@ export class Player extends MaveElement {
   }
 
   #processingMessage(status?: Embed['video']['status']) {
+    if (this.isAudio) {
+      return status === 'errored'
+        ? msg('audio failed to process')
+        : msg('preparing your audio...');
+    }
     const messages = {
       waiting: () => msg('waiting for video upload...'),
       uploading: () => msg('processing video...'),
@@ -1472,13 +1540,15 @@ export class Player extends MaveElement {
   #handleVideo(videoElement?: Element) {
     if (
       videoElement &&
-      videoElement.tagName == 'VIDEO' &&
-      (this.#hlsPath || this.#srcPath)
+      (videoElement.tagName == 'VIDEO' || videoElement.tagName == 'AUDIO') &&
+      (this.isAudio || this.#hlsPath || this.#srcPath)
     ) {
       const nextVideoElement = videoElement as HTMLMediaElement;
 
       if (this._videoElement && this._videoElement !== nextVideoElement) {
-        this._intersectionObserver.unobserve(this._videoElement);
+        this._intersectionObserver.unobserve(
+          this._videoElement.tagName === 'AUDIO' ? this : this._videoElement,
+        );
 
         if (this._mediaSourceLoaded) {
           this._mediaSourceLoaded = false;
@@ -1497,7 +1567,7 @@ export class Player extends MaveElement {
       );
       this._timeRangeAccessibilitySetupAttempts = 0;
       this.#setupTimeRangeAccessibility();
-      this._intersectionObserver.observe(this._videoElement);
+      this._intersectionObserver.observe(this.isAudio ? this : this._videoElement);
       this.#updateLoadingState();
 
       videoEvents.forEach((event) => {
@@ -1602,6 +1672,9 @@ export class Player extends MaveElement {
 
   #setupMediaSource() {
     if (!this._videoElement || !this._embedObj || this._mediaSourceLoaded) return;
+    if (this.embedController.loading) return;
+    if (this._videoElement.tagName !== (this.isAudio ? 'AUDIO' : 'VIDEO')) return;
+    if (this.isAudio && !this.#audioSrcPath) return;
 
     if (!this.#shouldLoadMediaNow()) {
       this.#observeDeferredMediaLoad();
@@ -1674,6 +1747,7 @@ export class Player extends MaveElement {
       this.#clearNativeAudioTracks();
       this.#resetHlsAudioTracks();
       if (this.#srcPath) this._videoElement.src = this.#srcPath;
+      if (this.isAudio) this.#queueAudioTrackSetup();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this._videoElement, this.embed, {
           component: 'player',
@@ -1695,7 +1769,8 @@ export class Player extends MaveElement {
       if (
         entries.length &&
         (entries[0].target.tagName == 'VIDEO' ||
-          entries[0].target.tagName == 'MAVE-PLAYER')
+          entries[0].target.tagName == 'MAVE-PLAYER' ||
+          entries[0].target.tagName == 'MAVE-AUDIO')
       ) {
         this._intersected = isIntersecting;
         this.#handleAutoplay();
@@ -1952,6 +2027,7 @@ export class Player extends MaveElement {
 
   // Used for updating the embed settings
   updateEmbed(embed: Embed) {
+    const wasAudio = this.isAudio;
     const posterOverlaySourceKey = Player.posterOverlaySourceKey(embed);
     if (this._posterOverlaySourceKey !== posterOverlaySourceKey) {
       this._posterOverlaySourceKey = posterOverlaySourceKey;
@@ -1961,9 +2037,16 @@ export class Player extends MaveElement {
       this.#clearDeferredMediaLoadObserver();
       this.#clearMediaSource();
       this.#resetPosterSurfaces();
+      this._audioTrackPath = undefined;
     }
 
     this._embedObj = embed;
+    if (wasAudio !== this.isAudio) {
+      this._mediaSourceLoaded = false;
+      this.#clearMediaSource();
+      this._subtitlesText = undefined;
+      this.loadTheme();
+    }
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.poster = this._embedObj.settings.poster;
     this.#preparePoster();
@@ -1998,16 +2081,19 @@ export class Player extends MaveElement {
           : this._embedObj.settings.autoplay;
     }
 
-    if (!this.attributes.getNamedItem('controls')) {
-      this.controls = this._embedObj.settings.controls;
-    }
-
     if (!this.attributes.getNamedItem('loop')) {
       this.loop = this._embedObj.settings.loop;
     }
 
     this.#syncHostLayout();
     this.updateStylePoster();
+    // A new audio embed can reuse the same media element and theme. Lit's ref
+    // callback does not run again in that case, so attach the new source after render.
+    if (this.isAudio) {
+      void this.updateComplete.then(() => {
+        if (this.isConnected) this.#setupMediaSource();
+      });
+    }
   }
 
   private static posterOverlaySourceKey(embed: Embed) {
@@ -2015,6 +2101,7 @@ export class Player extends MaveElement {
   }
 
   #syncHostLayout() {
+    this.toggleAttribute('data-audio', this.isAudio);
     this.#syncHostAspectRatio(this.#placeholderAspectRatio());
     this.#syncHostDimension('--width', this.width ?? this._embedObj?.settings.width);
     this.#syncHostDimension('--height', this.height ?? this._embedObj?.settings.height);
@@ -2475,6 +2562,10 @@ export class Player extends MaveElement {
   #setupNativeAudioTracks() {
     const video = this._videoElement as HTMLMediaElementWithAudioTracks | undefined;
     if (!video) return;
+    if (this.isAudio && this.#audioSrcPath) {
+      this.#setupManifestAudioTracks();
+      return;
+    }
 
     const root = this.#mediaChromeRoot;
     if (root) {
@@ -2541,6 +2632,56 @@ export class Player extends MaveElement {
     }
 
     this.#updateAudioTrackMenuFromNative(audioTracks);
+  }
+
+  #setupManifestAudioTracks() {
+    const media = this._videoElement;
+    const { menu, button } = this.#getAudioTrackElements();
+    const tracks = playableAudioTracks(this._embedObj);
+    if (!media || !menu || !button) return;
+
+    if (menu !== this._currentAudioTrackMenu || !this._cleanupNativeAudioTracks) {
+      this.#clearNativeAudioTracks();
+      let restorePlayback: (() => void) | undefined;
+      const select = (event: Event) => {
+        event.stopPropagation();
+        const track = playableAudioTracks(this._embedObj).find(
+          (track) => track.path === (event as CustomEvent<string>).detail,
+        );
+        if (!track || track.path === this._audioTrackPath) return;
+        const time = media.currentTime;
+        const paused = media.paused;
+        const rate = media.playbackRate;
+        if (restorePlayback) media.removeEventListener('loadedmetadata', restorePlayback);
+        restorePlayback = () => {
+          media.currentTime = Number.isFinite(media.duration)
+            ? Math.min(time, media.duration)
+            : time;
+          media.playbackRate = rate;
+          if (!paused) void media.play().catch(() => {});
+        };
+        media.addEventListener('loadedmetadata', restorePlayback, { once: true });
+        this._audioTrackPath = track.path;
+        media.src = this.#audioSrcPath!;
+        this.#setupManifestAudioTracks();
+      };
+      menu.addEventListener(MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST, select);
+      this._cleanupNativeAudioTracks = () => {
+        menu.removeEventListener(MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST, select);
+        if (restorePlayback) media.removeEventListener('loadedmetadata', restorePlayback);
+      };
+      this._currentAudioTrackMenu = menu;
+    }
+
+    const selected = this._audioTrackPath ?? defaultAudioTrack(tracks)?.path;
+    this.#updateAudioTrackMenu(
+      tracks.map((track) => ({
+        id: track.path,
+        label: track.label || track.language || track.filename,
+        language: track.language ?? undefined,
+        enabled: track.path === selected,
+      })),
+    );
   }
 
   #nativeAudioTracks(audioTracks?: NativeMediaAudioTrackList) {
@@ -2808,6 +2949,35 @@ export class Player extends MaveElement {
       ? 'flex'
       : 'none';
 
+    if (this.isAudio) {
+      const controls = audioControls(this.controls);
+      const display = (enabled: boolean) => (enabled ? 'flex' : 'none');
+      style['--media-control-bar-display'] = display(
+        Object.entries(controls).some(([key, value]) => key !== 'thumbnail' && value),
+      );
+      style['--play-display'] = display(controls.play);
+      style['--time-display'] = display(controls.time);
+      style['--seek-bar-visibility'] = controls.seek ? 'visible' : 'hidden';
+      style['--audio-timeline-display'] = controls.seek ? 'block' : 'none';
+      style['--volume-display'] = display(controls.volume);
+      style['--media-mute-button-display'] = display(controls.volume);
+      style['--playbackrate-display'] = display(controls.rate);
+      style['--airplay-display'] = display(controls.airplay);
+      style['--media-airplay-button-display'] = display(controls.airplay);
+      style['--media-audio-track-menu-button-display'] = display(
+        controls.audiotracks && audioTracksVisible,
+      );
+      if (!controls.subtitles) {
+        style['--captions-display'] = 'none';
+        style['--media-captions-menu-button-display'] = 'none';
+        style['--mave-captions-menu-button-display'] = 'none';
+      }
+      style['--fullscreen-display'] = 'none';
+      style['--cast-display'] = 'none';
+      style['--media-cast-button-display'] = 'none';
+      style['--big-button-display'] = 'none';
+    }
+
     return styleMap(style);
   }
 
@@ -2938,6 +3108,7 @@ export class Player extends MaveElement {
   }
 
   #placeholderBackgroundStyle() {
+    if (this.isAudio) return {};
     const style: { [key: string]: string } = {};
     const poster = this.poster;
     if (poster) {
@@ -2974,6 +3145,7 @@ export class Player extends MaveElement {
   }
 
   #placeholderAspectRatio() {
+    if (this.isAudio) return 'auto';
     if (
       this.attributes.getNamedItem('aspect-ratio') &&
       this.aspect_ratio &&
@@ -3047,19 +3219,56 @@ export class Player extends MaveElement {
   }
 
   #renderPendingPlaceholder() {
-    return this.#renderPlaceholder(msg('loading video...'));
+    return this.#renderPlaceholder(
+      this.isAudio ? msg('loading audio...') : msg('loading video...'),
+    );
   }
 
   #renderErrorPlaceholder() {
-    return this.#renderPlaceholder(msg('unable to load this video'), {
-      showSpinner: false,
-    });
+    return this.#renderPlaceholder(
+      this.isAudio ? msg('unable to load this audio') : msg('unable to load this video'),
+      {
+        showSpinner: false,
+      },
+    );
   }
 
   #renderVideoTemplate() {
     if (!this._embedObj || !this._themeLoaded) return nothing;
     const videoDimensions = this.#videoIntrinsicDimensions();
     const shouldLoadMedia = this.#shouldLoadMediaNow();
+
+    if (this.isAudio) {
+      if (!this.#audioSrcPath && !this.#manifestNeedsRefresh()) {
+        return html`<p class="audio-unavailable" role="status">
+          ${msg('No audio track available')}
+        </p>`;
+      }
+      return staticHtml`<theme-${unsafeStatic(this._themeLoaded)}
+        style=${this.styles}
+        audio
+        .type=${this.audioOptions?.type}
+        .thumbnail=${audioControls(this.controls).thumbnail}
+        ?big-control=${audioControls(this.controls).big}
+        audio-title=${this.audioOptions?.title || this._embedObj.name || nothing}
+        audio-subtitle=${this.audioOptions?.subtitle || nothing}
+        audio-artwork=${
+          audioControls(this.controls).thumbnail
+            ? this.audioOptions?.artwork || this.poster || nothing
+            : nothing
+        }
+        .waveform=${this.#audioWaveform}
+      >
+        <audio
+          aria-label=${this.audioOptions?.title || this._embedObj.name || 'Audio'}
+          ?loop=${this.loop || this._embedObj.settings.loop}
+          preload=${shouldLoadMedia ? 'metadata' : 'none'}
+          ${ref(this.#handleVideo)}
+          slot="media"
+          crossorigin="anonymous"
+        >${shouldLoadMedia ? this.#subtitles : nothing}</audio>
+      </theme-${unsafeStatic(this._themeLoaded)}>`;
+    }
 
     // Use our poster overlay/background only. Safari can briefly paint a native
     // video poster at its intrinsic size between play() and the first frame.
@@ -3092,6 +3301,7 @@ export class Player extends MaveElement {
   }
 
   get #hlsPath() {
+    if (this.isAudio) return undefined;
     const highestRendition = this.#highestRendition('hls');
     if (highestRendition) {
       return this.embedController.embedFile('playlist.m3u8');
@@ -3099,12 +3309,33 @@ export class Player extends MaveElement {
   }
 
   get #srcPath() {
+    if (this.isAudio) return this.#audioSrcPath;
     const highestRendition = this.#highestRendition('mp4');
     const src = highestRendition
       ? this.embedController.embedFile(`h264_${highestRendition?.size}.mp4`)
       : this._embedObj.video.original;
 
     return src;
+  }
+
+  get #audioSrcPath() {
+    const tracks = playableAudioTracks(this._embedObj);
+    const track =
+      tracks.find((track) => track.path === this._audioTrackPath) ??
+      defaultAudioTrack(tracks);
+    const path = track?.path;
+    if (!path) return undefined;
+    return audioSourceURL(path, this.embedController.embedFile(''), this.token);
+  }
+
+  get #audioWaveform() {
+    const tracks = playableAudioTracks(this._embedObj);
+    const selected =
+      tracks.find((track) => track.path === this._audioTrackPath) ??
+      defaultAudioTrack(tracks);
+    if (selected && selected.filename !== this._embedObj.waveform?.audio_track)
+      return undefined;
+    return waveformPeaks(this._embedObj.waveform, this._embedObj.video.duration);
   }
 
   get #subtitles() {
@@ -3142,7 +3373,6 @@ export class Player extends MaveElement {
             if (!data) return this.#renderPendingPlaceholder();
 
             const embedData = data as Embed;
-            this._embedObj = embedData;
             this.updateEmbed(embedData);
 
             return this.#renderVideoTemplate();
