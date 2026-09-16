@@ -1,9 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
+import { createAudioTheme } from './audio';
+
 export function build(name, LitElement, html, css) {
-  class Theme extends LitElement {
-    static styles = css`
+  class Theme extends createAudioTheme(LitElement, html, css, 'default') {
+    static themeStyles = css`
       :host {
         all: initial !important;
         width: 100% !important;
@@ -403,7 +405,10 @@ export function build(name, LitElement, html, css) {
         min-width: 120px;
         transform-origin: bottom right;
         background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
-        --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        --media-menu-background: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.25))
+        );
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -418,8 +423,14 @@ export function build(name, LitElement, html, css) {
 
       media-settings-menu {
         background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
-        --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
-        --media-settings-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        --media-menu-background: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.25))
+        );
+        --media-settings-menu-background: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.25))
+        );
         border-radius: 8px;
         backdrop-filter: blur(12px);
         min-width: 160px;
@@ -459,7 +470,10 @@ export function build(name, LitElement, html, css) {
         min-width: 120px;
         transform-origin: bottom right;
         background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
-        --media-menu-background: var(--mave-control-bg, var(--primary-color, rgba(0, 0, 0, 0.25)));
+        --media-menu-background: var(
+          --mave-control-bg,
+          var(--primary-color, rgba(0, 0, 0, 0.25))
+        );
         border-radius: 8px;
         backdrop-filter: blur(12px);
       }
@@ -550,8 +564,7 @@ export function build(name, LitElement, html, css) {
         line-height: 1.5rem;
         transition: margin-bottom 300ms ease-out
             var(--mave-subtitle-margin-transition-delay, 0s),
-          transform 200ms ease-in-out,
-          opacity 200ms ease-in-out;
+          transform 200ms ease-in-out, opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(12px);
@@ -723,7 +736,10 @@ export function build(name, LitElement, html, css) {
       }
     `;
 
+    static styles = [this.themeStyles, super.styles];
+
     render() {
+      if (this.audio) return this.renderAudio();
       return html`
         <media-controller novolumepref>
           <slot name="media" slot="media"></slot>
@@ -764,305 +780,316 @@ export function build(name, LitElement, html, css) {
             </media-play-button>
             <media-loading-indicator loading-delay="0"></media-loading-indicator>
           </div>
-          <media-control-bar>
-            <media-loading-indicator loading-delay="0"></media-loading-indicator>
-            <media-play-button class="small-button">
-              <svg
-                slot="play"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="#fff"
-                stroke="#fff"
-                stroke-width="0.75"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              <svg
-                slot="pause"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="#fff"
-                stroke="#fff"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
-              </svg>
-            </media-play-button>
-            <media-seek-forward-button style="display: none;" class="small-button">
-              <svg slot="forward" viewBox="0 0 16 16">
-                <path
-                  d="M3.1 13.1c-.1 0-.2 0-.3-.1-.2-.1-.3-.4-.3-.6V3.5c0-.3.1-.5.3-.6.1-.1.4 0 .6.1l6.5 4.4c.2.1.3.3.3.5s-.1.4-.3.5l-6.5 4.4c-.1.3-.2.3-.3.3zM12.8 13.1c-.5 0-.8-.4-.8-.8V3.7c0-.5.4-.8.8-.8.5 0 .8.4.8.8v8.6c.1.4-.3.8-.8.8z"
-                />
-              </svg>
-            </media-seek-forward-button>
-            <media-time-display></media-time-display>
-            <media-time-range>
-              <media-preview-thumbnail slot="preview"></media-preview-thumbnail>
-              <media-preview-time-display slot="preview"></media-preview-time-display>
-            </media-time-range>
-            <media-playback-rate-button></media-playback-rate-button>
-            <media-captions-menu hidden anchor="mave-captions"></media-captions-menu>
-            <mave-captions-menu-button
-              id="mave-captions"
-              class="small-button"
-              aria-expanded="false"
-            >
-              <svg
-                slot="off"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.3"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
-                />
-              </svg>
-              <svg
-                slot="on"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223zM8.25 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM10.875 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.875-1.125a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </mave-captions-menu-button>
-            <mave-audio-track-menu
-              hidden
-              anchor="mave-audio-tracks"
-            ></mave-audio-track-menu>
-            <mave-audio-track-menu-button
-              id="mave-audio-tracks"
-              class="small-button"
-              aria-expanded="false"
-            >
-              <svg
-                slot="icon"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                aria-hidden="true"
-              >
-                <path d="M5 10.5v3M8 7.5v9M11 4.75v14.5M14 7.5v9M17 5.75v12.5M20 9.5v5"></path>
-              </svg>
-            </mave-audio-track-menu-button>
-            <media-settings-menu-button
-              id="mave-settings"
-              class="small-button"
-              aria-expanded="false"
-            >
-              <svg
-                slot="icon"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <circle cx="5" cy="12" r="2"></circle>
-                <circle cx="12" cy="12" r="2"></circle>
-                <circle cx="19" cy="12" r="2"></circle>
-              </svg>
-            </media-settings-menu-button>
-            <media-settings-menu hidden anchor="mave-settings">
-              <media-settings-menu-item style="display: var(--playbackrate-display, flex);">
-                <span>Playback speed</span>
-                <media-playback-rate-menu slot="submenu" hidden></media-playback-rate-menu>
-              </media-settings-menu-item>
-              <media-settings-menu-item
-                style="display: var(--mave-captions-menu-button-display, flex);"
-              >
-                <span>Captions</span>
-                <media-captions-menu slot="submenu" hidden></media-captions-menu>
-              </media-settings-menu-item>
-              <media-settings-menu-item
-                style="display: var(--media-audio-track-menu-button-display, none);"
-              >
-                <span>Audio tracks</span>
-                <mave-audio-track-menu slot="submenu" hidden></mave-audio-track-menu>
-              </media-settings-menu-item>
-            </media-settings-menu>
-            <div class="media-volume-wrapper">
-              <media-mute-button class="small-button">
-                <svg
-                  slot="off"
-                  class="hidden"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <line x1="23" y1="9" x2="17" y2="15"></line>
-                  <line x1="17" y1="9" x2="23" y2="15"></line>
-                </svg>
-                <svg
-                  slot="low"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>
-                <svg
-                  slot="medium"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                </svg>
-                <svg
-                  slot="high"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                  <path
-                    d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"
-                  ></path>
-                </svg>
-              </media-mute-button>
-              <div class="media-volume-range-wrapper">
-                <media-volume-range></media-volume-range>
-              </div>
-            </div>
-            <media-airplay-button class="small-button">
-              <svg
-                slot="icon"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"></path>
-                <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
-              </svg>
-            </media-airplay-button>
-            <media-cast-button class="small-button">
-              <svg
-                slot="enter"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M3.75 18.75v1.5h1.5"></path>
-                <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
-                <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
-                <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
-              </svg>
-              <svg
-                slot="exit"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M3.75 18.75v1.5h1.5"></path>
-                <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
-                <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
-                <path d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"></path>
-              </svg>
-            </media-cast-button>
-            <media-fullscreen-button class="small-button">
-              <svg
-                slot="enter"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="feather feather-maximize"
-              >
-                <path
-                  d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
-                ></path>
-              </svg>
-              <svg
-                slot="exit"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="feather feather-maximize"
-              >
-                <path
-                  d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
-                ></path>
-              </svg>
-            </media-fullscreen-button>
-          </media-control-bar>
+          ${this.renderControls()}
           <div class="subtitles" noautohide>
             <div id="subtitles_text"></div>
           </div>
         </media-controller>
       `;
+    }
+
+    renderControls() {
+      return html`<media-control-bar>
+        <media-loading-indicator loading-delay="0"></media-loading-indicator>
+        <media-play-button class="small-button">
+          <svg
+            slot="play"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="#fff"
+            stroke="#fff"
+            stroke-width="0.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <svg
+            slot="pause"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="#fff"
+            stroke="#fff"
+            stroke-width="1"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+        </media-play-button>
+        <media-seek-forward-button style="display: none;" class="small-button">
+          <svg slot="forward" viewBox="0 0 16 16">
+            <path
+              d="M3.1 13.1c-.1 0-.2 0-.3-.1-.2-.1-.3-.4-.3-.6V3.5c0-.3.1-.5.3-.6.1-.1.4 0 .6.1l6.5 4.4c.2.1.3.3.3.5s-.1.4-.3.5l-6.5 4.4c-.1.3-.2.3-.3.3zM12.8 13.1c-.5 0-.8-.4-.8-.8V3.7c0-.5.4-.8.8-.8.5 0 .8.4.8.8v8.6c.1.4-.3.8-.8.8z"
+            />
+          </svg>
+        </media-seek-forward-button>
+        <media-time-display></media-time-display>
+        ${this.audio
+          ? this.renderAudioTimeline()
+          : html`<media-time-range>
+              <media-preview-thumbnail slot="preview"></media-preview-thumbnail>
+              <media-preview-time-display slot="preview"></media-preview-time-display>
+            </media-time-range>`}
+        <media-playback-rate-button></media-playback-rate-button>
+        <media-captions-menu hidden anchor="mave-captions"></media-captions-menu>
+        <mave-captions-menu-button
+          id="mave-captions"
+          class="small-button"
+          aria-expanded="false"
+        >
+          <svg
+            slot="off"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.3"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+            />
+          </svg>
+          <svg
+            slot="on"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223zM8.25 10.875a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25zM10.875 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.875-1.125a1.125 1.125 0 100 2.25 1.125 1.125 0 000-2.25z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </mave-captions-menu-button>
+        <mave-audio-track-menu hidden anchor="mave-audio-tracks"></mave-audio-track-menu>
+        <mave-audio-track-menu-button
+          id="mave-audio-tracks"
+          class="small-button"
+          aria-expanded="false"
+        >
+          <svg
+            slot="icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M5 10.5v3M8 7.5v9M11 4.75v14.5M14 7.5v9M17 5.75v12.5M20 9.5v5"
+            ></path>
+          </svg>
+        </mave-audio-track-menu-button>
+        <media-settings-menu-button
+          id="mave-settings"
+          class="small-button"
+          aria-expanded="false"
+        >
+          <svg
+            slot="icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <circle cx="5" cy="12" r="2"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+            <circle cx="19" cy="12" r="2"></circle>
+          </svg>
+        </media-settings-menu-button>
+        <media-settings-menu hidden anchor="mave-settings">
+          <media-settings-menu-item style="display: var(--playbackrate-display, flex);">
+            <span>Playback speed</span>
+            <media-playback-rate-menu slot="submenu" hidden></media-playback-rate-menu>
+          </media-settings-menu-item>
+          <media-settings-menu-item
+            style="display: var(--mave-captions-menu-button-display, flex);"
+          >
+            <span>Captions</span>
+            <media-captions-menu slot="submenu" hidden></media-captions-menu>
+          </media-settings-menu-item>
+          <media-settings-menu-item
+            style="display: var(--media-audio-track-menu-button-display, none);"
+          >
+            <span>Audio tracks</span>
+            <mave-audio-track-menu slot="submenu" hidden></mave-audio-track-menu>
+          </media-settings-menu-item>
+        </media-settings-menu>
+        <div class="media-volume-wrapper">
+          <media-mute-button class="small-button">
+            <svg
+              slot="off"
+              class="hidden"
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+            <svg
+              slot="low"
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <svg
+              slot="medium"
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <svg
+              slot="high"
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path
+                d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"
+              ></path>
+            </svg>
+          </media-mute-button>
+          <div class="media-volume-range-wrapper">
+            <media-volume-range></media-volume-range>
+          </div>
+        </div>
+        <media-airplay-button class="small-button">
+          <svg
+            slot="icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M7.5 17.25H5.25A2.25 2.25 0 0 1 3 15V6.75A2.25 2.25 0 0 1 5.25 4.5h13.5A2.25 2.25 0 0 1 21 6.75V15a2.25 2.25 0 0 1-2.25 2.25H16.5"
+            ></path>
+            <path d="M8.25 21h7.5L12 16.5 8.25 21z"></path>
+          </svg>
+        </media-airplay-button>
+        <media-cast-button class="small-button">
+          <svg
+            slot="enter"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3.75 18.75v1.5h1.5"></path>
+            <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+            <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+            <path
+              d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"
+            ></path>
+          </svg>
+          <svg
+            slot="exit"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3.75 18.75v1.5h1.5"></path>
+            <path d="M3.75 14.25A6.75 6.75 0 0 1 10.5 21"></path>
+            <path d="M3.75 9.75A11.25 11.25 0 0 1 15 21"></path>
+            <path
+              d="M3.75 6.75V6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25h-1.5"
+            ></path>
+          </svg>
+        </media-cast-button>
+        <media-fullscreen-button class="small-button">
+          <svg
+            slot="enter"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="feather feather-maximize"
+          >
+            <path
+              d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+            ></path>
+          </svg>
+          <svg
+            slot="exit"
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="feather feather-maximize"
+          >
+            <path
+              d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+            ></path>
+          </svg>
+        </media-fullscreen-button>
+      </media-control-bar>`;
     }
   }
   customElements.define(`theme-${name}`, Theme);

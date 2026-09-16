@@ -75,6 +75,12 @@ export type Embed = {
   };
   subtitles: Subtitle[];
   audio_tracks?: AudioTrack[];
+  waveform?: {
+    version: 1;
+    duration: number;
+    peaks: number[];
+    audio_track?: string | null;
+  } | null;
   metrics_key: string;
 };
 

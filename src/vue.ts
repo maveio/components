@@ -3,6 +3,7 @@ import { cloneVNode, defineComponent, h, onMounted, onUpdated, ref } from 'vue';
 
 export { configureMave, setConfig } from './config.js';
 
+import { Audio as AudioElement } from './components/audio.js';
 import { Clip as ClipElement } from './components/clip.js';
 import { Files as FilesElement } from './components/files.js';
 import { Image as ImageElement } from './components/img.js';
@@ -18,6 +19,7 @@ type RegistryEntry = {
 };
 
 const registry: Record<string, RegistryEntry> = {
+  Audio: { tag: 'mave-audio', element: AudioElement },
   Clip: { tag: 'mave-clip', element: ClipElement },
   Files: { tag: 'mave-files', element: FilesElement },
   Image: { tag: 'mave-img', element: ImageElement },
@@ -261,6 +263,7 @@ function createVueWrapper(
 }
 
 const vueComponents = {
+  Audio: createVueWrapper('Audio', registry.Audio.tag, registry.Audio.element),
   Clip: createVueWrapper('Clip', registry.Clip.tag, registry.Clip.element),
   Files: createVueWrapper('Files', registry.Files.tag, registry.Files.element),
   Image: createVueWrapper('Image', registry.Image.tag, registry.Image.element),
@@ -271,6 +274,7 @@ const vueComponents = {
   Upload: createVueWrapper('Upload', registry.Upload.tag, registry.Upload.element),
 };
 
+export const Audio = vueComponents.Audio;
 export const Clip = vueComponents.Clip;
 export const Files = vueComponents.Files;
 export const Image = vueComponents.Image;

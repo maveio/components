@@ -11,6 +11,14 @@ function ensureDefined(tag: string, element: CustomElementConstructor) {
   }
 }
 
+import { Audio as AudioComponent } from './components/audio.js';
+ensureDefined('mave-audio', AudioComponent);
+export const Audio = createComponent({
+  tagName: 'mave-audio',
+  elementClass: AudioComponent,
+  react: React,
+});
+
 import { Clip as ClipComponent } from './components/clip.js';
 ensureDefined('mave-clip', ClipComponent);
 export const Clip = createComponent({
