@@ -484,10 +484,11 @@
       <p class="eyebrow">Component examples</p>
       <h1>Everyday patterns for Mave components</h1>
       <p class="lead">
-        A curated set of demos for player, clip, files, and upload so you can
+        A curated set of demos for player, audio, clip, files, and upload so you can
         quickly validate integrations.
       </p>
       <div class="pill-row">
+        <a class="pill" href="#audio">Audio example</a>
         <a class="pill" href="/wcag.html">WCAG-focused examples</a>
       </div>
     </div>
@@ -495,6 +496,7 @@
       <h2>Includes</h2>
       <ul>
         <li>Default player with subtitles and locale set.</li>
+        <li>Audio player using the same video's audio track.</li>
         <li>Clip preview that opens a full player in a pop.</li>
         <li>File listing and a custom upload experience.</li>
       </ul>
@@ -515,6 +517,35 @@
       <div class="player-shell">
         <mave-player class="player" embed="ubg50SrEx9CqNZR" subtitles="en" locale="nl"
           style="display: block; width: 100%; background: center / contain no-repeat url(https://space-ubg50.video-dns.com/SrEx9CqNZR/thumbnail.jpg?e=1745867906); aspect-ratio: 16 / 9;"></mave-player>
+      </div>
+    </section>
+
+    <section id="audio" class="card reveal" style="--delay: 0.1s;">
+      <div>
+        <span class="tag">Audio</span>
+        <h2>Audio-only playback</h2>
+        <p class="muted">
+          Play the audio track from the video above using the default theme and
+          a line timeline.
+        </p>
+      </div>
+      <mave-audio embed="ubg50SrEx9CqNZR" type="line"
+        audio-title="Audio from the example video"></mave-audio>
+      <div class="card-meta">
+        <div>
+          <h3>What to verify</h3>
+          <ul>
+            <li>Play, pause, seek, and adjust the volume.</li>
+            <li>Only the audio track plays, without a video or thumbnail.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Attributes in use</h3>
+          <p class="muted">
+            <code>embed="ubg50SrEx9CqNZR"</code>
+            <code>type="line"</code>
+          </p>
+        </div>
       </div>
     </section>
 
@@ -693,7 +724,7 @@
   </mave-pop>
 
   <script crossorigin type="module">
-    import { Player, Upload, List, Clip, setConfig } from "../dist/index.js";
+    import { Player, Audio, Upload, List, Clip, setConfig } from "../dist/index.js";
     setConfig({ enabled: false });
   </script>
 

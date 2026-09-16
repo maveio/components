@@ -389,6 +389,7 @@ export class Player extends MaveElement {
       height: auto;
       aspect-ratio: auto;
       max-height: none;
+      overflow: visible;
     }
 
     :host([data-audio]) slot[name='video'] {
