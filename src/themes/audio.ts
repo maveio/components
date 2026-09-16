@@ -31,6 +31,7 @@ export function createAudioTheme(
       :host([audio]) {
         display: block !important;
         height: auto !important;
+        overflow: visible !important;
       }
       :host([audio]) ::slotted([slot='media']) {
         display: none;
@@ -42,7 +43,7 @@ export function createAudioTheme(
         height: auto;
         max-height: none;
         aspect-ratio: auto;
-        overflow: clip;
+        overflow: visible;
         line-height: 1.5;
         background: var(--mave-audio-background, var(--mave-control-bg, #171717));
         border-radius: var(--mave-audio-radius, 12px);
@@ -94,6 +95,45 @@ export function createAudioTheme(
         margin: 0;
         padding: 0;
         gap: 0;
+      }
+      /* Audio menus float outside the compact player, including on narrow layouts. */
+      :host([audio])
+        media-control-bar
+        > :is(
+          media-captions-menu,
+          media-audio-track-menu,
+          mave-audio-track-menu,
+          media-settings-menu
+        ) {
+        position: absolute;
+        top: auto;
+        bottom: calc(100% + 4px);
+        left: auto;
+        right: 0;
+        width: max-content;
+        min-width: 120px;
+        max-width: 100%;
+        max-height: min(300px, 50vh);
+        border-radius: 8px;
+        z-index: 30;
+        --media-menu-max-height: min(300px, 50vh);
+      }
+      :host([audio])
+        :is(
+          media-captions-menu,
+          media-audio-track-menu,
+          mave-audio-track-menu,
+          media-settings-menu,
+          media-volume-range
+        ) {
+        background: var(--mave-audio-background, var(--mave-control-bg, #171717));
+        --media-menu-background: var(
+          --mave-audio-background,
+          var(--mave-control-bg, #171717)
+        );
+        --media-settings-menu-background: var(--media-menu-background);
+        box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+        backdrop-filter: none;
       }
       :host([audio])
         :is(
@@ -173,6 +213,7 @@ export function createAudioTheme(
         flex: 0 0 auto;
       }
       :host([audio]) media-time-range {
+        z-index: auto;
         --media-range-thumb-width: 6px;
         --media-range-thumb-height: 6px;
         --media-range-thumb-background: var(--mave-control-fg, #fff);
