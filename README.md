@@ -133,9 +133,19 @@ and avoids loading it. For example:
   controls="play time seek volume"></mave-audio>
 ```
 
-Optional `audio-title`, `audio-subtitle` and `audio-artwork` customize metadata.
-The title defaults to the embed name and artwork to its poster. The public
-playback methods, events, tokens and analytics are shared with Player. Audio
+Optional `title`, `subtitle` and `poster` customize the audio heading and image.
+`subtitle` is the secondary text below the title (for example, an artist or show
+name), not a subtitle/caption track. The title defaults to the embed name.
+`poster` uses the same image selection as the video player and is only displayed
+when `controls` includes `thumbnail`. These replace the earlier `audio-title`,
+`audio-subtitle` and `audio-artwork` attributes, respectively.
+
+```html
+<mave-audio embed="{embed id}" title="Episode 12" subtitle="The Mave Podcast"
+  poster="https://example.com/cover.jpg" controls="full thumbnail"></mave-audio>
+```
+
+The public playback methods, events, tokens and analytics are shared with Player. Audio
 sizes to its content and shows an unavailable message for sources without a
 published audio track. Changing `type` keeps the current playback position.
 The same component is exported as `Audio` from `@maveio/components`,
@@ -146,6 +156,10 @@ import { Audio } from '@maveio/components/react';
 
 <Audio embed="{embed id}" theme="dolphin" type="wave" controls="full thumbnail" />
 ```
+
+Use `--mave-audio-min-height` to reserve space across loading and playback. To
+reserve the same space before the component is registered, also set
+`min-height: var(--mave-audio-min-height)` on the element.
 
 Additional CSS overrides: `--mave-audio-background` and `--mave-audio-radius`,
 alongside the existing theme's control variables.

@@ -12,18 +12,18 @@ export function createAudioTheme(
       audio: { type: Boolean, reflect: true },
       type: { reflect: true },
       thumbnail: { type: Boolean },
-      audioTitle: { attribute: 'audio-title' },
-      audioSubtitle: { attribute: 'audio-subtitle' },
-      audioArtwork: { attribute: 'audio-artwork' },
+      title: { reflect: true },
+      subtitle: {},
+      poster: {},
       waveform: { attribute: false },
     };
 
     declare audio: boolean;
     declare type: 'line' | 'wave';
     declare thumbnail: boolean;
-    declare audioTitle?: string;
-    declare audioSubtitle?: string;
-    declare audioArtwork?: string;
+    declare title: string;
+    declare subtitle?: string;
+    declare poster?: string;
     declare waveform?: number[];
 
     // Every override is scoped to audio; video continues to use the original CSS.
@@ -41,6 +41,7 @@ export function createAudioTheme(
         box-sizing: border-box;
         padding: 16px 16px 12px;
         height: auto;
+        min-height: var(--mave-audio-min-height, 0px);
         max-height: none;
         aspect-ratio: auto;
         overflow: visible;
@@ -57,7 +58,7 @@ export function createAudioTheme(
         color: var(--mave-control-fg, #fff);
         font: 14px/1.5 var(--media-font-family, system-ui, sans-serif);
       }
-      :host([audio]) .audio-artwork {
+      :host([audio]) .audio-poster {
         width: 48px;
         height: 48px;
         flex: 0 0 48px;
@@ -297,6 +298,8 @@ export function createAudioTheme(
         display: none;
       }
       :host([audio]) #subtitles_text {
+        opacity: 0;
+        transition: opacity 200ms ease-in-out;
         margin-top: 8px;
         color: var(--mave-control-fg, #fff);
         font: 14px/1.5 var(--media-font-family, system-ui, sans-serif);
@@ -415,13 +418,13 @@ export function createAudioTheme(
       return html`<media-controller audio noautohide novolumepref>
         <slot name="media" slot="media" @slotchange=${this.bindMedia}></slot>
         <div class="audio-heading">
-          ${this.thumbnail && this.audioArtwork
-            ? html`<img class="audio-artwork" src=${this.audioArtwork} alt="" />`
+          ${this.thumbnail && this.poster
+            ? html`<img class="audio-poster" src=${this.poster} alt="" />`
             : ''}
           <div class="audio-details">
-            <h2>${this.audioTitle || 'Audio'}</h2>
-            ${this.audioSubtitle
-              ? html`<p class="audio-subtitle">${this.audioSubtitle}</p>`
+            <h2>${this.title || 'Audio'}</h2>
+            ${this.subtitle
+              ? html`<p class="audio-subtitle">${this.subtitle}</p>`
               : ''}
           </div>
         </div>
@@ -429,7 +432,7 @@ export function createAudioTheme(
           ${theme === 'synthwave' ? this.renderAudioTimeline() : ''}
           ${this.renderControls()}
         </div>
-        <div id="subtitles_text"></div>
+        <div id="subtitles_text" noautohide></div>
       </media-controller>`;
     }
   };
