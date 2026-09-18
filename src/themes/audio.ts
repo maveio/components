@@ -336,24 +336,54 @@ export function createAudioTheme(
     `;
 
     private media?: HTMLMediaElement;
+    private progressFrame?: number;
+    private readonly progressEvents = [
+      'timeupdate', 'loadedmetadata', 'durationchange', 'emptied',
+      'playing', 'pause', 'ended', 'seeking', 'seeked', 'waiting',
+    ];
+    private stopProgressFrame() {
+      if (this.progressFrame !== undefined) {
+        cancelAnimationFrame(this.progressFrame);
+        this.progressFrame = undefined;
+      }
+    }
+    private animateProgress = () => {
+      this.progressFrame = undefined;
+      this.syncProgress();
+    };
     private syncProgress = () => {
       const media = this.media;
       const progress =
-        media && media.duration > 0
+        media && Number.isFinite(media.duration) && media.duration > 0
           ? Math.max(0, Math.min(100, (media.currentTime / media.duration) * 100))
           : 0;
       this.style.setProperty('--progress', `${progress}%`);
+      if (
+        this.isConnected && this.type === 'wave' && this.waveform?.length &&
+        media && !media.paused && !media.ended && !media.seeking &&
+        media.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
+      ) {
+        if (this.progressFrame === undefined)
+          this.progressFrame = requestAnimationFrame(this.animateProgress);
+      } else {
+        this.stopProgressFrame();
+      }
     };
     private bindMedia = () => {
       this.unbindMedia();
       this.media = this.querySelector('audio') ?? undefined;
-      for (const event of ['timeupdate', 'loadedmetadata', 'emptied'])
+      for (const event of this.progressEvents)
         this.media?.addEventListener(event, this.syncProgress);
       this.syncProgress();
     };
     private unbindMedia() {
-      for (const event of ['timeupdate', 'loadedmetadata', 'emptied'])
+      this.stopProgressFrame();
+      for (const event of this.progressEvents)
         this.media?.removeEventListener(event, this.syncProgress);
+    }
+    protected updated(changed: Map<PropertyKey, unknown>) {
+      super.updated(changed);
+      if (changed.has('type') || changed.has('waveform')) this.syncProgress();
     }
     connectedCallback() {
       super.connectedCallback();
