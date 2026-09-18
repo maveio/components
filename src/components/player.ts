@@ -184,17 +184,15 @@ export class Player extends MaveElement {
 
   @property({ attribute: 'audiotracks' }) audioTracks?: 'auto' | 'on' | 'off';
 
-  @property({ attribute: 'audio-title' }) audioTitle?: string;
-  @property({ attribute: 'audio-subtitle' }) audioSubtitle?: string;
-  @property({ attribute: 'audio-artwork' }) audioArtwork?: string;
+  @property({ reflect: true }) title = '';
+  @property() subtitle?: string;
   @property() type: 'line' | 'wave' = 'line';
 
   protected get audioOptions() {
     return {
       type: this.type === 'wave' ? ('wave' as const) : ('line' as const),
-      title: this.audioTitle,
-      subtitle: this.audioSubtitle,
-      artwork: this.audioArtwork,
+      title: this.title,
+      subtitle: this.subtitle,
     };
   }
 
@@ -387,6 +385,7 @@ export class Player extends MaveElement {
 
     :host([data-audio]) {
       height: auto;
+      min-height: var(--mave-audio-min-height, 0px);
       aspect-ratio: auto;
       max-height: none;
       overflow: visible;
@@ -1708,7 +1707,7 @@ export class Player extends MaveElement {
       this.#setupNativeAudioTracks();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-          component: 'player',
+          component: this.isAudio ? 'audio' : 'player',
         });
     } else if (Hls.isSupported() && this.#hlsPath) {
       this.#clearNativeHlsSubtitleState();
@@ -1732,7 +1731,7 @@ export class Player extends MaveElement {
       this.#setupHlsAudioTracks();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this.hls, this.embed, {
-          component: 'player',
+          component: this.isAudio ? 'audio' : 'player',
         });
     } else if (canPlayNativeHls) {
       this.#resetHlsAudioTracks();
@@ -1741,7 +1740,7 @@ export class Player extends MaveElement {
       this.#setupNativeAudioTracks();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-          component: 'player',
+          component: this.isAudio ? 'audio' : 'player',
         });
     } else {
       this.#clearNativeHlsSubtitleState();
@@ -1751,7 +1750,7 @@ export class Player extends MaveElement {
       if (this.isAudio) this.#queueAudioTrackSetup();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-          component: 'player',
+          component: this.isAudio ? 'audio' : 'player',
         });
     }
 
@@ -2134,6 +2133,21 @@ export class Player extends MaveElement {
     }
   }
 
+  private _advancedSubtitleCues = new WeakSet<TextTrackCue>();
+
+  #subtitleTrackLoaded(e: Event) {
+    const track = (e.target as HTMLTrackElement).track;
+    // Start the 200ms fade before speech. Shift both boundaries so adjacent
+    // sentences do not overlap and retain their original display duration.
+    for (const cue of Array.from(track.cues ?? [])) {
+      if (this._advancedSubtitleCues.has(cue)) continue;
+      this._advancedSubtitleCues.add(cue);
+      cue.startTime = Math.max(0, cue.startTime - 0.2);
+      cue.endTime = Math.max(0.001, cue.endTime - 0.2);
+    }
+    if (track.mode === 'showing') this.#renderSubtitleCue(track);
+  }
+
   #cuechange(e: Event) {
     const track = (e.target as HTMLTrackElement & { track: TextTrack }).track;
     this.#renderSubtitleCue(track);
@@ -2160,11 +2174,11 @@ export class Player extends MaveElement {
     if (cues?.length) {
       const cue = cues[0] as VTTCue;
       this._subtitlesText.style.opacity = '1';
-      this._subtitlesText.style.transform = 'scale(1)';
+      this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(1)';
       this._subtitlesText.innerHTML = cue.text.replace(/\n/g, '<br>');
     } else {
       this._subtitlesText.style.opacity = '0';
-      this._subtitlesText.style.transform = 'scale(0.99)';
+      this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(0.99)';
     }
   }
 
@@ -3134,7 +3148,9 @@ export class Player extends MaveElement {
     if (explicitHeight && explicitHeight !== 'auto') {
       style.height = explicitHeight;
     } else {
-      style.minHeight = '200px';
+      style.minHeight = this.isAudio
+        ? 'var(--mave-audio-min-height, 120px)'
+        : '200px';
     }
 
     const aspectRatio = this.#placeholderAspectRatio();
@@ -3251,11 +3267,11 @@ export class Player extends MaveElement {
         .type=${this.audioOptions?.type}
         .thumbnail=${audioControls(this.controls).thumbnail}
         ?big-control=${audioControls(this.controls).big}
-        audio-title=${this.audioOptions?.title || this._embedObj.name || nothing}
-        audio-subtitle=${this.audioOptions?.subtitle || nothing}
-        audio-artwork=${
+        title=${this.audioOptions?.title || this._embedObj.name || nothing}
+        subtitle=${this.audioOptions?.subtitle || nothing}
+        poster=${
           audioControls(this.controls).thumbnail
-            ? this.audioOptions?.artwork || this.poster || nothing
+            ? this.poster || nothing
             : nothing
         }
         .waveform=${this.#audioWaveform}
@@ -3344,7 +3360,7 @@ export class Player extends MaveElement {
       return this._embedObj.subtitles.map((track) => {
         if (this.#shouldRenderSubtitleTrack(track)) {
           return html`
-            <track @cuechange=${this.#cuechange} label=${
+            <track @load=${this.#subtitleTrackLoaded} @cuechange=${this.#cuechange} label=${
             track.label
           } kind="subtitles" srclang=${track.language} src=${track.path}></track>
           `;
