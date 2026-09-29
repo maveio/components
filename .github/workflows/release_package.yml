@@ -162,7 +162,7 @@ jobs:
 
       # Publish version to public repository
       - name: Publish
-        run: npm publish release-tarball/*.tgz --ignore-scripts --access public --tag "$RELEASE_TAG"
+        run: npm publish ./release-tarball/*.tgz --ignore-scripts --access public --tag "$RELEASE_TAG"
 
       - name: Export release tag
         id: release-tag
