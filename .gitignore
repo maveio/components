@@ -6,3 +6,7 @@ lib
 .env
 
 CLAUDE.md
+cdn-artifact/
+release-package/
+release-tarball/
+__pycache__/

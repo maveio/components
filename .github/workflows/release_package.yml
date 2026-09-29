@@ -1,8 +1,12 @@
 name: Release package
+concurrency:
+  group: components-release
+  cancel-in-progress: false
 permissions:
   id-token: write
   contents: write
   pull-requests: read
+  actions: read
 on:
   workflow_dispatch:
     inputs:
@@ -42,13 +46,8 @@ jobs:
           registry-url: https://registry.npmjs.org/
           node-version: '24'
 
-      # Install dependencies (required by Run tests step)
-      #- name: Install dependencies
-      #  run: yarn install
-
-      # Tests
-      #- name: Run tests
-      #  run: yarn test
+      - name: Install locked dependencies
+        run: npm ci
 
       # Configure Git
       - name: Git configuration
@@ -58,10 +57,13 @@ jobs:
 
       - name: Set publish-only env
         if: github.event.inputs.publish-only == 'true'
+        env:
+          PUBLISH_TAG: ${{ github.event.inputs.publish-tag }}
         run: |
+          [[ "$PUBLISH_TAG" =~ ^[a-z][a-z0-9-]*$ ]] || exit 1
           VERSION=$(node -p 'require("./package.json").version')
           echo "NEW_VERSION=v${VERSION}" >> "$GITHUB_ENV"
-          echo "RELEASE_TAG=${{ github.event.inputs.publish-tag }}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$PUBLISH_TAG" >> "$GITHUB_ENV"
 
       # Bump package version
       # Use tag latest
@@ -107,12 +109,37 @@ jobs:
         if: github.event.inputs.publish-only != 'true'
         run: |
           git add "package.json"
+          git add "package-lock.json"
           git add "CHANGELOG.md"
           git commit -m "release ${{ env.NEW_VERSION }}"
           git tag "${{ env.NEW_VERSION }}"
 
-      - name: Install dependencies
-        run: npm install
+      # Build once: both npm and the CDN use this exact package tarball.
+      - name: Build release and CDN artifact
+        run: |
+          npm run build:prod
+          mkdir release-tarball release-package
+          npm pack --ignore-scripts --pack-destination release-tarball
+          tar -xzf release-tarball/*.tgz -C release-package --strip-components=1
+          npm run build:cdn -- release-package cdn-artifact
+          python3 scripts/deploy-cdn.py cdn-artifact
+
+      - name: Save CDN artifact for deployment and rollback
+        uses: actions/upload-artifact@v4
+        with:
+          name: components-cdn
+          path: |
+            cdn-artifact/manifest.json
+            cdn-artifact/payloads/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Save exact npm tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: components-npm
+          path: release-tarball/*.tgz
+          retention-days: 90
 
       - name: Push to protected branch
         if: github.event.inputs.publish-only != 'true'
@@ -135,27 +162,19 @@ jobs:
 
       # Publish version to public repository
       - name: Publish
-        run: npm publish --access public --tag ${{ env.RELEASE_TAG }} --verbose
+        run: npm publish release-tarball/*.tgz --ignore-scripts --access public --tag "$RELEASE_TAG"
 
-      - name: Purge cache
-        uses: gacts/purge-jsdelivr-cache@v1
-        with:
-          url: |
-            https://cdn.jsdelivr.net/npm/@maveio/components/+esm
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/react.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/vue.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/default.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/dolphin.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/themes/synthwave.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/en.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/nl.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/de.js
-            https://cdn.jsdelivr.net/npm/@maveio/components/dist/generated/locales/fr.js
+      - name: Export release tag
+        id: release-tag
+        run: echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
-      - name: 'Purge cache mave.io cdn'
-        uses: indiesdev/curl@v1.1
-        id: mave-cdn
-        with:
-          url: https://cdn.purge.mave.io/mirror
-          method: 'GET'
-          timeout: 10000
+    outputs:
+      tag: ${{ steps.release-tag.outputs.tag }}
+
+  deploy-cdn:
+    needs: release
+    uses: ./.github/workflows/deploy_cdn.yml
+    with:
+      run-id: ${{ github.run_id }}
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit

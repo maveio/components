@@ -208,3 +208,15 @@ A more complex example is `<mave-list>`, which can be useful to show a collectio
 ### Localization
 
 When defining `msg()` run the following command: `./node_modules/.bin/lit-localize extract && ./node_modules/.bin/lit-localize build`
+
+### CDN releases
+
+The release workflow builds npm and CDN assets from the same package tarball.
+Browser modules are bundled locally, gzip-compressed and uploaded to Scaleway;
+the existing `/npm/@maveio/components/+esm` URL follows the latest stable release.
+Numbered releases remain immutable. The deploy workflow can also restore a saved
+`components-cdn` artifact by release run ID without republishing npm.
+
+Deployment uses the `cdn-production` GitHub environment: `CDN_SCW_ACCESS_KEY` and
+`CDN_SCW_SECRET_KEY` secrets, plus `CDN_SCW_REGION` and `CDN_TARGETS` variables
+(a JSON object mapping bucket hostnames to Edge Services pipeline IDs).

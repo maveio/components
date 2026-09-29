@@ -49,6 +49,7 @@
     "build": "tsup",
     "build:watch": "NODE_ENV=development tsup --watch --sourcemap --no-clean",
     "build:prod": "NODE_ENV=production npm run build --no-sourcemap",
+    "build:cdn": "node scripts/build-cdn.mjs",
     "localize": "lit-localize extract && ./node_modules/.bin/lit-localize build",
     "prepublishOnly": "npm run build:prod",
     "lint:fix": "eslint ./src --ext .ts,.tsx --quiet --fix --ixgnore-path ./.gitignore",
@@ -66,6 +67,8 @@
     "url": "git+https://github.com/maveio/components.git"
   },
   "devDependencies": {
+    "acorn": "8.15.0",
+    "esbuild": "0.28.1",
     "@lit/localize-tools": "^0.6.10",
     "@types/hls.js": "^1.0.0",
     "@types/phoenix": "^1.5.5",
@@ -107,7 +110,7 @@
     "tus-js-client": "^4.2.3"
   },
   "overrides": {
-    "esbuild": "^0.28.1",
+    "esbuild": "$esbuild",
     "shell-quote": "^1.8.4"
   }
 }

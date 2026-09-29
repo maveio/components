@@ -1,0 +1,53 @@
+name: Deploy CDN artifact
+on:
+  workflow_call:
+    inputs:
+      run-id:
+        type: string
+        required: true
+      tag:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: 'Release run ID containing components-cdn (also used for rollback)'
+        type: string
+        required: true
+      tag:
+        description: 'latest promotes production; other tags upload numbered files only'
+        type: string
+        default: latest
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: components-cdn-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: cdn-production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: components-cdn
+          path: cdn-artifact
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run-id }}
+      - name: Validate artifact before accessing credentials
+        run: python3 scripts/deploy-cdn.py cdn-artifact
+      - name: Upload, promote, purge and verify both CDNs
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CDN_SCW_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CDN_SCW_SECRET_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.CDN_SCW_SECRET_KEY }}
+          CDN_TARGETS: ${{ vars.CDN_TARGETS }}
+          CDN_SCW_REGION: ${{ vars.CDN_SCW_REGION }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          aws --version
+          python3 scripts/deploy-cdn.py cdn-artifact --tag "$RELEASE_TAG" --apply
