@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Security
+
+- Update Phoenix, xmldom, and js-yaml to patched versions.
+
 ## 0.0.193 - 2026-09-29
 
 ## 0.0.192 - 2026-09-18
