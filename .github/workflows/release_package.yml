@@ -24,15 +24,15 @@ on:
         default: latest
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Checkout project repository
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Import GPG key
         id: import-gpg
-        uses: crazy-max/ghaction-import-gpg@v4
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
@@ -41,7 +41,7 @@ jobs:
 
       # Setup Node.js environment
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           registry-url: https://registry.npmjs.org/
           node-version: '24'
@@ -85,24 +85,29 @@ jobs:
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release-type }}
 
-      # Update changelog unreleased section with new version
-      - name: Update changelog
+      - name: Prepare changelog and release notes
         if: github.event.inputs.publish-only != 'true'
-        uses: superfaceai/release-changelog-action@v1
-        with:
-          path-to-changelog: CHANGELOG.md
-          version: ${{ env.NEW_VERSION }}
-          operation: release
+        run: |
+          python3 - <<'PYTHON'
+          from datetime import datetime, timezone
+          import os
+          from pathlib import Path
+          import re
 
-      # Read version changelog
-      - id: get-changelog
-        name: Get version changelog
-        if: github.event.inputs.publish-only != 'true'
-        uses: superfaceai/release-changelog-action@v1
-        with:
-          path-to-changelog: CHANGELOG.md
-          version: ${{ env.NEW_VERSION }}
-          operation: read
+          path = Path('CHANGELOG.md')
+          changelog = path.read_text()
+          version = os.environ['NEW_VERSION'].removeprefix('v')
+          section = re.search(r'^## Unreleased\s*\n(.*?)(?=^## |\Z)', changelog, re.M | re.S)
+          if not section or re.search(r'^## ' + re.escape(version) + r'(?: |$)', changelog, re.M):
+              raise SystemExit('Missing Unreleased section or version already in changelog')
+          notes = section[1].strip()
+          date = datetime.now(timezone.utc).date().isoformat()
+          replacement = f'## Unreleased\n\n## {version} - {date}\n\n'
+          if notes:
+              replacement += notes + '\n\n'
+          path.write_text(changelog[:section.start()] + replacement + changelog[section.end():])
+          (Path(os.environ['RUNNER_TEMP']) / 'release-notes.md').write_text(notes + '\n')
+          PYTHON
 
       # Commit changes
       - name: Commit CHANGELOG.md and package.json changes and create tag
@@ -125,7 +130,7 @@ jobs:
           python3 scripts/deploy-cdn.py cdn-artifact
 
       - name: Save CDN artifact for deployment and rollback
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: components-cdn
           path: |
@@ -135,7 +140,7 @@ jobs:
           if-no-files-found: error
 
       - name: Save exact npm tarball
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: components-npm
           path: release-tarball/*.tgz
@@ -153,10 +158,10 @@ jobs:
       # Update GitHub release with changelog
       - name: Update GitHub release documentation
         if: github.event.inputs.publish-only != 'true'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.NEW_VERSION }}
-          body: ${{ steps.get-changelog.outputs.changelog }}
+          body_path: ${{ runner.temp }}/release-notes.md
           prerelease: ${{ startsWith(github.event.inputs.release-type, 'pre') }}
           token: ${{ secrets.PUSH_TO_PROTECTED_BRANCH }}
 
