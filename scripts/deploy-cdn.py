@@ -147,6 +147,22 @@ def verify(url, obj):
             raise RuntimeError(f'Content mismatch: {url}')
 
 
+def verify_edge(bucket, objects, verify_fn=verify):
+    # A completed purge can still briefly serve stale data or HTTP 503.
+    deadline = time.monotonic() + 300
+    for obj in objects:
+        url = f'https://{bucket}/' + urllib.parse.quote(obj['key'], safe='/@+')
+        while True:
+            try:
+                verify_fn(url, obj)
+                break
+            except (RuntimeError, OSError):
+                if time.monotonic() >= deadline:
+                    raise
+                print(f'Waiting for edge propagation: {url}', flush=True)
+                time.sleep(5)
+
+
 def deploy(directory, manifest, tag, storage, purge_fn=purge, verify_fn=verify):
     if not re.fullmatch(r'[a-z][a-z0-9-]*', tag):
         raise ValueError('Invalid release tag')
@@ -179,8 +195,7 @@ def deploy(directory, manifest, tag, storage, purge_fn=purge, verify_fn=verify):
         try:
             purge_fn(pipeline)
             # Actual public URLs, without a cache-busting query string.
-            for obj in versioned + aliases:
-                verify_fn(f'https://{bucket}/' + urllib.parse.quote(obj['key'], safe='/@+'), obj)
+            verify_edge(bucket, versioned + aliases, verify_fn)
             print(f'Verified {bucket}: {manifest["version"]} ({tag})', flush=True)
         except (RuntimeError, OSError) as error:
             # A failed first pipeline must not prevent purging the other one.
