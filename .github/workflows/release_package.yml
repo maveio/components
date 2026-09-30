@@ -122,7 +122,8 @@ jobs:
       # Build once: both npm and the CDN use this exact package tarball.
       - name: Build release and CDN artifact
         run: |
-          npm run build:prod
+          npm test
+          npm run test:package
           mkdir release-tarball release-package
           npm pack --ignore-scripts --pack-destination release-tarball
           tar -xzf release-tarball/*.tgz -C release-package --strip-components=1

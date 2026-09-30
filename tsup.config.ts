@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import * as dotenv from 'dotenv';
 import { replace } from 'esbuild-plugin-replace';
 import { defineConfig } from 'tsup';
@@ -29,11 +30,15 @@ export default defineConfig({
   minify: isProduction,
   skipNodeModulesBundle: true,
   clean: true,
-  dts: true,
   sourcemap: !isProduction,
   target: 'es2020',
   watch: isDev,
-  onSuccess: isDev ? 'echo "Build complete - files updated"' : undefined,
+  // TypeScript 7 emits declarations directly; tsup's DTS bundler uses the old API.
+  onSuccess: async () => {
+    execFileSync(process.execPath, ['scripts/build-types.mjs'], {
+      stdio: 'inherit',
+    });
+  },
   noExternal: [
     'lit',
     'lit-element/lit-element.js',
