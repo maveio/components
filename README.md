@@ -97,80 +97,13 @@ You can either change the settings through our interface or provide it as attrib
 
 ### Audio
 
-`<mave-audio>` plays published audio tracks from **audio or video uploads** using
-native `<audio>`. It never fetches a video rendition or original video as a fallback.
-`<mave-player>` automatically uses the same audio presentation for audio-only
-uploads. Existing embeds keep their tag, playback API, events, theme and color.
-Video uploads continue to use the video player; use `<mave-audio>` to play only
-their audio tracks.
+Use `<mave-audio>` to play audio uploads or the audio tracks of a video:
 
 ```html
-<!-- Both examples accept the same embed id, including a video upload. -->
-<mave-audio embed="{embed id}" type="line"></mave-audio>
-<mave-audio embed="{embed id}" theme="dolphin" type="wave"></mave-audio>
-<!-- Automatically chooses audio or video from the uploaded media. -->
-<mave-player embed="{embed id}" theme="dolphin" type="wave"></mave-player>
+<mave-audio embed="{embed id}"></mave-audio>
 ```
 
-`type="line"` (default) shows a progress bar; `type="wave"` shows measured amplitude
-peaks. Independently, `theme="default"`, `theme="dolphin"` and `theme="synthwave"`
-reuse the video themes' buttons, icons, timeline styling, typography and `color`
-contrast colors. Synthwave keeps its timeline above the controls.
-The same audio attributes work on `<mave-player>` when it detects audio-only
-media. Switching its `embed` between audio and video also switches presentation.
-
-Audio defaults to `controls="full"`: play, time, seek, volume, captions and audio
-track selection when available. Use an explicit list for fewer controls, `none`
-to hide the controls or `big` for a large play button. `rate` and `airplay` are
-explicit opt-ins, just as in the video player. Video-only controls are ignored.
-`thumbnail` is always opt-in, including with `full`; omitting it hides the image
-and avoids loading it. For example:
-
-```html
-<mave-audio embed="{embed id}" theme="dolphin" type="wave"
-  controls="full rate thumbnail"></mave-audio>
-<mave-audio embed="{embed id}" theme="synthwave" type="line"
-  controls="play time seek volume"></mave-audio>
-```
-
-Optional `title`, `subtitle` and `poster` customize the audio heading and image.
-`subtitle` is the secondary text below the title (for example, an artist or show
-name), not a subtitle/caption track. The title defaults to the embed name.
-`poster` uses the same image selection as the video player and is only displayed
-when `controls` includes `thumbnail`. These replace the earlier `audio-title`,
-`audio-subtitle` and `audio-artwork` attributes, respectively.
-
-```html
-<mave-audio embed="{embed id}" title="Episode 12" subtitle="The Mave Podcast"
-  poster="https://example.com/cover.jpg" controls="full thumbnail"></mave-audio>
-```
-
-The public playback methods, events, tokens and analytics are shared with Player. Audio
-sizes to its content and shows an unavailable message for sources without a
-published audio track. Changing `type` keeps the current playback position.
-The same component is exported as `Audio` from `@maveio/components`,
-`@maveio/components/react` and `@maveio/components/vue`:
-
-```jsx
-import { Audio } from '@maveio/components/react';
-
-<Audio embed="{embed id}" theme="dolphin" type="wave" controls="full thumbnail" />
-```
-
-Use `--mave-audio-min-height` to reserve space across loading and playback. To
-reserve the same space before the component is registered, also set
-`min-height: var(--mave-audio-min-height)` on the element.
-
-Additional CSS overrides: `--mave-audio-background` and `--mave-audio-radius`,
-alongside the existing theme's control variables.
-
-Waveforms use the optional manifest field
-`waveform: {version: 1, duration, audio_track, peaks}`. Peaks are amplitudes from
-0 to 1; `audio_track` identifies the analyzed track's filename. Core generates them
-from the processed primary track of audio and video uploads. Missing, invalid,
-mismatched-duration or different-track peaks fall back to the line timeline.
-Switching language tracks preserves position and speed. Existing uploads need
-reprocessing with the updated publishing preset to gain waveform data.
+You can customize the appearance with themes and use `type="wave"` to show a waveform. The `<mave-player>` component also automatically shows an audio player for audio-only uploads.
 
 ### Clip
 
@@ -205,18 +138,11 @@ A more complex example is `<mave-list>`, which can be useful to show a collectio
 
 `npm run start`
 
+Build and typecheck with TypeScript 7 using `npm run build:prod` and `npm run typecheck`.
+The `typescript-native` alias selects that compiler; `typescript` stays on 6.0 for
+ESLint's compiler API compatibility. Run `npm run lint` to check code or
+`npm run lint:fix` to apply fixes.
+
 ### Localization
 
 When defining `msg()` run the following command: `./node_modules/.bin/lit-localize extract && ./node_modules/.bin/lit-localize build`
-
-### CDN releases
-
-The release workflow builds npm and CDN assets from the same package tarball.
-Browser modules are bundled locally, gzip-compressed and uploaded to Scaleway;
-the existing `/npm/@maveio/components/+esm` URL follows the latest stable release.
-Numbered releases remain immutable. The deploy workflow can also restore a saved
-`components-cdn` artifact by release run ID without republishing npm.
-
-Deployment uses the `cdn-production` GitHub environment: `CDN_SCW_ACCESS_KEY` and
-`CDN_SCW_SECRET_KEY` secrets, plus `CDN_SCW_REGION` and `CDN_TARGETS` variables
-(a JSON object mapping bucket hostnames to Edge Services pipeline IDs).

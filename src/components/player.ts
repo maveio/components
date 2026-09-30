@@ -1779,6 +1779,10 @@ export class Player extends MaveElement {
   }
 
   #videoPlayed() {
+    // Themes and native controls can start playback without calling player.play().
+    // Subscribe before the following `playing` event so that playback is measured.
+    this._metricsInstance?.monitor();
+
     if (!this._startedPlaying) {
       this.#applyActiveSubtitle();
     }
@@ -2087,13 +2091,11 @@ export class Player extends MaveElement {
 
     this.#syncHostLayout();
     this.updateStylePoster();
-    // A new audio embed can reuse the same media element and theme. Lit's ref
+    // A new embed can reuse the same media element and theme. Lit's ref
     // callback does not run again in that case, so attach the new source after render.
-    if (this.isAudio) {
-      void this.updateComplete.then(() => {
-        if (this.isConnected) this.#setupMediaSource();
-      });
-    }
+    void this.updateComplete.then(() => {
+      if (this.isConnected) this.#setupMediaSource();
+    });
   }
 
   private static posterOverlaySourceKey(embed: Embed) {
