@@ -586,7 +586,7 @@ export function build(name, LitElement, html, css) {
     render() {
       if (this.audio) return this.renderAudio();
       return html`
-        <media-controller novolumepref>
+        <media-controller novolumepref nomutedpref nosubtitleslangpref>
           <div class="subtitles" noautohide>
             <div id="subtitles_text">subtitles</div>
           </div>

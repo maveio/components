@@ -741,7 +741,7 @@ export function build(name, LitElement, html, css) {
     render() {
       if (this.audio) return this.renderAudio();
       return html`
-        <media-controller novolumepref>
+        <media-controller novolumepref nomutedpref nosubtitleslangpref>
           <slot name="media" slot="media"></slot>
           <slot name="poster" slot="poster"></slot>
           <div class="mave-gradient-bottom"></div>

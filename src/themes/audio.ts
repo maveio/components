@@ -445,7 +445,13 @@ export function createAudioTheme(
     }
 
     renderAudio() {
-      return html`<media-controller audio noautohide novolumepref>
+      return html`<media-controller
+        audio
+        noautohide
+        novolumepref
+        nomutedpref
+        nosubtitleslangpref
+      >
         <slot name="media" slot="media" @slotchange=${this.bindMedia}></slot>
         <div class="audio-heading">
           ${this.thumbnail && this.poster
