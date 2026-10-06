@@ -386,6 +386,9 @@ export class Upload extends LitElement {
 
     const upload = new tus.Upload(file, {
       endpoint: Config.upload.endpoint,
+      // Bound request duration: long production PATCH requests have been
+      // interrupted around 15 minutes. Keep chunks large to limit HTTP/S3 overhead.
+      chunkSize: 50 * 1024 * 1024,
       retryDelays: [0, 3000, 5000, 10000, 20000, 60000, 60000],
       metadata: {
         title: file.name,
