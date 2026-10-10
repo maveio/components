@@ -94,7 +94,6 @@ it('plays private media with an HTML token attribute and accepts a refreshed tok
   expect(player.token).toBe('viewer-jwt');
   expect(fetch).toHaveBeenCalledWith(
     expect.stringContaining('token=viewer-jwt'),
-    undefined,
   );
   expect(
     vi
@@ -106,7 +105,6 @@ it('plays private media with an HTML token attribute and accepts a refreshed tok
   await vi.waitFor(() => {
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('token=refreshed-jwt'),
-      undefined,
     );
   });
 });
@@ -139,7 +137,6 @@ it('uses the configured space media host for private playback', async () => {
     expect.stringContaining(
       'https://space-aaaaa.signed.example.test/bbbbbccccc/manifest.json?token=viewer-jwt',
     ),
-    undefined,
   );
 });
 

@@ -105,7 +105,7 @@ export class EmbedController {
       if (!url) return;
 
       try {
-        const response = await fetch(url, this.fetchOptions);
+        const response = await fetch(url);
         if (!response.ok) {
           throw EmbedController.responseError(response, url);
         }
@@ -161,7 +161,7 @@ export class EmbedController {
     if (this.type == EmbedType.Embed) {
       return this.embedFile('manifest.json');
     } else {
-      const url = new URL(`${API.baseUrl().replace(/\/$/, '')}/collection`);
+      const url = new URL(`${API.baseUrl()}/collection/${this.token}`);
       if (this.embed && this.embed?.length > 1)
         url.searchParams.append('embed', this.embed);
       return url.toString();
@@ -229,17 +229,6 @@ export class EmbedController {
 
   get cdnRoot(): string {
     return Config.cdn.endpoint.replace('${this.spaceId}', this.spaceId);
-  }
-
-  private get fetchOptions(): RequestInit | undefined {
-    if (this.type != EmbedType.Collection || !this.token) return undefined;
-
-    return {
-      headers: { Authorization: `Bearer ${this.token}` },
-      cache: 'no-store',
-      credentials: 'omit',
-      referrerPolicy: 'no-referrer',
-    };
   }
 
   refresh(): Promise<unknown> {
