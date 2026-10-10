@@ -15,12 +15,15 @@ vi.mock('@lit-labs/observers/intersection-controller.js', () => ({
 }));
 
 const originalCdn = { ...Config.cdn };
+const originalApi = { ...Config.api };
 const originalMetrics = { ...Config.metrics };
 let filetype = 'mp4';
 
 beforeEach(() => {
   filetype = 'mp4';
   Config.cdn.endpoint = 'https://cdn.example.test';
+  Config.api.endpoint = 'https://api.example.test/api/v1';
+  Config.cdn.playback_endpoint = '';
   Config.metrics.enabled = false;
   vi.spyOn(Hls, 'isSupported').mockReturnValue(false);
   vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('');
@@ -65,6 +68,7 @@ afterEach(() => {
   document.body.replaceChildren();
   vi.unstubAllGlobals();
   Object.assign(Config.cdn, originalCdn);
+  Object.assign(Config.api, originalApi);
   Object.assign(Config.metrics, originalMetrics);
 });
 
@@ -78,6 +82,35 @@ async function mount() {
   return player;
 }
 
+it('plays private media with an HTML token attribute and accepts a refreshed token', async () => {
+  document.body.innerHTML =
+    '<mave-player embed="aaaaabbbbbccccc" token="viewer-jwt"></mave-player>';
+  const player = document.querySelector('mave-player')!;
+  await vi.waitFor(() => {
+    expect(player.shadowRoot?.querySelector('video')?.src).toContain(
+      `${Config.api.endpoint}/playback/media/aaaaabbbbbccccc/`,
+    );
+  });
+  expect(player.token).toBe('viewer-jwt');
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringContaining('token=viewer-jwt'),
+    undefined,
+  );
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.some(([url]) => String(url).includes('/playback/sessions')),
+  ).toBe(false);
+
+  player.setAttribute('token', 'refreshed-jwt');
+  await vi.waitFor(() => {
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('token=refreshed-jwt'),
+      undefined,
+    );
+  });
+});
+
 it('falls back to MP4 without HLS support and forwards play/pause to the media', async () => {
   const player = await mount();
   const media = player.shadowRoot!.querySelector('video')!;
@@ -88,6 +121,26 @@ it('falls back to MP4 without HLS support and forwards play/pause to the media',
   player.pause();
   expect(play).toHaveBeenCalledOnce();
   expect(pause).toHaveBeenCalledOnce();
+});
+
+it('uses the configured space media host for private playback', async () => {
+  Config.cdn.playback_endpoint =
+    'https://space-${this.spaceId}.signed.example.test/${this.embedId}';
+  const player = document.createElement('mave-player');
+  player.embed = 'aaaaabbbbbccccc';
+  player.token = 'viewer-jwt';
+  document.body.append(player);
+  await vi.waitFor(() => {
+    expect(player.shadowRoot?.querySelector('video')?.src).toContain(
+      'https://space-aaaaa.signed.example.test/bbbbbccccc/',
+    );
+  });
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringContaining(
+      'https://space-aaaaa.signed.example.test/bbbbbccccc/manifest.json?token=viewer-jwt',
+    ),
+    undefined,
+  );
 });
 
 it('uses native HLS on Safari instead of creating a JavaScript HLS player', async () => {

@@ -10,8 +10,8 @@ import { Embed } from '../embed/api';
 import { EmbedController } from '../embed/controller';
 import {
   type ClipCodec,
-  type ClipSource,
   clipMimeType,
+  type ClipSource,
   detectPlayableClipCodecs,
   selectClipPosterSource,
   selectClipSources,
@@ -67,7 +67,7 @@ export class Clip extends LitElement {
   }
 
   private _token: string;
-  @property()
+  @property({ type: String, reflect: false })
   get token(): string {
     return this._token;
   }
