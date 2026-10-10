@@ -64,6 +64,9 @@ export default defineConfig({
       __MAVE_ENDPOINT__: isProduction
         ? 'https://api.mave.io/api/v1'
         : process.env.MAVE_ENDPOINT,
+      __MAVE_PLAYBACK_ENDPOINT__: isProduction
+        ? 'https://space-${this.spaceId}.signed.video-dns.com/${this.embedId}'
+        : process.env.MAVE_PLAYBACK_ENDPOINT || '',
       __MAVE_SOCKET_ENDPOINT__: isProduction
         ? 'wss://dash.mave.io/api/v1/socket'
         : process.env.MAVE_SOCKET_ENDPOINT,

@@ -3,6 +3,7 @@ import { ReactiveControllerHost } from 'lit';
 
 import { Config } from '../config';
 import * as API from './api';
+import { PlaybackSource, playbackSource } from './playback';
 
 // More compatible version of:
 // const regex = /(?<!\bwww\.\S+)(?<!@\S+)(?<!\.\d)(?<=[.!?])\s+/g;
@@ -40,6 +41,7 @@ export class CaptionController {
   private task: Task;
   private _embed: string;
   private _token: string;
+  private _playbackSource?: PlaybackSource;
   private _version: number;
 
   constructor(host: ReactiveControllerHost, embed: string) {
@@ -50,6 +52,14 @@ export class CaptionController {
       this.host,
       async () => {
         try {
+          const requestEmbed = this.embed;
+          const requestToken = this.token;
+          const source = requestToken
+            ? playbackSource(requestToken, requestEmbed)
+            : undefined;
+          if (this.embed !== requestEmbed || this.token !== requestToken) return;
+          this._playbackSource = source;
+
           const url = this.embedFile('subtitle.json');
 
           const response = await fetch(url);
@@ -162,13 +172,14 @@ export class CaptionController {
           throw new Error();
         }
       },
-      () => [this.embed],
+      () => [this.embed, this.token],
     );
   }
 
   set embed(value: string) {
     if (this._embed != value) {
       this._embed = value;
+      this._playbackSource = undefined;
       this.host.requestUpdate();
     }
   }
@@ -180,6 +191,7 @@ export class CaptionController {
   set token(value: string) {
     if (this._token != value) {
       this._token = value;
+      this._playbackSource = undefined;
       this.host.requestUpdate();
     }
   }
@@ -215,12 +227,13 @@ export class CaptionController {
   }
 
   embedFile(file: string, params = new URLSearchParams()): string {
+    const mediaBaseUrl = this._playbackSource?.media_base_url.replace(/\/$/, '');
     const url = new URL(
-      `${this.cdnRoot}/${this.embedId}${
+      `${mediaBaseUrl || `${this.cdnRoot}/${this.embedId}`}${
         file == 'manifest.json' ? '/' : this.version
       }${file}`,
     );
-    if (this.token) params.append('token', this.token);
+    if (this._playbackSource) params.append('token', this._playbackSource.token);
     url.search = params.toString();
     return url.toString();
   }

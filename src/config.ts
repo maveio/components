@@ -12,6 +12,7 @@ const defaultConfig = {
   },
   cdn: {
     endpoint: '__MAVE_CDN_ENDPOINT__',
+    playback_endpoint: '__MAVE_PLAYBACK_ENDPOINT__',
   },
 };
 

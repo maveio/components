@@ -1,7 +1,8 @@
 import { css, html, LitElement, nothing } from 'lit';
-import { styleMap } from 'lit-html/directives/style-map.js';
 import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
+import { styleMap } from 'lit-html/directives/style-map.js';
+
 import { Caption } from '../embed/api';
 import { CaptionController } from '../embed/caption';
 import { Player } from './player';
@@ -23,8 +24,23 @@ export class Text extends LitElement {
     if (this._embedId != value) {
       this._embedId = value;
       this.captionController = new CaptionController(this, this.embed);
+      this.captionController.token = this.token;
       this.reset();
       this.requestUpdate('embed');
+    }
+  }
+
+  private _token: string;
+  @property({ type: String, reflect: false })
+  get token(): string {
+    return this._token;
+  }
+
+  set token(value: string) {
+    if (this._token !== value) {
+      this._token = value;
+      if (this.captionController) this.captionController.token = value;
+      this.requestUpdate('token');
     }
   }
 

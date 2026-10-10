@@ -87,6 +87,11 @@ function normalizeAttributes(attrs: Record<string, unknown>) {
       continue;
     }
 
+    if (key === 'token') {
+      forwarded[key] = value;
+      continue;
+    }
+
     if (value === false || value === undefined || value === null) {
       forwarded[`^${key}`] = null;
       continue;

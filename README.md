@@ -95,6 +95,17 @@ Once you have uploaded your first video you can show your videos in different fo
 
 You can either change the settings through our interface or provide it as attributes. To learn which attributes you can use to change the appearance of your player, go to [our docs](https://docs.mave.io).
 
+### Private playback
+
+Pass a playback JWT with the `token` attribute:
+
+```html
+<mave-player embed="{embed id}" token="{playback token}"></mave-player>
+```
+
+Create tokens on your server using a read-only API key. Never expose the API key
+in browser code. See [secure video playback](https://www.mave.io/docs/secure-video-playback/).
+
 ### Audio
 
 Use `<mave-audio>` to play audio uploads or the audio tracks of a video:
