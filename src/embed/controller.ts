@@ -18,6 +18,7 @@ export class EmbedController {
 
   host: ReactiveControllerHost;
   private task: Task;
+  private requestGeneration = 0;
   private type: EmbedType;
   private _embed: string;
   private _token: string;
@@ -25,6 +26,7 @@ export class EmbedController {
   private _version: number;
   private _enabled: boolean;
   private _embedData: Partial<API.Embed>;
+  publicManifest = false;
   caching: boolean = true;
   loading: boolean = true;
 
@@ -32,6 +34,7 @@ export class EmbedController {
     host: ReactiveControllerHost,
     embedType: EmbedType = EmbedType.Embed,
     enabled = true,
+    onPublicManifestError?: (embed: string) => Promise<void>,
   ) {
     this.host = host;
     this.type = embedType;
@@ -41,6 +44,9 @@ export class EmbedController {
     this.task = new Task(
       this.host,
       async () => {
+        const generation = ++this.requestGeneration;
+        const requestEmbed = this.embed;
+        const requestToken = this.token;
         try {
           if (!this.enabled) {
             return;
@@ -54,28 +60,42 @@ export class EmbedController {
             return;
           }
 
-          const requestEmbed = this.embed;
-          const requestToken = this.token;
           const source =
             this.type == EmbedType.Embed && requestToken
               ? playbackSource(requestToken, requestEmbed)
               : undefined;
 
-          if (this.embed !== requestEmbed || this.token !== requestToken) return;
+          if (
+            generation !== this.requestGeneration ||
+            this.embed !== requestEmbed ||
+            this.token !== requestToken
+          )
+            return;
           this._playbackSource = source;
 
           const data = await this.fetchManifestWithRetry(() => {
             if (!this.enabled) return;
-            if (this.embed !== requestEmbed || this.token !== requestToken) return;
+            if (
+              generation !== this.requestGeneration ||
+              this.embed !== requestEmbed ||
+              this.token !== requestToken
+            )
+              return;
 
             return this.manifest_url;
           });
 
           if (!data) return;
-          if (!this.enabled || this.embed !== requestEmbed || this.token !== requestToken)
+          if (
+            generation !== this.requestGeneration ||
+            !this.enabled ||
+            this.embed !== requestEmbed ||
+            this.token !== requestToken
+          )
             return;
 
           this.loading = false;
+          this.publicManifest = !requestToken;
 
           if (this.type == EmbedType.Embed) {
             this._embedData = data as Partial<API.Embed>;
@@ -84,9 +104,20 @@ export class EmbedController {
           } else {
             return data as Partial<API.Collection>;
           }
-        } catch (e) {
-          console.log(e);
-          throw new Error(`Failed to fetch "${this.embed}"`);
+        } catch {
+          if (generation !== this.requestGeneration) return;
+          if (this.embed === requestEmbed && this.token === requestToken)
+            this.publicManifest = false;
+          if (
+            this.enabled &&
+            this.embed === requestEmbed &&
+            this.token === requestToken &&
+            !requestToken
+          ) {
+            await onPublicManifestError?.(requestEmbed);
+          }
+          // Never log request errors: private media URLs can contain authorization tokens.
+          throw new Error('Failed to load video manifest');
         }
       },
       () => [this.embed, this.token, this.enabled],
@@ -172,6 +203,8 @@ export class EmbedController {
 
   set embed(value: string) {
     if (this._embed != value) {
+      this.requestGeneration++;
+      this.publicManifest = false;
       this._embed = value;
       this._playbackSource = undefined;
       this.loading = true;
@@ -185,6 +218,8 @@ export class EmbedController {
 
   set token(value: string) {
     if (this._token != value) {
+      this.requestGeneration++;
+      this.publicManifest = false;
       this._token = value;
       this._playbackSource = undefined;
       this.host.requestUpdate();
@@ -197,6 +232,7 @@ export class EmbedController {
 
   set enabled(value: boolean) {
     if (this._enabled != value) {
+      this.requestGeneration++;
       this._enabled = value;
       if (value) this.loading = true;
       this.host.requestUpdate();
@@ -248,7 +284,7 @@ export class EmbedController {
     );
 
     if (file.includes('?')) {
-      const [_file, query] = file.split('?');
+      const [, query] = file.split('?');
       const query_params = new URLSearchParams(query);
       query_params.forEach((value, key) => {
         params.append(key, value);

@@ -55,6 +55,13 @@
   <target>Kan video niet laden</target>
 </trans-unit>
 <trans-unit id="stickyClose"><source>Close mini-player</source><target>Minispeler sluiten</target></trans-unit>
+<trans-unit id="passwordLabel"><source>Enter the video password</source><target>Voer het videowachtwoord in</target></trans-unit>
+<trans-unit id="passwordLoading"><source>Unlocking…</source><target>Ontgrendelen…</target></trans-unit>
+<trans-unit id="passwordSubmit"><source>Unlock video</source><target>Video ontgrendelen</target></trans-unit>
+<trans-unit id="passwordIncorrect"><source>Incorrect password. Try again.</source><target>Onjuist wachtwoord. Probeer opnieuw.</target></trans-unit>
+<trans-unit id="passwordRateLimited"><source>Too many attempts. Please wait a minute.</source><target>Te veel pogingen. Wacht een minuut.</target></trans-unit>
+<trans-unit id="passwordUnavailable"><source>Unable to unlock this video. Please try again.</source><target>Deze video kan niet worden ontgrendeld. Probeer opnieuw.</target></trans-unit>
+<trans-unit id="passwordPending"><source>Video protection is still being applied. Please try again shortly.</source><target>De video wordt nog beveiligd. Probeer het zo opnieuw.</target></trans-unit>
 </body>
 </file>
 </xliff>

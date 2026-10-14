@@ -9,7 +9,14 @@
     /* eslint-disable @typescript-eslint/no-explicit-any */
 
     export const templates = {
-      's1a2236b3e9a624e9': `Sélectionner un fichier`,
+      'passwordIncorrect': `Mot de passe incorrect. Réessayez.`,
+'passwordLabel': `Saisissez le mot de passe de la vidéo`,
+'passwordLoading': `Déverrouillage…`,
+'passwordPending': `La protection de la vidéo est en cours. Réessayez dans un instant.`,
+'passwordRateLimited': `Trop de tentatives. Attendez une minute.`,
+'passwordSubmit': `Déverrouiller la vidéo`,
+'passwordUnavailable': `Impossible de déverrouiller cette vidéo. Réessayez.`,
+'s1a2236b3e9a624e9': `Sélectionner un fichier`,
 's3377775e4a0566a2': `Type de fichier non pris en charge`,
 's3468c5fda66950d2': `Chargement de la vidéo...`,
 's422bb6dceefc6f42': `Un instant...`,

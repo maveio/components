@@ -55,6 +55,13 @@
   <target>Impossible de charger cette vidéo</target>
 </trans-unit>
 <trans-unit id="stickyClose"><source>Close mini-player</source><target>Fermer le mini-lecteur</target></trans-unit>
+<trans-unit id="passwordLabel"><source>Enter the video password</source><target>Saisissez le mot de passe de la vidéo</target></trans-unit>
+<trans-unit id="passwordLoading"><source>Unlocking…</source><target>Déverrouillage…</target></trans-unit>
+<trans-unit id="passwordSubmit"><source>Unlock video</source><target>Déverrouiller la vidéo</target></trans-unit>
+<trans-unit id="passwordIncorrect"><source>Incorrect password. Try again.</source><target>Mot de passe incorrect. Réessayez.</target></trans-unit>
+<trans-unit id="passwordRateLimited"><source>Too many attempts. Please wait a minute.</source><target>Trop de tentatives. Attendez une minute.</target></trans-unit>
+<trans-unit id="passwordUnavailable"><source>Unable to unlock this video. Please try again.</source><target>Impossible de déverrouiller cette vidéo. Réessayez.</target></trans-unit>
+<trans-unit id="passwordPending"><source>Video protection is still being applied. Please try again shortly.</source><target>La protection de la vidéo est en cours. Réessayez dans un instant.</target></trans-unit>
 </body>
 </file>
 </xliff>

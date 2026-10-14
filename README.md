@@ -180,3 +180,18 @@ picture-in-picture exit floating mode. Closing the mini-player or pressing Escap
 suppresses it for that player for this page view, without browser storage.
 Controls remain in the same DOM and follow the selected locale; reduced-motion
 preferences disable the entry animation.
+
+### Password-protected playback
+
+When a public manifest cannot be loaded, the player checks the Core access signal
+and displays a password form if required. Successful public playback makes no
+additional access request. The configured API URL must support
+`GET /playback/:embed_id/access` and `POST /playback/:embed_id/password-token`.
+
+The returned four-hour token stays in this player instance's memory. It is never
+reflected into HTML, emitted as an event, or stored in cookies/browser storage.
+Changing embeds or disconnecting clears internal authorization. An explicit
+`token` always takes precedence. Video bytes continue through the existing private
+playback contract and signed storage URLs; there is no separate refresh loop.
+The form works in `mave-player`, inherited audio players, and Core's static
+`player.html`, with English, Dutch, German and French labels and errors.

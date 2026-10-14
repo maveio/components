@@ -37,3 +37,34 @@ it('keeps collection tokens in the existing URL for root and nested requests', a
     'https://api.example.test/api/v1/collection/collection-jwt?embed=aaaaabbbbbccccc',
   ));
 });
+
+class VideoHost extends LitElement {
+  controller = new EmbedController(this, EmbedType.Embed);
+}
+customElements.define('test-video-host', VideoHost);
+it('ignores an old A response after A → B → A, including its media version', async () => {
+  const original = Config.cdn.endpoint;
+  Config.cdn.endpoint = 'https://cdn.example.test';
+  let oldA!: (response: Response) => void;
+  let count = 0;
+  vi.stubGlobal('fetch', vi.fn(async () => {
+    count++;
+    if (count === 1) return new Promise<Response>(resolve => {oldA = resolve;});
+    return new Response(JSON.stringify({video:{version:2}}));
+  }));
+  const host = new VideoHost(); host.controller.embed='aaaaabbbbbccccc'; document.body.append(host);
+  await vi.waitFor(() => expect(oldA).toBeTypeOf('function'));
+  host.controller.embed='aaaaadddddeeeee';
+  await vi.waitFor(() => expect(count).toBe(2));
+  host.controller.embed='aaaaabbbbbccccc';
+  await vi.waitFor(() => expect(count).toBe(3));
+  expect(host.controller.version).toBe('/v2/');
+  const oldResponse = new Response(JSON.stringify({video:{version:1}}));
+  const parsed = vi.spyOn(oldResponse, 'json');
+  oldA(oldResponse);
+  await vi.waitFor(() => expect(parsed).toHaveBeenCalled());
+  await host.updateComplete;
+  expect(host.controller.version).toBe('/v2/');
+  expect(host.controller.publicManifest).toBe(true);
+  Config.cdn.endpoint = original;
+});

@@ -9,7 +9,14 @@
     /* eslint-disable @typescript-eslint/no-explicit-any */
 
     export const templates = {
-      's1a2236b3e9a624e9': `Select file`,
+      'passwordIncorrect': `Incorrect password. Try again.`,
+'passwordLabel': `Enter the video password`,
+'passwordLoading': `Unlocking…`,
+'passwordPending': `Video protection is still being applied. Please try again shortly.`,
+'passwordRateLimited': `Too many attempts. Please wait a minute.`,
+'passwordSubmit': `Unlock video`,
+'passwordUnavailable': `Unable to unlock this video. Please try again.`,
+'s1a2236b3e9a624e9': `Select file`,
 's3377775e4a0566a2': `Unsupported file type`,
 's3468c5fda66950d2': `Loading video...`,
 's422bb6dceefc6f42': `Just a minute...`,

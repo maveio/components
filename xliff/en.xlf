@@ -55,6 +55,13 @@
   <target>Unable to load this video</target>
 </trans-unit>
 <trans-unit id="stickyClose"><source>Close mini-player</source><target>Close mini-player</target></trans-unit>
+<trans-unit id="passwordLabel"><source>Enter the video password</source><target>Enter the video password</target></trans-unit>
+<trans-unit id="passwordLoading"><source>Unlocking…</source><target>Unlocking…</target></trans-unit>
+<trans-unit id="passwordSubmit"><source>Unlock video</source><target>Unlock video</target></trans-unit>
+<trans-unit id="passwordIncorrect"><source>Incorrect password. Try again.</source><target>Incorrect password. Try again.</target></trans-unit>
+<trans-unit id="passwordRateLimited"><source>Too many attempts. Please wait a minute.</source><target>Too many attempts. Please wait a minute.</target></trans-unit>
+<trans-unit id="passwordUnavailable"><source>Unable to unlock this video. Please try again.</source><target>Unable to unlock this video. Please try again.</target></trans-unit>
+<trans-unit id="passwordPending"><source>Video protection is still being applied. Please try again shortly.</source><target>Video protection is still being applied. Please try again shortly.</target></trans-unit>
 </body>
 </file>
 </xliff>
