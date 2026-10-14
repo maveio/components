@@ -54,6 +54,7 @@
   <source>unable to load this video</source>
   <target>Impossible de charger cette vidéo</target>
 </trans-unit>
+<trans-unit id="stickyClose"><source>Close mini-player</source><target>Fermer le mini-lecteur</target></trans-unit>
 </body>
 </file>
 </xliff>

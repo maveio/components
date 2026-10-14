@@ -33,6 +33,7 @@ import {
 } from '../utils/audio';
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
+import { StickyPlayer } from '../utils/sticky-player';
 import { videoEvents } from '../utils/video_events';
 import { videoObject, VideoSeo } from '../utils/video-seo';
 
@@ -112,6 +113,7 @@ export class Player extends MaveElement {
     if (this._embedId != value) {
       this._seoManifest = undefined;
       this._seo.clear();
+      this._sticky?.reset();
       this.#resetDeferredMediaLoadState();
       this._embedId = value;
       this.embedController.embed = this.embed;
@@ -137,6 +139,9 @@ export class Player extends MaveElement {
   }
 
   @property() locale?: string;
+  @property({ reflect: true }) sticky?: 'bottom-right' | 'bottom-left';
+  @property({ type: Boolean, attribute: 'sticky-mobile' }) sticky_mobile = false;
+  private _sticky = new StickyPlayer(this, () => this.isAudio);
 
   @property({ converter: { fromAttribute: (value) => value !== 'off' } })
   seo = true;
@@ -360,6 +365,66 @@ export class Player extends MaveElement {
   private _audioTrackPath?: string;
 
   static styles = css`
+    [data-sticky-anchor] {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+    #sticky-surface {
+      display: contents;
+    }
+    :host([data-sticky-active]) #sticky-surface {
+      display: block;
+      position: fixed;
+      z-index: 1000;
+      bottom: 24px;
+      right: 24px;
+      width: min(360px, calc(100vw - 32px));
+      height: auto;
+      aspect-ratio: var(--mave-sticky-aspect, 16 / 9);
+      background: #000;
+      box-shadow: 0 8px 32px #0006;
+      border-radius: 8px;
+      animation: sticky-appear 160ms ease-out;
+    }
+    :host([data-sticky-active][sticky='bottom-left']) #sticky-surface {
+      left: 24px;
+      right: auto;
+    }
+    [data-sticky-close] {
+      position: absolute;
+      top: -18px;
+      right: 0;
+      z-index: 1;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid #fff8;
+      color: #fff;
+      background: #171717;
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+    }
+    [data-sticky-close]:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+    }
+    @keyframes sticky-appear {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #sticky-surface {
+        animation: none !important;
+      }
+    }
+
     :host {
       display: block;
       position: relative;
@@ -3420,25 +3485,40 @@ export class Player extends MaveElement {
       : nothing;
 
     return html`
-      <slot
-        name="video"
-        style=${styleMap({
-          display:
-            startScreen && !this._startedPlaying && !this._isProcessing
-              ? 'none'
-              : 'block',
-        })}
-      >
-        ${playerTemplate}
-      </slot>
-      ${
-        this._embedObj && this._isProcessing
-          ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
-          : nothing
-      }
-      <slot name="start-screen"></slot>
-      <slot name="end-screen"></slot>
-      <slot name="hover-screen"></slot>
+      <div data-sticky-anchor aria-hidden="true"></div>
+      <div id="sticky-surface">
+        ${
+          this._sticky.active
+            ? html`<button
+                type="button"
+                data-sticky-close
+                aria-label=${msg('Close mini-player', { id: 'stickyClose' })}
+                @click=${this._sticky.dismiss}
+              >
+                ×
+              </button>`
+            : nothing
+        }
+        <slot
+          name="video"
+          style=${styleMap({
+            display:
+              startScreen && !this._startedPlaying && !this._isProcessing
+                ? 'none'
+                : 'block',
+          })}
+        >
+          ${playerTemplate}
+        </slot>
+        ${
+          this._embedObj && this._isProcessing
+            ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
+            : nothing
+        }
+        <slot name="start-screen"></slot>
+        <slot name="end-screen"></slot>
+        <slot name="hover-screen"></slot>
+      </div>
     `;
   }
 }

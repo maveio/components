@@ -167,3 +167,16 @@ ESLint's compiler API compatibility. Run `npm run lint` to check code or
 ### Localization
 
 When defining `msg()` run the following command: `./node_modules/.bin/lit-localize extract && ./node_modules/.bin/lit-localize build`
+
+### Mini-player
+
+`<mave-player embed="..." sticky="bottom-right">` keeps a playing video visible
+when its original position leaves the viewport. Use `bottom-left` for the other
+corner. Sticky playback is off by default and disabled below 640 px unless
+`sticky-mobile` is present. Audio players never float.
+
+The original space is preserved. Scrolling back, pausing, fullscreen and
+picture-in-picture exit floating mode. Closing the mini-player or pressing Escape
+suppresses it for that player for this page view, without browser storage.
+Controls remain in the same DOM and follow the selected locale; reduced-motion
+preferences disable the entry animation.
