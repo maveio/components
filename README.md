@@ -95,6 +95,16 @@ Once you have uploaded your first video you can show your videos in different fo
 
 You can either change the settings through our interface or provide it as attributes. To learn which attributes you can use to change the appearance of your player, go to [our docs](https://docs.mave.io).
 
+### Search metadata
+
+Public video players add one Schema.org `VideoObject` JSON-LD script beside the
+element after their manifest loads. Use `seo="off"` to disable it. Metadata uses
+the existing title, poster, duration and upload date; description is included
+only when supplied by the manifest. No metadata is emitted for token or password
+playback. Signed media URLs are excluded. Scripts update when the embed changes
+and are removed when the player disconnects. Lazy players publish metadata only
+once loaded; this feature does not guarantee search-engine indexing.
+
 ### Private playback
 
 Pass a playback JWT with the `token` attribute:

@@ -31,6 +31,9 @@ export type RenditionsByCodec = {
 export type Embed = {
   id: string;
   name: string;
+  description?: string | null;
+  visibility?: 'public' | 'private';
+  password_protected?: boolean;
   space_id: string;
   created_at: number;
   poster: {
