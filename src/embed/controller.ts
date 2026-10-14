@@ -34,7 +34,7 @@ export class EmbedController {
     host: ReactiveControllerHost,
     embedType: EmbedType = EmbedType.Embed,
     enabled = true,
-    onPublicManifestError?: (embed: string) => Promise<void>,
+    onPublicManifestError?: (embed: string, current: () => boolean) => Promise<void>,
   ) {
     this.host = host;
     this.type = embedType;
@@ -114,7 +114,10 @@ export class EmbedController {
             this.token === requestToken &&
             !requestToken
           ) {
-            await onPublicManifestError?.(requestEmbed);
+            await onPublicManifestError?.(
+              requestEmbed,
+              () => generation === this.requestGeneration,
+            );
           }
           // Never log request errors: private media URLs can contain authorization tokens.
           throw new Error('Failed to load video manifest');

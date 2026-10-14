@@ -641,8 +641,11 @@ export class Player extends MaveElement {
     this._focusPasswordPlayback = true;
     this.embedController.token = this.token || token;
   });
-  private embedController = new EmbedController(this, EmbedType.Embed, false, (embed) =>
-    this._password.checkAccess(embed),
+  private embedController = new EmbedController(
+    this,
+    EmbedType.Embed,
+    false,
+    (embed, current) => this._password.checkAccess(embed, current),
   );
   private _videoElement?: HTMLMediaElement;
 

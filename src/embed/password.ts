@@ -44,7 +44,7 @@ export class PasswordPlayback implements ReactiveController {
     return `${Config.api.endpoint.replace(/\/$/, '')}/playback/${encodeURIComponent(embed)}/${action}`;
   }
 
-  async checkAccess(embed: string) {
+  async checkAccess(embed: string, current = () => true) {
     if (
       this.host.token ||
       this.#token ||
@@ -62,7 +62,12 @@ export class PasswordPlayback implements ReactiveController {
         cache: 'no-store',
       });
       const data = response.ok ? await response.json() : undefined;
-      if (generation !== this.generation || embed !== this.host.embed || this.host.token)
+      if (
+        !current() ||
+        generation !== this.generation ||
+        embed !== this.host.embed ||
+        this.host.token
+      )
         return;
       this.protected = data?.password_protected === true;
       this.host.requestUpdate();

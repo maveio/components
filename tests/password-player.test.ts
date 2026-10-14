@@ -163,3 +163,22 @@ it('explains pending storage protection without treating it as a bad password',a
   const player=await mount(); const f=await form(player); submit(f);
   await vi.waitFor(()=>expect(f.textContent).toContain('protection is still being applied'));
 });
+it('ignores access discovery superseded by a successful public manifest refresh', async()=>{
+  let resolve!: (response:Response)=>void;
+  let manifests=0;
+  vi.mocked(fetch).mockImplementation(async(url)=>{
+    if(String(url).includes('/access')) return new Promise<Response>(r=>{resolve=r;});
+    manifests++;
+    return manifests===1 ? json({},403) : json(manifest());
+  });
+  const player=await mount();
+  await vi.waitFor(()=>expect(resolve).toBeTypeOf('function'));
+  await (player as unknown as {embedController:{refresh:()=>Promise<unknown>}}).embedController.refresh();
+  await vi.waitFor(()=>expect(player.shadowRoot?.querySelector('video')).not.toBeNull());
+  const oldResponse=json({password_protected:true});
+  const parsed=vi.spyOn(oldResponse,'json');
+  resolve(oldResponse);
+  await vi.waitFor(()=>expect(parsed).toHaveBeenCalled());
+  await player.updateComplete;
+  expect(player.shadowRoot?.querySelector('form')).toBeNull();
+});

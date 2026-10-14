@@ -95,3 +95,13 @@ it('omits signed content URLs and unavailable optional metadata', async () => {
   expect(json).not.toHaveProperty('description');
   expect(json).not.toHaveProperty('uploadDate');
 });
+it('updates the existing script when public manifest metadata changes', async () => {
+  const player = await mount();
+  const script = scripts()[0];
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ ...manifest(), name: 'Updated title', description: undefined })));
+  await (player as unknown as {embedController:{refresh:()=>Promise<unknown>}}).embedController.refresh();
+  await vi.waitFor(() => expect(JSON.parse(script.textContent!).name).toBe('Updated title'));
+  expect(scripts()).toHaveLength(1);
+  expect(scripts()[0]).toBe(script);
+  expect(JSON.parse(script.textContent!)).not.toHaveProperty('description');
+});

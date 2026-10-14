@@ -9,7 +9,7 @@ password, rate-limit and network feedback. Successful authorization resumes the
 existing private playback path. Explicit caller tokens win; internally obtained
 tokens exist only in memory and are discarded on embed changes/disconnect.
 Outdated access/token requests and A → B → A manifest responses cannot modify the
-current video. Token URLs are not logged. No new storage refresh mechanism exists.
+current video. A late access response also cannot replace a newly refreshed public player. Token URLs are not logged. No new storage refresh mechanism exists.
 
 JSON-LD now requires an explicitly recorded successful public manifest load;
 private metadata cannot escape on reconnect, even when the manifest contains no
@@ -21,7 +21,7 @@ after re-enabling it; successful authorization focuses the loaded media.
 Validation:
 
 - Typecheck passed.
-- Vitest: 9 files, 43 tests passed, including races, token precedence, reconnect,
+- Vitest: 9 files, 45 tests passed, including races, token precedence, reconnect,
   no extra public access request, audio inheritance, localized forms and focus.
 - Production build and package tests passed (4 package tests).
 - Edited source files pass lint. Full lint retains 74 pre-existing findings,
