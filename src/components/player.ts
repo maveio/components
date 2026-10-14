@@ -110,6 +110,8 @@ export class Player extends MaveElement {
   set embed(value: string) {
     if (this._embedId != value) {
       this.#resetDeferredMediaLoadState();
+      this.#clearReleaseCountdown();
+      this._startAfterRelease = false;
       this._embedId = value;
       this.embedController.embed = this.embed;
       this.updateStylePoster();
@@ -283,6 +285,7 @@ export class Player extends MaveElement {
   @state() private _isProcessing = false;
   @state() private _posterOverlayHidden = false;
   @state() private _mediaLoadRequested = false;
+  @state() private _releaseNow = Date.now();
 
   @query("slot[name='end-screen']") endScreenElement: HTMLElement;
   @query("slot[name='start-screen']") startScreenElement: HTMLElement;
@@ -291,6 +294,13 @@ export class Player extends MaveElement {
   @state() private _themeLoaded?: string;
   private _themeRequest?: { theme: string; path: string };
   private static readonly PROCESSING_REFRESH_INTERVAL = 5000;
+  // Refetch the countdown manifest so an earlier or later release reaches
+  // waiting viewers, then retry with backoff until the release completes.
+  private static readonly RELEASE_RECHECK_INTERVAL = 300_000;
+  private static readonly RELEASE_RECHECK_JITTER = 60_000;
+  private static readonly RELEASE_REFRESH_INTERVAL = 5_000;
+  private static readonly RELEASE_REFRESH_MAX_INTERVAL = 60_000;
+  private static readonly RELEASE_REFRESH_JITTER = 3_000;
   private static readonly POSTER_AUTOPLAY_WAIT_MS = 800;
   private static readonly AUTO_LAZY_PLAYER_THRESHOLD = 4;
   private static readonly AUTO_LAZY_ROOT_MARGIN_PX = 300;
@@ -477,6 +487,84 @@ export class Player extends MaveElement {
       letter-spacing: 0.01em;
     }
 
+    .release-wrapper {
+      z-index: 100;
+    }
+
+    .release {
+      container-type: size;
+      gap: clamp(6px, 3cqh, 16px);
+      padding: 16px;
+      background: radial-gradient(120% 120% at 50% 0%, #2b2b30 0%, #0c0c0e 70%);
+      background-size: cover;
+      background-position: center;
+      font-family:
+        Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
+    }
+
+    .release__label {
+      font-size: clamp(11px, 3cqw, 15px);
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    .release__label::after {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 2px;
+      margin: 8px auto 0;
+      border-radius: 1px;
+      background: var(--mave-release-accent, #fff);
+    }
+
+    .release__units {
+      display: flex;
+      gap: clamp(10px, 4cqw, 36px);
+    }
+
+    .release__unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 2ch;
+    }
+
+    .release__value {
+      font-size: clamp(22px, 11cqw, 88px);
+      font-weight: 600;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .release__unit-label {
+      margin-top: 6px;
+      font-size: clamp(9px, 2.2cqw, 13px);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+
+    .release__date {
+      font-size: clamp(11px, 2.6cqw, 15px);
+      opacity: 0.75;
+    }
+
+    @container (max-height: 160px) {
+      .release__label::after,
+      .release__date,
+      .release__unit-label {
+        display: none;
+      }
+
+      .release__value {
+        font-size: clamp(18px, 40cqh, 40px);
+      }
+    }
+
     @keyframes processing-spin {
       to {
         transform: rotate(360deg);
@@ -496,6 +584,13 @@ export class Player extends MaveElement {
 
   private _metricsInstance?: Metrics;
   private _intersected = false;
+
+  private _releaseTickHandle?: number;
+  private _releaseRefreshHandle?: number;
+  private _releaseRefreshAttempts = 0;
+  private _releaseClockOffset = 0;
+  private _releaseManifest?: Embed;
+  private _startAfterRelease = false;
 
   private _queue: { (): void }[] = [];
   private _processingRefreshHandle?: number;
@@ -581,6 +676,10 @@ export class Player extends MaveElement {
   }
 
   play(): Promise<void> {
+    if (this.#isScheduled()) {
+      return Promise.reject(new Error('[mave-player]: video is not released yet'));
+    }
+
     if (!this._mediaLoadRequested) {
       return new Promise((resolve, reject) => {
         this._queue.push(() => {
@@ -905,6 +1004,10 @@ export class Player extends MaveElement {
     this.#syncHostLayout();
     this.updateStylePoster();
     this.#queueMediaLoadSync();
+    if (this.#isScheduled()) {
+      this._releaseNow = Date.now();
+      this.#syncReleaseCountdown();
+    }
     this.addEventListener(
       MediaUIEvents.MEDIA_PLAY_REQUEST,
       this.#prepareEndedVideoForReplay,
@@ -1016,6 +1119,7 @@ export class Player extends MaveElement {
     this._contrastQueryHandler = undefined;
     this._metricsInstance?.demonitor();
     this.#clearProcessingRefresh();
+    this.#stopReleaseTimers();
     this.#clearQueuedMediaLoadSync();
     this.#clearDeferredMediaLoadObserver();
     this.#clearNativeHlsSubtitleState();
@@ -1073,6 +1177,18 @@ export class Player extends MaveElement {
 
   #updateLoadingState() {
     if (!this._embedObj) return;
+
+    if (this.#isScheduled()) {
+      this.#clearProcessingRefresh();
+      if (this._isProcessing) {
+        this._isProcessing = false;
+        this.requestUpdate();
+      }
+      this.#syncReleaseCountdown();
+      return;
+    }
+
+    if (this._releaseManifest) this.#clearReleaseCountdown();
 
     const status = this.#manifestStatus();
     const hasStatus = typeof status === 'string';
@@ -1171,6 +1287,184 @@ export class Player extends MaveElement {
     }
   }
 
+  #isScheduled(embed: Embed | undefined = this._embedObj) {
+    return embed?.video?.status === 'scheduled';
+  }
+
+  #releaseRemainingMs() {
+    const releaseAt = this._embedObj?.release_at;
+    if (typeof releaseAt !== 'number') return 0;
+    return releaseAt * 1000 - (this._releaseNow + this._releaseClockOffset);
+  }
+
+  // Counts down to the release and refetches the manifest once it ends. The
+  // server keeps returning the scheduled manifest until storage is public, so
+  // refreshes continue with backoff until the real manifest arrives.
+  #syncReleaseCountdown() {
+    if (typeof window === 'undefined') return;
+
+    if (this._releaseManifest !== this._embedObj) {
+      // A new manifest arrived: measure clock skew against the server once.
+      this._releaseManifest = this._embedObj;
+      const serverTime = this._embedObj.server_time;
+      this._releaseClockOffset =
+        typeof serverTime === 'number' ? serverTime * 1000 - Date.now() : 0;
+      this._releaseNow = Date.now();
+      this._startAfterRelease = true;
+      if (this.#releaseRemainingMs() > 0) this._releaseRefreshAttempts = 0;
+    }
+
+    if (this.#releaseRemainingMs() > 0) this.#scheduleReleaseTick();
+    this.#scheduleReleaseRefresh();
+  }
+
+  #scheduleReleaseTick() {
+    if (this._releaseTickHandle != null) return;
+
+    // Align ticks with second boundaries so digits change on time.
+    const delay = (this.#releaseRemainingMs() % 1000 || 1000) + 10;
+    this._releaseTickHandle = window.setTimeout(() => {
+      this._releaseTickHandle = undefined;
+      this._releaseNow = Date.now();
+      if (this.#releaseRemainingMs() > 0) this.#scheduleReleaseTick();
+    }, delay);
+  }
+
+  #scheduleReleaseRefresh() {
+    if (this._releaseRefreshHandle != null) return;
+
+    const remaining = this.#releaseRemainingMs();
+    const jitter = (max: number) => Math.floor(Math.random() * max);
+    let delay: number;
+
+    if (remaining > Player.RELEASE_RECHECK_INTERVAL) {
+      delay = Player.RELEASE_RECHECK_INTERVAL + jitter(Player.RELEASE_RECHECK_JITTER);
+    } else if (remaining > 0) {
+      // Spread viewers of a premiere so they do not all refetch at once.
+      delay = remaining + jitter(Player.RELEASE_REFRESH_JITTER);
+    } else if (this._releaseRefreshAttempts === 0) {
+      delay = jitter(Player.RELEASE_REFRESH_JITTER);
+    } else {
+      const backoff =
+        Player.RELEASE_REFRESH_INTERVAL * 2 ** (this._releaseRefreshAttempts - 1);
+      delay =
+        Math.min(backoff, Player.RELEASE_REFRESH_MAX_INTERVAL) +
+        jitter(Player.RELEASE_REFRESH_JITTER);
+    }
+
+    this._releaseRefreshHandle = window.setTimeout(() => {
+      this._releaseRefreshHandle = undefined;
+      if (this.#releaseRemainingMs() <= 0) this._releaseRefreshAttempts++;
+      this.embedController.refresh().catch(() => undefined);
+    }, delay);
+  }
+
+  #stopReleaseTimers() {
+    if (typeof window === 'undefined') return;
+
+    if (this._releaseTickHandle != null) {
+      window.clearTimeout(this._releaseTickHandle);
+      this._releaseTickHandle = undefined;
+    }
+    if (this._releaseRefreshHandle != null) {
+      window.clearTimeout(this._releaseRefreshHandle);
+      this._releaseRefreshHandle = undefined;
+    }
+  }
+
+  #clearReleaseCountdown() {
+    this.#stopReleaseTimers();
+    this._releaseRefreshAttempts = 0;
+    this._releaseManifest = undefined;
+  }
+
+  // Viewers who waited for the countdown expect the video to start. Try with
+  // sound first; browsers that require a gesture still allow muted playback.
+  async #startReleasedPlayback() {
+    const video = this._videoElement;
+    if (!video?.paused) return;
+
+    this._metricsInstance?.monitor();
+    try {
+      await video.play();
+    } catch {
+      if (!this.isConnected || this._videoElement !== video || !video.paused) return;
+      video.muted = true;
+      try {
+        await video.play();
+      } catch {
+        // Blocked by the page or browser policy; the controls stay available.
+      }
+    }
+  }
+
+  #formatReleaseDate(releaseAt: number) {
+    try {
+      return new Intl.DateTimeFormat(this.locale || undefined, {
+        dateStyle: 'long',
+        timeStyle: 'short',
+      }).format(new Date(releaseAt * 1000));
+    } catch {
+      return new Date(releaseAt * 1000).toLocaleString();
+    }
+  }
+
+  #renderReleaseCountdown() {
+    const remaining = Math.max(0, this.#releaseRemainingMs());
+    const releaseAt = this._embedObj.release_at;
+    const date = typeof releaseAt === 'number' ? this.#formatReleaseDate(releaseAt) : '';
+    const total = Math.ceil(remaining / 1000);
+    const days = Math.floor(total / 86400);
+    const units: [number, string][] = [
+      [Math.floor((total % 86400) / 3600), msg('hours')],
+      [Math.floor((total % 3600) / 60), msg('minutes')],
+      [total % 60, msg('seconds')],
+    ];
+    if (days > 0) units.unshift([days, msg('days')]);
+
+    return html`
+      <div
+        class="processing-wrapper release-wrapper"
+        part="release-countdown"
+        style=${styleMap(this.#placeholderWrapperStyle())}
+      >
+        <div
+          class="processing-state release"
+          style=${styleMap({
+            ...this.#placeholderBackgroundStyle(),
+            '--mave-release-accent': this.color || '#fff',
+          })}
+          role="timer"
+          aria-label=${date ? `${msg('available on')} ${date}` : msg('available soon')}
+        >
+          ${
+            remaining > 0
+              ? html`
+                  <span class="release__label">${msg('available in')}</span>
+                  <div class="release__units" aria-hidden="true">
+                    ${units.map(
+                      ([value, label]) => html`
+                        <div class="release__unit">
+                          <span class="release__value"
+                            >${String(value).padStart(2, '0')}</span
+                          >
+                          <span class="release__unit-label">${label}</span>
+                        </div>
+                      `,
+                    )}
+                  </div>
+                  ${date ? html`<span class="release__date">${date}</span>` : nothing}
+                `
+              : html`
+                  <div class="processing-state__spinner" aria-hidden="true"></div>
+                  <span class="processing-state__text">${msg('available soon')}</span>
+                `
+          }
+        </div>
+      </div>
+    `;
+  }
+
   #processingMessage(status?: Embed['video']['status']) {
     if (this.isAudio) {
       return status === 'errored'
@@ -1184,6 +1478,7 @@ export class Player extends MaveElement {
       playable: () => msg('processing video...'),
       ready: () => msg('preparing your video...'),
       errored: () => msg('video failed to process'),
+      scheduled: () => msg('available soon'),
       default: () => msg('preparing your video...'),
     };
 
@@ -1666,6 +1961,7 @@ export class Player extends MaveElement {
 
   #setupMediaSource() {
     if (!this._videoElement || !this._embedObj || this._mediaSourceLoaded) return;
+    if (this.#isScheduled()) return;
     if (this.embedController.loading) return;
     if (this._videoElement.tagName !== (this.isAudio ? 'AUDIO' : 'VIDEO')) return;
     if (this.isAudio && !this.#audioSrcPath) return;
@@ -1756,6 +2052,11 @@ export class Player extends MaveElement {
     this.#applyActiveSubtitle();
     this.#handleAutoplay();
     this.#hideEndscreen();
+
+    if (this._startAfterRelease) {
+      this._startAfterRelease = false;
+      void this.#startReleasedPlayback();
+    }
   }
 
   #intersected(entries: IntersectionObserverEntry[]) {
@@ -1909,7 +2210,7 @@ export class Player extends MaveElement {
   }
 
   #handleAutoplay() {
-    if (!this._embedObj) return;
+    if (!this._embedObj || this.#isScheduled()) return;
 
     if (this.#shouldAutoplayNow()) {
       if (!this._mediaSourceLoaded) {
@@ -1984,6 +2285,8 @@ export class Player extends MaveElement {
   }
 
   #requestPlay() {
+    if (this.#isScheduled()) return;
+
     if (this._videoElement && !this._mediaSourceLoaded) {
       this._queue.push(() => {
         void this.#playVideo().catch(() => undefined);
@@ -3247,6 +3550,7 @@ export class Player extends MaveElement {
   }
 
   #renderVideoTemplate() {
+    if (this._embedObj && this.#isScheduled()) return this.#renderReleaseCountdown();
     if (!this._embedObj || !this._themeLoaded) return nothing;
     const videoDimensions = this.#videoIntrinsicDimensions();
     const shouldLoadMedia = this.#shouldLoadMediaNow();
@@ -3381,7 +3685,13 @@ export class Player extends MaveElement {
     const playerTemplate = this._mediaLoadRequested
       ? this.embedController.render({
           pending: () => (this._embedObj ? this.#renderVideoTemplate() : nothing),
-          error: () => this.#renderErrorPlaceholder(),
+          error: () => {
+            if (!this.#isScheduled()) return this.#renderErrorPlaceholder();
+
+            // A failed refresh around the release keeps waiting instead of failing.
+            this.#scheduleReleaseRefresh();
+            return this.#renderVideoTemplate();
+          },
           complete: (data) => {
             if (!data) return this.#renderPendingPlaceholder();
 
@@ -3398,7 +3708,10 @@ export class Player extends MaveElement {
         name="video"
         style=${styleMap({
           display:
-            startScreen && !this._startedPlaying && !this._isProcessing
+            startScreen &&
+            !this._startedPlaying &&
+            !this._isProcessing &&
+            !this.#isScheduled()
               ? 'none'
               : 'block',
         })}

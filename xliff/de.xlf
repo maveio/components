@@ -54,6 +54,34 @@
   <source>unable to load this video</source>
   <target>Video kann nicht geladen werden</target>
 </trans-unit>
+<trans-unit id="s4d41317b4e57e7f4">
+  <source>hours</source>
+  <target>Stunden</target>
+</trans-unit>
+<trans-unit id="scbeff7c3e03228ae">
+  <source>minutes</source>
+  <target>Minuten</target>
+</trans-unit>
+<trans-unit id="s9eff639fb8a1be0a">
+  <source>seconds</source>
+  <target>Sekunden</target>
+</trans-unit>
+<trans-unit id="s8587736730c8b7ea">
+  <source>days</source>
+  <target>Tage</target>
+</trans-unit>
+<trans-unit id="s9a673aac651b7111">
+  <source>available on</source>
+  <target>Verfügbar am</target>
+</trans-unit>
+<trans-unit id="sb7bb752147a1f4a3">
+  <source>available soon</source>
+  <target>Gleich verfügbar</target>
+</trans-unit>
+<trans-unit id="s9a535aac650afe67">
+  <source>available in</source>
+  <target>Verfügbar in</target>
+</trans-unit>
 </body>
 </file>
 </xliff>
