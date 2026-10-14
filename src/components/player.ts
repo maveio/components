@@ -22,6 +22,7 @@ import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 import { Config } from '../config';
 import { Embed, type Rendition } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
+import { PasswordPlayback } from '../embed/password';
 import { ThemeLoader } from '../themes/loader';
 import {
   audioControls,
@@ -33,6 +34,7 @@ import {
 } from '../utils/audio';
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
+import { playerMessage } from '../utils/player-message';
 import { StickyPlayer } from '../utils/sticky-player';
 import { videoEvents } from '../utils/video_events';
 import { videoObject, VideoSeo } from '../utils/video-seo';
@@ -114,6 +116,9 @@ export class Player extends MaveElement {
       this._seoManifest = undefined;
       this._seo.clear();
       this._sticky?.reset();
+      this._password?.reset();
+      this._focusPasswordPlayback = false;
+      this.embedController.token = this.token || '';
       this.#resetDeferredMediaLoadState();
       this._embedId = value;
       this.embedController.embed = this.embed;
@@ -132,6 +137,7 @@ export class Player extends MaveElement {
     if (this._token != value) {
       this._seoManifest = undefined;
       this._seo.clear();
+      this._password?.reset();
       this._token = value;
       this.requestUpdate('token');
       this.embedController.token = this._token;
@@ -151,7 +157,11 @@ export class Player extends MaveElement {
   #syncSeo() {
     const manifest = this._seoManifest;
     const data =
-      this.seo && !this.token && !this.isAudio && manifest
+      this.seo &&
+      this.embedController.publicManifest &&
+      !this.embedController.token &&
+      !this.isAudio &&
+      manifest
         ? videoObject(
             manifest,
             `${this.embedController.cdnRoot}/${this.embedController.embedId}/player.html`,
@@ -365,6 +375,52 @@ export class Player extends MaveElement {
   private _audioTrackPath?: string;
 
   static styles = css`
+    .password-panel {
+      box-sizing: border-box;
+      min-height: 240px;
+      width: 100%;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      gap: 12px;
+      background: #171717;
+      color: white;
+      font:
+        16px/1.5 system-ui,
+        sans-serif;
+    }
+    .password-panel input,
+    .password-panel button {
+      box-sizing: border-box;
+      min-height: 44px;
+      font: inherit;
+      padding: 8px 12px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+    }
+    .password-panel input {
+      background: #292929;
+      color: white;
+    }
+    .password-panel button {
+      cursor: pointer;
+      background: white;
+      color: #111;
+    }
+    .password-panel :focus-visible {
+      outline: 3px solid #75bdff;
+      outline-offset: 2px;
+    }
+    .password-panel :disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+    .password-panel p {
+      min-height: 24px;
+      margin: 0;
+    }
     [data-sticky-anchor] {
       position: absolute;
       inset: 0;
@@ -578,7 +634,19 @@ export class Player extends MaveElement {
     callback: this.#intersected.bind(this),
   });
 
-  private embedController = new EmbedController(this, EmbedType.Embed, false);
+  private _focusPasswordPlayback = false;
+  private _password = new PasswordPlayback(this, (token) => {
+    this._seoManifest = undefined;
+    this._seo.clear();
+    this._focusPasswordPlayback = true;
+    this.embedController.token = this.token || token;
+  });
+  private embedController = new EmbedController(
+    this,
+    EmbedType.Embed,
+    false,
+    (embed, current) => this._password.checkAccess(embed, current),
+  );
   private _videoElement?: HTMLMediaElement;
 
   @state()
@@ -1043,6 +1111,10 @@ export class Player extends MaveElement {
   protected updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
     this.#syncSeo();
+    if (this._focusPasswordPlayback && this._videoElement?.isConnected) {
+      this._focusPasswordPlayback = false;
+      this._videoElement.focus({ preventScroll: true });
+    }
 
     if (
       changedProperties.has('controls') ||
@@ -1084,6 +1156,8 @@ export class Player extends MaveElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._seo.clear();
+    this._seoManifest = undefined;
+    this.embedController.token = this.token || '';
     this.removeEventListener(
       MediaUIEvents.MEDIA_PLAY_REQUEST,
       this.#prepareEndedVideoForReplay,
@@ -3428,7 +3502,11 @@ export class Player extends MaveElement {
       defaultAudioTrack(tracks);
     const path = track?.path;
     if (!path) return undefined;
-    return audioSourceURL(path, this.embedController.embedFile(''), this.token);
+    return audioSourceURL(
+      path,
+      this.embedController.embedFile(''),
+      this.embedController.token,
+    );
   }
 
   get #audioWaveform() {
@@ -3464,7 +3542,8 @@ export class Player extends MaveElement {
   }
 
   render() {
-    if (!this.embed) return;
+    if (!this.embed || !this.isConnected) return nothing;
+    if (this._password.protected && !this.token) return this._password.render();
     const startScreen = this.querySelector(
       '[slot="start-screen"], [data-slot="start-screen"]',
     ) as HTMLElement;
@@ -3476,7 +3555,9 @@ export class Player extends MaveElement {
             if (!data) return this.#renderPendingPlaceholder();
 
             const embedData = data as Embed;
-            this._seoManifest = embedData;
+            this._seoManifest = this.embedController.publicManifest
+              ? embedData
+              : undefined;
             this.updateEmbed(embedData);
 
             return this.#renderVideoTemplate();
@@ -3492,7 +3573,7 @@ export class Player extends MaveElement {
             ? html`<button
                 type="button"
                 data-sticky-close
-                aria-label=${msg('Close mini-player', { id: 'stickyClose' })}
+                aria-label=${playerMessage(msg('Close mini-player', { id: 'stickyClose' }), 'stickyClose', this.locale)}
                 @click=${this._sticky.dismiss}
               >
                 ×

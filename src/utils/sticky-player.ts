@@ -15,6 +15,7 @@ export class StickyPlayer implements ReactiveController {
   private nativeFullscreen = false;
   private pip = false;
   private observer?: IntersectionObserver;
+  private anchor?: Element;
   private media?: HTMLMediaElement;
   private events?: AbortController;
   private mobile?: MediaQueryList;
@@ -38,8 +39,11 @@ export class StickyPlayer implements ReactiveController {
   }
 
   hostUpdated() {
-    if (!this.observer && typeof IntersectionObserver !== 'undefined') {
-      const anchor = this.host.shadowRoot?.querySelector('[data-sticky-anchor]');
+    const anchor =
+      this.host.shadowRoot?.querySelector('[data-sticky-anchor]') ?? undefined;
+    if (anchor !== this.anchor && typeof IntersectionObserver !== 'undefined') {
+      this.observer?.disconnect();
+      this.anchor = anchor;
       if (anchor) {
         this.observer = new IntersectionObserver(([entry]) => {
           this.visible = entry.isIntersecting;
@@ -150,6 +154,7 @@ export class StickyPlayer implements ReactiveController {
     this.setActive(false);
     this.observer?.disconnect();
     this.observer = undefined;
+    this.anchor = undefined;
     this.events?.abort();
     this.media = undefined;
   }

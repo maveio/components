@@ -9,7 +9,14 @@
     /* eslint-disable @typescript-eslint/no-explicit-any */
 
     export const templates = {
-      's1a2236b3e9a624e9': `Selecteer bestand`,
+      'passwordIncorrect': `Onjuist wachtwoord. Probeer opnieuw.`,
+'passwordLabel': `Voer het videowachtwoord in`,
+'passwordLoading': `Ontgrendelen…`,
+'passwordPending': `De video wordt nog beveiligd. Probeer het zo opnieuw.`,
+'passwordRateLimited': `Te veel pogingen. Wacht een minuut.`,
+'passwordSubmit': `Video ontgrendelen`,
+'passwordUnavailable': `Deze video kan niet worden ontgrendeld. Probeer opnieuw.`,
+'s1a2236b3e9a624e9': `Selecteer bestand`,
 's3377775e4a0566a2': `Bestandstype wordt niet ondersteund`,
 's3468c5fda66950d2': `Video laden...`,
 's422bb6dceefc6f42': `Nog even geduld...`,
