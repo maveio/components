@@ -22,5 +22,12 @@
 'sdc51fb6761fd6e91': `Done`,
 'sea5f88da17c5f8af': `Video failed to process`,
 'sf81e3c69132c6256': `Or browse your files`,
+'stickyClose': `Close mini-player`,
+'sb4942c8563d01d6a': `audio failed to process`,
+'s81f7611acc53fea6': `preparing your audio...`,
+'s1ee65762202c6a6d': `loading audio...`,
+'se83f8b260b548b25': `unable to load this audio`,
+'s9cc09ba5ee551310': `No audio track available`,
+'s20d91335dedc941e': `something went wrong`,
     };
   
