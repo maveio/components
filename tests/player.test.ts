@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import Hls from 'hls.js';
 import { Metrics } from '@maveio/data';
+import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 import '../src/components/player';
 import { Config } from '../src/config';
 
@@ -18,9 +19,11 @@ const originalCdn = { ...Config.cdn };
 const originalApi = { ...Config.api };
 const originalMetrics = { ...Config.metrics };
 let filetype = 'mp4';
+let subtitleTracks: { language: string; label: string; path: string }[] = [];
 
 beforeEach(() => {
   filetype = 'mp4';
+  subtitleTracks = [];
   Config.cdn.endpoint = 'https://cdn.example.test';
   Config.api.endpoint = 'https://api.example.test/api/v1';
   Config.cdn.playback_endpoint = '';
@@ -57,7 +60,7 @@ beforeEach(() => {
                 label: 'Audio',
               },
             ],
-            subtitles: [],
+            subtitles: subtitleTracks,
           }),
         ),
     ),
@@ -242,4 +245,93 @@ it('switches a video embed to audio and detaches the old analytics session', asy
   vi.spyOn(audio, 'play').mockResolvedValue();
   await player.play();
   expect(monitor.mock.instances[monitor.mock.instances.length - 1]).not.toBe(oldSession);
+});
+
+// Model a browser enabling an external track after attaching an HLS MediaSource.
+// Happy DOM does not implement HTMLTrackElement.track or track-list events.
+async function mountWithSubtitle(activeSubtitle?: string) {
+  subtitleTracks = [{ language: 'nl', label: 'Dutch', path: '/dutch.vtt' }];
+  vi.mocked(Hls.isSupported).mockReturnValue(true);
+  vi.spyOn(Hls.prototype, 'loadSource').mockImplementation(() => {});
+  const trackEvents = new EventTarget();
+  const tracks = new WeakMap<HTMLTrackElement, TextTrack>();
+  const originalTrack = Object.getOwnPropertyDescriptor(
+    HTMLTrackElement.prototype,
+    'track',
+  );
+  Object.defineProperty(HTMLTrackElement.prototype, 'track', {
+    configurable: true,
+    get(this: HTMLTrackElement) {
+      if (!tracks.has(this))
+        tracks.set(this, {
+          kind: this.kind,
+          language: this.srclang,
+          label: this.label,
+          mode: 'disabled',
+        } as TextTrack);
+      return tracks.get(this);
+    },
+  });
+  vi.spyOn(Hls.prototype, 'attachMedia').mockImplementation((element) => {
+    const media = element as HTMLMediaElement;
+    Object.defineProperty(media, 'textTracks', {
+      get: () =>
+        Object.assign(
+          Array.from(media.querySelectorAll('track'), (el) => el.track),
+          {
+            addEventListener: trackEvents.addEventListener.bind(trackEvents),
+            removeEventListener: trackEvents.removeEventListener.bind(trackEvents),
+          },
+        ),
+    });
+  });
+  const player = document.createElement('mave-player');
+  if (activeSubtitle) player.active_subtitle = activeSubtitle;
+  player.embed = 'aaaaabbbbbccccc';
+  document.body.append(player);
+  await vi.waitFor(() =>
+    expect(player.shadowRoot?.querySelector('track[kind="subtitles"]')).not.toBeNull(),
+  );
+  const media = player.shadowRoot!.querySelector('video')!;
+  const track = media.querySelector('track[kind="subtitles"]')!.track;
+  media.dispatchEvent(new Event('loadedmetadata'));
+  return {
+    player,
+    track,
+    trackEvents,
+    restore: () => {
+      player.remove();
+      if (originalTrack)
+        Object.defineProperty(HTMLTrackElement.prototype, 'track', originalTrack);
+      else Reflect.deleteProperty(HTMLTrackElement.prototype, 'track');
+    },
+  };
+}
+
+it('keeps HLS subtitles off when the browser automatically enables a track', async () => {
+  const { track, trackEvents, restore } = await mountWithSubtitle();
+  track.mode = 'showing';
+  trackEvents.dispatchEvent(new Event('change'));
+  try {
+    expect(track.mode).toBe('disabled');
+  } finally {
+    restore();
+  }
+});
+
+it('preserves explicit and user-selected HLS subtitles', async () => {
+  const { player, track, trackEvents, restore } = await mountWithSubtitle('nl');
+  try {
+    expect(track.mode).toBe('showing');
+    player.dispatchEvent(new CustomEvent(MediaUIEvents.MEDIA_DISABLE_SUBTITLES_REQUEST));
+    track.mode = 'disabled';
+    trackEvents.dispatchEvent(new Event('change'));
+    expect(track.mode).toBe('disabled');
+    player.dispatchEvent(new CustomEvent(MediaUIEvents.MEDIA_SHOW_SUBTITLES_REQUEST));
+    track.mode = 'showing';
+    trackEvents.dispatchEvent(new Event('change'));
+    expect(track.mode).toBe('showing');
+  } finally {
+    restore();
+  }
 });

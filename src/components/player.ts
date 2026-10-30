@@ -306,7 +306,7 @@ export class Player extends MaveElement {
   private _nativeAudioTrackIdMap = new Map<string, NativeMediaAudioTrack>();
   private _nativeAudioTrackList?: NativeMediaAudioTrackList;
   private _pendingAudioTrackSetup?: number;
-  private _cleanupNativeHlsSubtitleState?: () => void;
+  private _cleanupSubtitleState?: () => void;
   private _activeSubtitleApplied = false;
   private _activeSubtitleUserOverride = false;
   private _mediaSourceLoaded = false;
@@ -775,7 +775,7 @@ export class Player extends MaveElement {
     this._metricsInstance?.demonitor();
     this._metricsInstance = undefined;
     this.#destroyHlsInstance();
-    this.#clearNativeHlsSubtitleState();
+    this.#clearSubtitleState();
     this.#clearNativeAudioTracks();
     this.#resetHlsAudioTracks();
 
@@ -967,7 +967,7 @@ export class Player extends MaveElement {
       this._activeSubtitleApplied = false;
       this._activeSubtitleUserOverride = false;
       this.#applyActiveSubtitle();
-      this.#syncNativeHlsSubtitleState();
+      this.#syncSubtitleState();
     }
 
     if (changedProperties.has('autoplay')) {
@@ -1019,7 +1019,7 @@ export class Player extends MaveElement {
     this.#clearProcessingRefresh();
     this.#clearQueuedMediaLoadSync();
     this.#clearDeferredMediaLoadObserver();
-    this.#clearNativeHlsSubtitleState();
+    this.#clearSubtitleState();
     this.#clearNativeAudioTracks();
     this.#resetHlsAudioTracks();
     this._currentAudioTrackMenu = undefined;
@@ -1245,17 +1245,17 @@ export class Player extends MaveElement {
     this._hlsAudioTracks = [];
   }
 
-  #clearNativeHlsSubtitleState() {
-    this._cleanupNativeHlsSubtitleState?.();
-    this._cleanupNativeHlsSubtitleState = undefined;
+  #clearSubtitleState() {
+    this._cleanupSubtitleState?.();
+    this._cleanupSubtitleState = undefined;
   }
 
-  #guardNativeHlsSubtitleState() {
+  #guardSubtitleState() {
     if (!this._videoElement) return;
 
-    this.#clearNativeHlsSubtitleState();
+    this.#clearSubtitleState();
 
-    const sync = () => this.#syncNativeHlsSubtitleState();
+    const sync = () => this.#syncSubtitleState();
     const textTracks = this._videoElement.textTracks;
     const timers: number[] = [];
 
@@ -1273,7 +1273,7 @@ export class Player extends MaveElement {
       });
     }
 
-    this._cleanupNativeHlsSubtitleState = () => {
+    this._cleanupSubtitleState = () => {
       this._videoElement?.removeEventListener('loadstart', sync);
       this._videoElement?.removeEventListener('loadedmetadata', sync);
       textTracks?.removeEventListener('addtrack', sync);
@@ -1283,7 +1283,7 @@ export class Player extends MaveElement {
     };
   }
 
-  #syncNativeHlsSubtitleState() {
+  #syncSubtitleState() {
     if (!this._videoElement) return;
 
     this.#applyActiveSubtitle();
@@ -1713,7 +1713,7 @@ export class Player extends MaveElement {
     this.#destroyHlsInstance();
 
     if (Hls.isSupported() && this.#hlsPath) {
-      this.#clearNativeHlsSubtitleState();
+      this.#clearSubtitleState();
       this.#clearNativeAudioTracks();
       this.#resetHlsAudioTracks();
 
@@ -1736,6 +1736,9 @@ export class Player extends MaveElement {
         this.#setupHlsSources(this.#hlsPath, remotePlaybackDisabled);
       }
       this.#setupHlsAudioTracks();
+      // External VTT tracks can also be auto-enabled by Safari during MSE/MMS
+      // playback. Preserve the same explicit subtitle selection as native HLS.
+      if (this._embedObj.subtitles.length) this.#guardSubtitleState();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this.hls, this.embed, {
           component: this.isAudio ? 'audio' : 'player',
@@ -1743,14 +1746,14 @@ export class Player extends MaveElement {
     } else if (canPlayNativeHls) {
       this.#resetHlsAudioTracks();
       this._videoElement.src = this.#hlsPath;
-      this.#guardNativeHlsSubtitleState();
+      this.#guardSubtitleState();
       this.#setupNativeAudioTracks();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this._videoElement, this.embed, {
           component: this.isAudio ? 'audio' : 'player',
         });
     } else {
-      this.#clearNativeHlsSubtitleState();
+      this.#clearSubtitleState();
       this.#clearNativeAudioTracks();
       this.#resetHlsAudioTracks();
       if (this.#srcPath) this._videoElement.src = this.#srcPath;
@@ -2232,7 +2235,7 @@ export class Player extends MaveElement {
       // Safari may expose an unlabeled native HLS captions track. Media Chrome
       // serializes it as an empty list entry, so keep the menu on our manifest tracks.
       if (
-        this._cleanupNativeHlsSubtitleState &&
+        this._cleanupSubtitleState &&
         mutations.some(
           (mutation) =>
             mutation.type === 'childList' ||
@@ -2240,7 +2243,7 @@ export class Player extends MaveElement {
             mutation.attributeName === 'mediasubtitlesshowing',
         )
       ) {
-        this.#syncNativeHlsSubtitleState();
+        this.#syncSubtitleState();
       }
     });
     observer.observe(root, {
@@ -2253,8 +2256,8 @@ export class Player extends MaveElement {
     this._themeMutationObserver = observer;
     this._themeMutationObserverRoot = root;
 
-    if (this._cleanupNativeHlsSubtitleState) {
-      this.#syncNativeHlsSubtitleState();
+    if (this._cleanupSubtitleState) {
+      this.#syncSubtitleState();
     }
   }
 

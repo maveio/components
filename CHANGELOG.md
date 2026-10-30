@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Update HLS.js, Media Chrome, Phoenix, and compatible development dependencies.
+- Update tsup to version 9 and use the official TypeScript 6 API compatibility
+  package alongside the TypeScript 7 build and typecheck compiler.
+
+### Fixed
+
+- Keep external subtitles off by default during HLS.js playback, while preserving
+  explicit subtitle configuration and viewer selection.
+
+### Security
+
+- Update Vite, Vitest, and Happy DOM to patched versions.
+
 ## 0.0.198 - 2026-10-30
 
 ## 0.0.197 - 2026-10-10
