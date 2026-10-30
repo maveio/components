@@ -61,10 +61,14 @@ understand the problem and the improvement within twenty seconds.
 - Open with one or two plain sentences: what happens today, what changes, and
   why that matters. Follow with two to four concrete bullets when useful.
   Describe the final change, not the sequence of work or a list of edited files.
-- Use the repository's PR template when present. Short headings and small
-  before/after tables are welcome; avoid decorative noise, oversized headings
-  and long checklists. Remove empty or irrelevant sections. Routine PRs should
-  usually fit in roughly 100–200 words, excluding media.
+- Start with [.github/pull_request_template.md](.github/pull_request_template.md),
+  following the same presentation as Core: `## ✨ What changes`,
+  `## 👀 Preview` (or `## 👀 Before / after`) and `## 🔎 Additional checks`.
+  Use the short headings, restrained emoji markers and a small before/after
+  table or real preview to make substantial PRs easy to scan. Keep only useful
+  sections and remove template comments before posting. A very small fix may
+  use a brief paragraph instead. Avoid decorative noise and long checklists;
+  routine PRs should usually fit in roughly 100–200 words, excluding media.
 - For visible UI or media changes, capture real before/after screenshots. Use a
   short video or GIF when motion or interaction is the point. Label the states,
   keep the viewport and example consistent, and inspect the media before posting.
