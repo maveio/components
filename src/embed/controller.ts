@@ -72,6 +72,8 @@ export class EmbedController {
           });
 
           if (!data) return;
+          if (!this.enabled || this.embed !== requestEmbed || this.token !== requestToken)
+            return;
 
           this.loading = false;
 

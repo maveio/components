@@ -12,7 +12,7 @@ import type {
   MediaPlaylist,
 } from 'hls.js';
 import Hls from 'hls.js';
-import { css, html, nothing,type PropertyValues } from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
@@ -20,7 +20,7 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 
 import { Config } from '../config';
-import { Embed,type Rendition } from '../embed/api';
+import { Embed, type Rendition } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
 import {
@@ -34,6 +34,7 @@ import {
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
 import { videoEvents } from '../utils/video_events';
+import { videoObject, VideoSeo } from '../utils/video-seo';
 
 type ControlColors = {
   bg: string;
@@ -109,6 +110,8 @@ export class Player extends MaveElement {
   }
   set embed(value: string) {
     if (this._embedId != value) {
+      this._seoManifest = undefined;
+      this._seo.clear();
       this.#resetDeferredMediaLoadState();
       this._embedId = value;
       this.embedController.embed = this.embed;
@@ -125,6 +128,8 @@ export class Player extends MaveElement {
   }
   set token(value: string) {
     if (this._token != value) {
+      this._seoManifest = undefined;
+      this._seo.clear();
       this._token = value;
       this.requestUpdate('token');
       this.embedController.token = this._token;
@@ -132,6 +137,24 @@ export class Player extends MaveElement {
   }
 
   @property() locale?: string;
+
+  @property({ converter: { fromAttribute: (value) => value !== 'off' } })
+  seo = true;
+  private _seo = new VideoSeo();
+  private _seoManifest?: Embed;
+
+  #syncSeo() {
+    const manifest = this._seoManifest;
+    const data =
+      this.seo && !this.token && !this.isAudio && manifest
+        ? videoObject(
+            manifest,
+            `${this.embedController.cdnRoot}/${this.embedController.embedId}/player.html`,
+            manifest.video?.original || this.#srcPath || undefined,
+          )
+        : undefined;
+    this._seo.update(this, data);
+  }
 
   @property({ attribute: 'aspect-ratio' }) aspect_ratio?: string;
 
@@ -349,8 +372,8 @@ export class Player extends MaveElement {
     }
 
     video::cue {
-      font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
-        sans-serif;
+      font-family:
+        Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
       font-weight: 500;
       display: var(--subtitle-display, initial);
       opacity: var(--subtitle-opacity, 0);
@@ -381,7 +404,9 @@ export class Player extends MaveElement {
 
     .audio-unavailable {
       padding: 20px;
-      font: 14px/1.5 system-ui, sans-serif;
+      font:
+        14px/1.5 system-ui,
+        sans-serif;
     }
 
     :host([data-audio]) {
@@ -953,6 +978,7 @@ export class Player extends MaveElement {
 
   protected updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
+    this.#syncSeo();
 
     if (
       changedProperties.has('controls') ||
@@ -993,6 +1019,7 @@ export class Player extends MaveElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._seo.clear();
     this.removeEventListener(
       MediaUIEvents.MEDIA_PLAY_REQUEST,
       this.#prepareEndedVideoForReplay,
@@ -2780,7 +2807,7 @@ export class Player extends MaveElement {
         (typeof language === 'string' && language.trim()) ||
         `Track ${index + 1}`;
       const isEnabled =
-        activeId != null ? rawId === activeId : track?.default ?? index === 0;
+        activeId != null ? rawId === activeId : (track?.default ?? index === 0);
 
       return {
         id,
@@ -3122,9 +3149,11 @@ export class Player extends MaveElement {
           class="processing-state"
           style=${styleMap(this.#placeholderBackgroundStyle())}
         >
-          ${showSpinner
-            ? html`<div class="processing-state__spinner" aria-hidden="true"></div>`
-            : nothing}
+          ${
+            showSpinner
+              ? html`<div class="processing-state__spinner" aria-hidden="true"></div>`
+              : nothing
+          }
           <span class="processing-state__text">${message}</span>
         </div>
       </div>
@@ -3157,9 +3186,7 @@ export class Player extends MaveElement {
     if (explicitHeight && explicitHeight !== 'auto') {
       style.height = explicitHeight;
     } else {
-      style.minHeight = this.isAudio
-        ? 'var(--mave-audio-min-height, 120px)'
-        : '200px';
+      style.minHeight = this.isAudio ? 'var(--mave-audio-min-height, 120px)' : '200px';
     }
 
     const aspectRatio = this.#placeholderAspectRatio();
@@ -3279,9 +3306,7 @@ export class Player extends MaveElement {
         title=${this.audioOptions?.title || this._embedObj.name || nothing}
         subtitle=${this.audioOptions?.subtitle || nothing}
         poster=${
-          audioControls(this.controls).thumbnail
-            ? this.poster || nothing
-            : nothing
+          audioControls(this.controls).thumbnail ? this.poster || nothing : nothing
         }
         .waveform=${this.#audioWaveform}
       >
@@ -3370,8 +3395,8 @@ export class Player extends MaveElement {
         if (this.#shouldRenderSubtitleTrack(track)) {
           return html`
             <track @load=${this.#subtitleTrackLoaded} @cuechange=${this.#cuechange} label=${
-            track.label
-          } kind="subtitles" srclang=${track.language} src=${track.path}></track>
+              track.label
+            } kind="subtitles" srclang=${track.language} src=${track.path}></track>
           `;
         }
       });
@@ -3399,6 +3424,7 @@ export class Player extends MaveElement {
             if (!data) return this.#renderPendingPlaceholder();
 
             const embedData = data as Embed;
+            this._seoManifest = embedData;
             this.updateEmbed(embedData);
 
             return this.#renderVideoTemplate();
@@ -3418,9 +3444,11 @@ export class Player extends MaveElement {
       >
         ${playerTemplate}
       </slot>
-      ${this._embedObj && this._isProcessing
-        ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
-        : nothing}
+      ${
+        this._embedObj && this._isProcessing
+          ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
+          : nothing
+      }
       <slot name="start-screen"></slot>
       <slot name="end-screen"></slot>
       <slot name="hover-screen"></slot>
