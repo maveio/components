@@ -140,14 +140,69 @@ it('uses the configured space media host for private playback', async () => {
   );
 });
 
-it('uses native HLS on Safari instead of creating a JavaScript HLS player', async () => {
+it('uses adaptive HLS.js on Safari and provides a native AirPlay source', async () => {
   vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Version/18.0 Safari/605.1');
   vi.mocked(Hls.isSupported).mockReturnValue(true);
   vi.mocked(HTMLMediaElement.prototype.canPlayType).mockReturnValue('probably');
-  const load = vi.spyOn(Hls.prototype, 'loadSource');
+  const load = vi.spyOn(Hls.prototype, 'loadSource').mockImplementation(() => {});
+  vi.spyOn(Hls.prototype, 'attachMedia').mockImplementation((media) => {
+    (media as HTMLMediaElement).src = 'blob:test-media-source';
+  });
+  const player = await mount();
+  const media = player.shadowRoot!.querySelector('video')!;
+  expect(load).toHaveBeenCalledWith(expect.stringContaining('playlist.m3u8'));
+  expect(media.hasAttribute('src')).toBe(false);
+  expect([...media.querySelectorAll('source')].map((source) => source.src)).toEqual([
+    'blob:test-media-source',
+    expect.stringContaining('playlist.m3u8'),
+  ]);
+  expect(media.disableRemotePlayback).not.toBe(true);
+});
+
+it('retains native HLS when MediaSource playback is unavailable', async () => {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Version/18.0 Safari/605.1');
+  vi.mocked(HTMLMediaElement.prototype.canPlayType).mockReturnValue('probably');
+  const load = vi.spyOn(Hls.prototype, 'loadSource').mockImplementation(() => {});
   const player = await mount();
   expect(player.shadowRoot!.querySelector('video')!.src).toContain('playlist.m3u8');
   expect(load).not.toHaveBeenCalled();
+});
+
+it('retains the ManagedMediaSource child and re-enables AirPlay with its alternate source', async () => {
+  vi.mocked(Hls.isSupported).mockReturnValue(true);
+  vi.mocked(HTMLMediaElement.prototype.canPlayType).mockReturnValue('probably');
+  vi.spyOn(Hls.prototype, 'loadSource').mockImplementation(() => {});
+  vi.spyOn(Hls.prototype, 'attachMedia').mockImplementation((element) => {
+    const media = element as HTMLMediaElement;
+    const source = document.createElement('source');
+    source.src = 'blob:test-managed-media-source';
+    media.append(source);
+    media.disableRemotePlayback = true;
+  });
+  const player = await mount();
+  const media = player.shadowRoot!.querySelector('video')!;
+  expect([...media.querySelectorAll('source')].map((source) => source.src)).toEqual([
+    'blob:test-managed-media-source',
+    expect.stringContaining('playlist.m3u8'),
+  ]);
+  expect(media.disableRemotePlayback).not.toBe(true);
+});
+
+it('removes the previous AirPlay URL when switching embeds', async () => {
+  vi.mocked(Hls.isSupported).mockReturnValue(true);
+  vi.mocked(HTMLMediaElement.prototype.canPlayType).mockReturnValue('probably');
+  vi.spyOn(Hls.prototype, 'loadSource').mockImplementation(() => {});
+  vi.spyOn(Hls.prototype, 'attachMedia').mockImplementation((element) => {
+    (element as HTMLMediaElement).src = 'blob:test-media-source';
+  });
+  const player = await mount();
+  player.embed = 'aaaaadddddeeeee';
+  await vi.waitFor(() => {
+    const sources = player.shadowRoot!.querySelectorAll('video source');
+    expect(sources).toHaveLength(2);
+    expect((sources[1] as HTMLSourceElement).src).toContain('dddddeeeee');
+  });
+  expect(player.shadowRoot!.innerHTML).not.toContain('bbbbbccccc/v1/playlist');
 });
 
 it('attaches HLS.js when needed and destroys it when the embed changes', async () => {

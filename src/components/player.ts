@@ -299,6 +299,7 @@ export class Player extends MaveElement {
   private _subtitlesText?: HTMLElement;
   private _audioTrackCount = 0;
   private _cleanupHlsAudioTracks?: () => void;
+  private _cleanupHlsSources?: () => void;
   private _cleanupNativeAudioTracks?: () => void;
   private _hlsAudioTracks: MediaPlaylist[] = [];
   private _hlsAudioTrackIdMap = new Map<string, number>();
@@ -1191,27 +1192,46 @@ export class Player extends MaveElement {
   }
 
   #destroyHlsInstance() {
-    if (!this.hls) return;
-    try {
-      this.hls.destroy();
-    } catch {
-      // no-op
+    if (this.hls) {
+      try {
+        this.hls.destroy();
+      } catch {
+        // no-op
+      }
+      this.hls = undefined;
     }
-    this.hls = undefined;
+    this._cleanupHlsSources?.();
+    this._cleanupHlsSources = undefined;
   }
 
-  #shouldUseNativeHlsPlayback() {
-    if (typeof navigator === 'undefined') return false;
+  #setupHlsSources(hlsPath: string, remotePlaybackDisabled: boolean) {
+    const media = this._videoElement;
+    if (!media) return;
 
-    const userAgent = navigator.userAgent;
-    const isIOS =
-      /iPad|iPhone|iPod/.test(userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari =
-      /Safari/.test(userAgent) &&
-      !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Android/.test(userAgent);
+    let localSource: HTMLSourceElement | undefined;
+    if (media.src.startsWith('blob:')) {
+      localSource = document.createElement('source');
+      localSource.src = media.src;
+      localSource.type = 'video/mp4';
+      media.prepend(localSource);
+      media.removeAttribute('src');
+    }
 
-    return isIOS || isSafari;
+    // Safari can hand the alternate URL to AirPlay while MSE/MMS plays locally.
+    const airplaySource = document.createElement('source');
+    airplaySource.src = hlsPath;
+    airplaySource.type = 'application/x-mpegURL';
+    media.append(airplaySource);
+    // hls.js disables remote playback when attaching ManagedMediaSource. The
+    // alternate HLS source lets MMS open without disabling AirPlay.
+    media.disableRemotePlayback = remotePlaybackDisabled;
+    media.load();
+
+    this._cleanupHlsSources = () => {
+      localSource?.remove();
+      airplaySource.remove();
+      media.disableRemotePlayback = remotePlaybackDisabled;
+    };
   }
 
   #resetHlsAudioTracks() {
@@ -1690,20 +1710,9 @@ export class Player extends MaveElement {
     const canPlayNativeHls =
       !!this.#hlsPath &&
       !!this._videoElement.canPlayType('application/vnd.apple.mpegurl');
-    const shouldUseNativeHls = canPlayNativeHls && this.#shouldUseNativeHlsPlayback();
-
     this.#destroyHlsInstance();
 
-    if (shouldUseNativeHls) {
-      this.#resetHlsAudioTracks();
-      this._videoElement.src = this.#hlsPath;
-      this.#guardNativeHlsSubtitleState();
-      this.#setupNativeAudioTracks();
-      if (Config.metrics.enabled)
-        this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-          component: this.isAudio ? 'audio' : 'player',
-        });
-    } else if (Hls.isSupported() && this.#hlsPath) {
+    if (Hls.isSupported() && this.#hlsPath) {
       this.#clearNativeHlsSubtitleState();
       this.#clearNativeAudioTracks();
       this.#resetHlsAudioTracks();
@@ -1721,7 +1730,11 @@ export class Player extends MaveElement {
 
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => this.#syncHlsQualityPolicy());
       this.hls?.loadSource(this.#hlsPath);
+      const remotePlaybackDisabled = this._videoElement.disableRemotePlayback;
       this.hls?.attachMedia(this._videoElement);
+      if (canPlayNativeHls) {
+        this.#setupHlsSources(this.#hlsPath, remotePlaybackDisabled);
+      }
       this.#setupHlsAudioTracks();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this.hls, this.embed, {
