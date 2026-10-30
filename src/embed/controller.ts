@@ -15,6 +15,8 @@ export class EmbedController {
   private static readonly MANIFEST_RETRY_STATUSES = new Set([
     408, 409, 425, 429, 500, 502, 503, 504,
   ]);
+  // Storage denies the manifest of a scheduled release until it is published.
+  private static readonly SCHEDULED_RELEASE_STATUSES = new Set([401, 403, 404]);
 
   host: ReactiveControllerHost;
   private task: Task;
@@ -64,12 +66,15 @@ export class EmbedController {
           if (this.embed !== requestEmbed || this.token !== requestToken) return;
           this._playbackSource = source;
 
-          const data = await this.fetchManifestWithRetry(() => {
-            if (!this.enabled) return;
-            if (this.embed !== requestEmbed || this.token !== requestToken) return;
+          const isCurrent = () =>
+            this.enabled && this.embed === requestEmbed && this.token === requestToken;
 
-            return this.manifest_url;
-          });
+          const data = await this.fetchManifestWithRetry(
+            () => (isCurrent() ? this.manifest_url : undefined),
+            source
+              ? undefined
+              : () => (isCurrent() ? this.scheduledReleaseUrl : undefined),
+          );
 
           if (!data) return;
 
@@ -93,8 +98,10 @@ export class EmbedController {
 
   private async fetchManifestWithRetry(
     manifestUrl: () => string | undefined,
+    scheduledReleaseUrl?: () => string | undefined,
   ): Promise<unknown | undefined> {
     let lastError: unknown;
+    let checkedScheduledRelease = !scheduledReleaseUrl;
 
     for (
       let attempt = 0;
@@ -113,6 +120,16 @@ export class EmbedController {
         return await response.json();
       } catch (error) {
         lastError = error;
+
+        // Denied manifests (or denied responses without CORS headers) may
+        // belong to a scheduled release. Ask the API once before retrying.
+        if (!checkedScheduledRelease && EmbedController.mayBeScheduledRelease(error)) {
+          checkedScheduledRelease = true;
+          const scheduled = await EmbedController.fetchScheduledRelease(
+            scheduledReleaseUrl?.(),
+          );
+          if (scheduled) return scheduled;
+        }
 
         const retryDelay = EmbedController.MANIFEST_RETRY_DELAYS_MS[attempt];
         if (retryDelay == null || !EmbedController.shouldRetryManifestError(error)) {
@@ -147,6 +164,50 @@ export class EmbedController {
     if (typeof status !== 'number') return true;
 
     return EmbedController.MANIFEST_RETRY_STATUSES.has(status);
+  }
+
+  private static mayBeScheduledRelease(error: unknown) {
+    const status =
+      typeof error === 'object' && error
+        ? (error as { status?: number }).status
+        : undefined;
+
+    return (
+      typeof status !== 'number' || EmbedController.SCHEDULED_RELEASE_STATUSES.has(status)
+    );
+  }
+
+  private static async fetchScheduledRelease(url: string | undefined) {
+    if (!url) return;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return;
+
+      // Besides the countdown manifest, accept a published manifest: storage
+      // can turn public between the denied request and this one.
+      const data = (await response.json()) as Partial<API.Embed>;
+      const status = data?.video?.status;
+      return status === 'scheduled' || status === 'ready' || status === 'playable'
+        ? data
+        : undefined;
+    } catch {
+      return;
+    }
+  }
+
+  // Public countdown manifest served by the API while a release is pending.
+  get scheduledReleaseUrl(): string | undefined {
+    const base = API.baseUrl();
+    if (
+      this.type != EmbedType.Embed ||
+      !this.embed ||
+      !base ||
+      base.startsWith('__MAVE_')
+    )
+      return;
+
+    return `${base.replace(/\/$/, '')}/${encodeURIComponent(this.embed)}`;
   }
 
   private static withJitter(delay: number) {

@@ -33,6 +33,10 @@ export type Embed = {
   name: string;
   space_id: string;
   created_at: number;
+  /** Unix seconds of a pending scheduled release (`video.status: 'scheduled'`). */
+  release_at?: number | null;
+  /** Server clock in Unix seconds when a scheduled manifest was produced. */
+  server_time?: number;
   poster: {
     renditions: [Poster];
     image_src: string;
@@ -62,7 +66,14 @@ export type Embed = {
     language: string;
     max_height?: number | null;
     max_width?: number | null;
-    status?: 'waiting' | 'playable' | 'uploading' | 'preparing' | 'ready' | 'errored';
+    status?:
+      | 'waiting'
+      | 'playable'
+      | 'uploading'
+      | 'preparing'
+      | 'ready'
+      | 'errored'
+      | 'scheduled';
     ready?: boolean;
     sources: {
       mp4: {

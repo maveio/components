@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `mave-player` shows a countdown for scheduled releases and starts playback once
+  the video is published. When storage denies the manifest, the player asks the
+  API for the countdown manifest (`video.status: "scheduled"`, `release_at`).
+
 ## 0.0.197 - 2026-10-10
 
 ## 0.0.196 - 2026-10-06
