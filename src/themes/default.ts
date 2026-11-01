@@ -498,6 +498,18 @@ export function build(name, LitElement, html, css) {
         display: var(--media-audio-track-menu-button-display, none);
       }
 
+      mave-audio-description-button {
+        margin-right: -2px;
+      }
+
+      mave-audio-description-button.small-button {
+        display: var(--mave-audio-description-button-display, none);
+      }
+
+      mave-audio-description-button.small-button svg[slot='on'] {
+        --media-icon-color: var(--mave-control-fg, white);
+      }
+
       media-settings-menu-button.small-button {
         display: none;
       }
@@ -891,6 +903,36 @@ export function build(name, LitElement, html, css) {
             ></path>
           </svg>
         </mave-audio-track-menu-button>
+        <mave-audio-description-button class="small-button">
+          <svg
+            slot="off"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="2.75" y="4.75" width="18.5" height="14.5" rx="2.5"></rect>
+            <path
+              d="M6.25 15.25 8.5 8.75l2.25 6.5M7.03 13h2.94M13.25 8.75v6.5h1.25a3.25 3.25 0 0 0 0-6.5h-1.25Z"
+            ></path>
+          </svg>
+          <svg
+            slot="on"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM5.2 16 7.4 8h1.7l2.2 8H9.7l-.45-1.7H7.25L6.8 16H5.2Zm2.45-3.1h1.2l-.6-2.3-.6 2.3ZM12.8 8h2.4a3.4 4 0 0 1 0 8h-2.4V8Zm1.5 1.4v5.2h.9a2 2.6 0 0 0 0-5.2h-.9Z"
+            ></path>
+          </svg>
+        </mave-audio-description-button>
         <media-settings-menu-button
           id="mave-settings"
           class="small-button"
