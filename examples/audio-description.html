@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio description | Mave Components</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 32px 16px 80px;
+      font-family: system-ui, sans-serif;
+      color: #0f1b2d;
+      background: #f6f2ea;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    section {
+      margin-top: 32px;
+    }
+
+    mave-player {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+    }
+
+    code {
+      font-size: 0.9em;
+    }
+
+    output {
+      display: block;
+      margin-top: 8px;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Audio description</h1>
+    <p>
+      A local HLS fixture (<code>fixtures/audio-description/DemoVideo</code>) with a main audio rendition
+      (a 440 Hz tone) and a second rendition marked
+      <code>CHARACTERISTICS="public.accessibility.describes-video"</code> (the tone at 20% with 880 Hz
+      "descriptions" at 1–3 s and 5–7 s). The manifest lists it under <code>audio_descriptions</code>, so the
+      player shows the AD button; the descriptive WebVTT is added as a hidden
+      <code>&lt;track kind="descriptions"&gt;</code> and stays out of the captions menu.
+    </p>
+    <p>
+      <button type="button" id="forget">Forget my AD choice</button>
+    </p>
+
+    <section>
+      <h2>Default theme</h2>
+      <mave-player id="default-player" embed="adfixDemoVideo"></mave-player>
+      <output for="default-player"></output>
+    </section>
+
+    <section>
+      <h2>Dolphin theme</h2>
+      <mave-player id="dolphin-player" embed="adfixDemoVideo" theme="dolphin"></mave-player>
+      <output for="dolphin-player"></output>
+    </section>
+
+    <section>
+      <h2><code>audiodescription="off"</code></h2>
+      <mave-player id="off-player" embed="adfixDemoVideo" audiodescription="off"></mave-player>
+      <output for="off-player"></output>
+    </section>
+  </main>
+
+  <script crossorigin type="module">
+    import { setConfig } from "../dist/index.js";
+
+    setConfig({
+      metrics: { enabled: false },
+      cdn: { endpoint: `${location.origin}/fixtures/audio-description` },
+    });
+
+    document.querySelector("#forget").addEventListener("click", () => {
+      try {
+        localStorage.removeItem("mave:audio-description");
+      } catch {
+        // Storage can be unavailable.
+      }
+    });
+
+    // Show which audio rendition each player is using.
+    const describe = (player) => {
+      const hls = player.hls;
+      const track = hls?.audioTracks?.[hls.audioTrack];
+      const root = player.shadowRoot?.querySelector("theme-default, theme-dolphin")?.shadowRoot;
+      const button = root?.querySelector("mave-audio-description-button");
+      const visible = button ? getComputedStyle(button).display !== "none" : false;
+      return `audio: ${track?.name ?? "–"} · AD button: ${visible ? "shown" : "hidden"}, aria-pressed=${button?.getAttribute("aria-pressed") ?? "–"}`;
+    };
+
+    setInterval(() => {
+      document.querySelectorAll("output[for]").forEach((output) => {
+        const player = document.getElementById(output.htmlFor.value);
+        if (player) output.textContent = describe(player);
+      });
+    }, 500);
+  </script>
+</body>
+
+</html>

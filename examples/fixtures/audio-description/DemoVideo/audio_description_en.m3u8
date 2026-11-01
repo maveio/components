@@ -1,0 +1,13 @@
+#EXTM3U
+#EXT-X-VERSION:7
+#EXT-X-TARGETDURATION:4
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MAP:URI="audio_description_en_init.mp4"
+#EXTINF:4.017052,
+audio_description_en_0.m4s
+#EXTINF:3.993832,
+audio_description_en_1.m4s
+#EXTINF:0.023220,
+audio_description_en_2.m4s
+#EXT-X-ENDLIST
