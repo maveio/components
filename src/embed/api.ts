@@ -75,6 +75,7 @@ export type Embed = {
   };
   subtitles: Subtitle[];
   audio_tracks?: AudioTrack[];
+  audio_descriptions?: AudioDescription[];
   waveform?: {
     version: 1;
     duration: number;
@@ -98,6 +99,14 @@ export type AudioTrack = {
   default: boolean;
   codec?: 'mp3' | 'aac' | 'wav' | 'flac' | 'ogg';
   file_size?: number;
+};
+
+/** A spoken description track, published as an HLS alternate audio rendition. */
+export type AudioDescription = {
+  language: string;
+  label: string;
+  audio: { path: string; hls_playlist?: string | null };
+  vtt: { path: string };
 };
 
 export type Collection = {

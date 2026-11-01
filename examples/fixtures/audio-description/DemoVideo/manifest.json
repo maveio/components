@@ -1,0 +1,61 @@
+{
+  "id": "adfixDemoVideo",
+  "name": "Audio description fixture",
+  "space_id": "adfix",
+  "created_at": 1767225600,
+  "metrics_key": "fixture",
+  "poster": {
+    "renditions": [],
+    "image_src": "fixtures/audio-description/DemoVideo/thumbnail.jpg",
+    "initial_frame_src": "fixtures/audio-description/DemoVideo/thumbnail.jpg",
+    "video_src": ""
+  },
+  "settings": {
+    "aspect_ratio": "16/9",
+    "opacity": null,
+    "autoplay": "on_show",
+    "height": "",
+    "loop": false,
+    "width": "",
+    "color": "",
+    "controls": "full",
+    "poster": null
+  },
+  "video": {
+    "id": "DemoVideo",
+    "version": 0,
+    "audio": true,
+    "aspect_ratio": "16/9",
+    "filetype": "mp4",
+    "size": 240000,
+    "duration": 8,
+    "language": "en",
+    "max_width": 320,
+    "max_height": 180,
+    "status": "ready",
+    "ready": true,
+    "sources": { "mp4": { "480p": "", "720p": "" } },
+    "renditions": [
+      { "size": "sd", "codec": "h264", "container": "hls", "type": "video" }
+    ]
+  },
+  "subtitles": [
+    {
+      "language": "en",
+      "label": "English",
+      "path": "fixtures/audio-description/DemoVideo/subtitles_en.vtt"
+    }
+  ],
+  "audio_tracks": [],
+  "audio_descriptions": [
+    {
+      "language": "en",
+      "label": "English (audio description)",
+      "audio": {
+        "path": "audio_description_en.mp3",
+        "hls_playlist": "audio_description_en.m3u8"
+      },
+      "vtt": { "path": "descriptions_en.vtt" }
+    }
+  ]
+}
