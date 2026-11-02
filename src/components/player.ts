@@ -34,6 +34,7 @@ import {
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
 import { subtitleCueContent } from '../utils/subtitle_cues';
+import { fitSubtitleText, observeSubtitleLayout } from '../utils/subtitle_layout';
 import { videoEvents } from '../utils/video_events';
 
 type ControlColors = {
@@ -298,6 +299,7 @@ export class Player extends MaveElement {
   private static readonly AUTO_LAZY_ROOT_MARGIN = '300px 0px';
 
   private _subtitlesText?: HTMLElement;
+  private _subtitleLayoutCleanup?: () => void;
   private _audioTrackCount = 0;
   private _cleanupHlsAudioTracks?: () => void;
   private _cleanupHlsSources?: () => void;
@@ -996,6 +998,7 @@ export class Player extends MaveElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.#clearSubtitleLayout();
     this.removeEventListener(
       MediaUIEvents.MEDIA_PLAY_REQUEST,
       this.#prepareEndedVideoForReplay,
@@ -1056,7 +1059,7 @@ export class Player extends MaveElement {
     try {
       const theme = await ThemeLoader.get(request.theme, request.path);
       if (this._themeRequest !== request) return;
-      this._subtitlesText = undefined;
+      this.#clearSubtitleLayout();
       this._themeLoaded = theme.name;
     } catch {
       if (this._themeRequest !== request) return;
@@ -1065,7 +1068,7 @@ export class Player extends MaveElement {
       try {
         const theme = await ThemeLoader.get(this.defaultTheme);
         if (this._themeRequest !== request) return;
-        this._subtitlesText = undefined;
+        this.#clearSubtitleLayout();
         this._themeLoaded = theme.name;
       } catch {
         console.warn('[mave-player]: default theme could not be loaded');
@@ -2061,7 +2064,7 @@ export class Player extends MaveElement {
     if (wasAudio !== this.isAudio) {
       this._mediaSourceLoaded = false;
       this.#clearMediaSource();
-      this._subtitlesText = undefined;
+      this.#clearSubtitleLayout();
       this.loadTheme();
     }
     this._audioTrackCount = embed.audio_tracks?.length ?? 0;
@@ -2168,6 +2171,12 @@ export class Player extends MaveElement {
     this.#renderSubtitleCue(track);
   }
 
+  #clearSubtitleLayout() {
+    this._subtitleLayoutCleanup?.();
+    this._subtitleLayoutCleanup = undefined;
+    this._subtitlesText = undefined;
+  }
+
   #renderSubtitleCue(track?: TextTrack) {
     if (track?.mode == 'showing') {
       this._currentTrackLanguage = track.language;
@@ -2179,6 +2188,7 @@ export class Player extends MaveElement {
         ?.shadowRoot?.querySelector('#subtitles_text');
       if (subtitleText) {
         this._subtitlesText = subtitleText as HTMLElement;
+        this._subtitleLayoutCleanup = observeSubtitleLayout(this._subtitlesText);
       }
     }
 
@@ -2191,6 +2201,7 @@ export class Player extends MaveElement {
       this._subtitlesText.style.opacity = '1';
       this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(1)';
       this._subtitlesText.replaceChildren(subtitleCueContent(cue));
+      fitSubtitleText(this._subtitlesText);
     } else {
       this._subtitlesText.style.opacity = '0';
       this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(0.99)';
