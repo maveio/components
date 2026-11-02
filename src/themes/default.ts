@@ -562,9 +562,10 @@ export function build(name, LitElement, html, css) {
         max-width: 80%;
         color: white;
         line-height: 1.5rem;
-        transition: margin-bottom 300ms ease-out
-            var(--mave-subtitle-margin-transition-delay, 0s),
-          transform 200ms ease-in-out, opacity 200ms ease-in-out;
+        transition:
+          margin-bottom 300ms ease-out var(--mave-subtitle-margin-transition-delay, 0s),
+          transform 200ms ease-in-out,
+          opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(12px);
@@ -830,12 +831,14 @@ export function build(name, LitElement, html, css) {
           </svg>
         </media-seek-forward-button>
         <media-time-display></media-time-display>
-        ${this.audio
-          ? this.renderAudioTimeline()
-          : html`<media-time-range>
-              <media-preview-thumbnail slot="preview"></media-preview-thumbnail>
-              <media-preview-time-display slot="preview"></media-preview-time-display>
-            </media-time-range>`}
+        ${
+          this.audio
+            ? this.renderAudioTimeline()
+            : html`<media-time-range>
+                <media-preview-thumbnail slot="preview"></media-preview-thumbnail>
+                <media-preview-time-display slot="preview"></media-preview-time-display>
+              </media-time-range>`
+        }
         <media-playback-rate-button></media-playback-rate-button>
         <media-captions-menu hidden anchor="mave-captions"></media-captions-menu>
         <mave-captions-menu-button

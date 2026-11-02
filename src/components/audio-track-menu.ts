@@ -6,7 +6,7 @@ import {
 } from 'media-chrome/dist/menu/media-chrome-menu.js';
 import { MediaChromeMenuButton } from 'media-chrome/dist/menu/media-chrome-menu-button.js';
 import { t } from 'media-chrome/dist/utils/i18n.js';
-import { globalThis } from 'media-chrome/dist/utils/server-safe-globals.js';
+import { globalThis as serverSafeGlobal } from 'media-chrome/dist/utils/server-safe-globals.js';
 
 type AudioTrackOption = {
   id: string;
@@ -107,7 +107,7 @@ export class MaveAudioTrackMenu extends MediaChromeMenu {
     this.#selectedId = String(selectedValue);
 
     this.dispatchEvent(
-      new globalThis.CustomEvent(MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST, {
+      new serverSafeGlobal.CustomEvent(MediaUIEvents.MEDIA_AUDIO_TRACK_REQUEST, {
         detail: this.#selectedId,
         composed: true,
         bubbles: true,
@@ -159,12 +159,12 @@ export class MaveAudioTrackMenuButton extends MediaChromeMenuButton {
   }
 }
 
-if (!globalThis.customElements.get('mave-audio-track-menu')) {
-  globalThis.customElements.define('mave-audio-track-menu', MaveAudioTrackMenu);
+if (!serverSafeGlobal.customElements.get('mave-audio-track-menu')) {
+  serverSafeGlobal.customElements.define('mave-audio-track-menu', MaveAudioTrackMenu);
 }
 
-if (!globalThis.customElements.get('mave-audio-track-menu-button')) {
-  globalThis.customElements.define(
+if (!serverSafeGlobal.customElements.get('mave-audio-track-menu-button')) {
+  serverSafeGlobal.customElements.define(
     'mave-audio-track-menu-button',
     MaveAudioTrackMenuButton,
   );

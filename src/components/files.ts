@@ -72,7 +72,7 @@ export class Files extends MaveElement {
           const primaryVideoRendition = this.#getPrimaryVideoRendition();
           const primaryAudioTrack = this.#getPrimaryAudioTrack();
 
-          const templates = this._slottedChildren.map((item: any) => {
+          const templates = this._slottedChildren.map((item) => {
             function createClone() {
               let clone: DocumentFragment;
               if (item.nodeName === 'TEMPLATE') {
@@ -260,10 +260,7 @@ export class Files extends MaveElement {
     const titleElement = this.#findAccessibleTitleElement(link);
     if (!titleElement) return;
 
-    const descriptionElement = this.#findAccessibleDescriptionElement(
-      link,
-      titleElement,
-    );
+    const descriptionElement = this.#findAccessibleDescriptionElement(link, titleElement);
 
     link.setAttribute('aria-labelledby', this.#ensureElementId(titleElement, 'title'));
 
