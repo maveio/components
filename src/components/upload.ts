@@ -494,7 +494,7 @@ export class Upload extends LitElement {
       if (typeof decoded?.error === 'string' && decoded.error.trim() !== '') {
         return decoded.error.trim();
       }
-    } catch (_error) {
+    } catch {
       return body;
     }
 
@@ -512,7 +512,7 @@ export class Upload extends LitElement {
     }, 250);
   }
 
-  rendition(data: any) {
+  rendition(data: unknown) {
     if (!this.playableEmitted && this.isPlayableRendition(data)) {
       this.playableEmitted = true;
       // small delay to allow data to propagate
@@ -543,7 +543,8 @@ export class Upload extends LitElement {
     this.dispatchEvent(new CustomEvent('error', { bubbles: true, detail: error }));
   }
 
-  private isPlayableRendition(rendition: { container?: string; type?: string }) {
+  private isPlayableRendition(data: unknown) {
+    const rendition = data as { container?: unknown; type?: unknown } | null | undefined;
     return (
       typeof rendition?.container === 'string' &&
       rendition.container === 'hls' &&
@@ -551,7 +552,7 @@ export class Upload extends LitElement {
     );
   }
 
-  private updateHasErrorSlot(_event?: Event) {
+  private updateHasErrorSlot() {
     const hasSlot = !!this.querySelector('[slot="error"]');
     if (this._hasErrorSlot !== hasSlot) {
       this._hasErrorSlot = hasSlot;

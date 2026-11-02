@@ -30,14 +30,11 @@ async function loadFromDist(locale: string): Promise<LocaleModule | null> {
     // When the bundle is consumed directly from "dist", the generated locale
     // files sit alongside the compiled chunks. Resolve the path relative to
     // the current module at runtime to support that scenario.
-    const href = new URL(
-      `./${base}generated/locales/${locale}.js`,
-      import.meta.url,
-    ).href;
+    const href = new URL(`./${base}generated/locales/${locale}.js`, import.meta.url).href;
     if (!href || href.endsWith('/undefined')) return null;
 
     return (await import(/* @vite-ignore */ href)) as LocaleModule;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

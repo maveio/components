@@ -54,7 +54,7 @@ export class MaveElement extends LitElement {
     }
   }
 
-  emit(eventType: string, detail: any) {
+  emit<T>(eventType: string, detail: T) {
     this.dispatchEvent(
       new CustomEvent(`mave:${eventType}`, { detail: { ...detail, eventType } }),
     );

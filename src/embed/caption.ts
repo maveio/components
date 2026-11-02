@@ -5,37 +5,6 @@ import { Config } from '../config';
 import * as API from './api';
 import { PlaybackSource, playbackSource } from './playback';
 
-// More compatible version of:
-// const regex = /(?<!\bwww\.\S+)(?<!@\S+)(?<!\.\d)(?<=[.!?])\s+/g;
-function splitText(text: string) {
-  // Splitting by a period, exclamation mark, or question mark followed by a space.
-  const parts = text.split(/([.!?])\s+/);
-  const sentences = [];
-  let currentSentence = '';
-
-  for (let i = 0; i < parts.length; i++) {
-    currentSentence += parts[i];
-
-    // Check if the current part ends with 'www.', '@', or is part of a decimal number.
-    if (/\bwww\.$/.test(parts[i]) || /@$/.test(parts[i]) || /\.\d$/.test(parts[i])) {
-      continue;
-    }
-
-    // If it's the end of a sentence, push it to the sentences array and reset currentSentence.
-    if (/[.!?]$/.test(parts[i])) {
-      sentences.push(currentSentence);
-      currentSentence = '';
-    }
-  }
-
-  // Add any remaining sentence part.
-  if (currentSentence) {
-    sentences.push(currentSentence);
-  }
-
-  return sentences;
-}
-
 export class CaptionController {
   host: ReactiveControllerHost;
   private task: Task;
@@ -65,9 +34,6 @@ export class CaptionController {
           const response = await fetch(url);
           if (response.status !== 200) throw new Error();
           const data = await response.json();
-
-          // Split the text using the regular expression
-          // const sentences = splitText(data.text.trim());
 
           const words = data.segments
             .flatMap((segment: API.Segment) => segment.words)
@@ -167,9 +133,9 @@ export class CaptionController {
 
           // Return the final structure
           return { text: data.text, segments: paragraphs } as Partial<API.Caption>;
-        } catch (e) {
+        } catch (error) {
           console.warn(`Failed to fetch language file for "${this.embed}"`);
-          throw new Error();
+          throw new Error(undefined, { cause: error });
         }
       },
       () => [this.embed, this.token],

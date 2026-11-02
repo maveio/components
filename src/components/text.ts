@@ -9,7 +9,11 @@ import { Player } from './player';
 
 type HighlightMode = 'sentence' | 'word';
 type ActiveWordRange = { startIndex: number; endIndex: number };
-type SentenceWordRange = ActiveWordRange & { start: number; end: number; nextStart?: number };
+type SentenceWordRange = ActiveWordRange & {
+  start: number;
+  end: number;
+  nextStart?: number;
+};
 type HighlightPosition = 'single' | 'start' | 'middle' | 'end';
 
 export class Text extends LitElement {
@@ -165,9 +169,7 @@ export class Text extends LitElement {
     return Math.min(maxScrollTop, Math.max(0, scrollTop));
   }
 
-  #scrollContainer() {
-    let element: HTMLElement | null = this;
-
+  #scrollContainer(element: HTMLElement | null = this) {
     while (element) {
       if (this.#isScrollable(element)) return element;
       element = element.parentElement;
@@ -284,7 +286,9 @@ export class Text extends LitElement {
     this.wordIndex = 0;
     this.segmentIndex = 0;
     this.rovingSegmentIndex = 0;
-    const player = document.querySelector(`mave-player[embed="${this.embed}"]`) as Player | null;
+    const player = document.querySelector(
+      `mave-player[embed="${this.embed}"]`,
+    ) as Player | null;
     this.player = player ?? undefined;
 
     if (this.player) {
@@ -420,7 +424,9 @@ export class Text extends LitElement {
     return /[.!?][)"'\]\u2019\u201d]*$/.test(word.trim());
   }
 
-  #activeSingleWordRange(segment: Caption['segments'][number]): ActiveWordRange | undefined {
+  #activeSingleWordRange(
+    segment: Caption['segments'][number],
+  ): ActiveWordRange | undefined {
     const activeWordIndex = segment.words.findIndex((word) => this.#isInRange(word));
 
     if (activeWordIndex < 0) return undefined;
@@ -438,7 +444,8 @@ export class Text extends LitElement {
 
     for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
       const word = words[wordIndex];
-      const isSentenceEnd = this.#wordEndsSentence(word.word) || wordIndex === words.length - 1;
+      const isSentenceEnd =
+        this.#wordEndsSentence(word.word) || wordIndex === words.length - 1;
 
       if (!isSentenceEnd) continue;
 
@@ -527,7 +534,10 @@ export class Text extends LitElement {
     return 'middle';
   }
 
-  #shouldHighlightSeparator(activeWordRange: ActiveWordRange | undefined, wordIndex: number) {
+  #shouldHighlightSeparator(
+    activeWordRange: ActiveWordRange | undefined,
+    wordIndex: number,
+  ) {
     return (
       this.#normalizedHighlightMode() === 'sentence' &&
       !!activeWordRange &&
@@ -564,7 +574,8 @@ export class Text extends LitElement {
 
     if (hours > 0) parts.push(this.#unit(hours, 'hour', 'hours'));
     if (minutes > 0) parts.push(this.#unit(minutes, 'minute', 'minutes'));
-    if (seconds > 0 || parts.length === 0) parts.push(this.#unit(seconds, 'second', 'seconds'));
+    if (seconds > 0 || parts.length === 0)
+      parts.push(this.#unit(seconds, 'second', 'seconds'));
 
     return parts.join(', ');
   }
@@ -599,36 +610,42 @@ export class Text extends LitElement {
       this.wordIndex = activeWordRange.endIndex;
     }
 
-    return segment.words.map(
-      (word, wordIndex) => {
-        const isHighlighted = this.#isWordHighlighted(activeWordRange, wordIndex);
-        const highlightPosition = this.#highlightPosition(activeWordRange, wordIndex);
-        const highlightSeparator = this.#shouldHighlightSeparator(activeWordRange, wordIndex);
-        const sentenceWordRange = this.#sentenceWordRangeForWord(sentenceWordRanges, wordIndex);
-        const separatorSpan =
-          wordIndex > 0
-            ? html`<span
-                data-highlight-position=${ifDefined(highlightSeparator ? 'middle' : undefined)}
-                data-sentence-start=${ifDefined(sentenceWordRange?.start)}
-                part=${ifDefined(highlightSeparator ? 'word' : undefined)}
-                x-caption-sentence-start=${ifDefined(sentenceWordRange?.start)}
-              >${' '}</span>`
-            : nothing;
+    return segment.words.map((word, wordIndex) => {
+      const isHighlighted = this.#isWordHighlighted(activeWordRange, wordIndex);
+      const highlightPosition = this.#highlightPosition(activeWordRange, wordIndex);
+      const highlightSeparator = this.#shouldHighlightSeparator(
+        activeWordRange,
+        wordIndex,
+      );
+      const sentenceWordRange = this.#sentenceWordRangeForWord(
+        sentenceWordRanges,
+        wordIndex,
+      );
+      const separatorSpan =
+        wordIndex > 0
+          ? html`<span
+              data-highlight-position=${ifDefined(highlightSeparator ? 'middle' : undefined)}
+              data-sentence-start=${ifDefined(sentenceWordRange?.start)}
+              part=${ifDefined(highlightSeparator ? 'word' : undefined)}
+              x-caption-sentence-start=${ifDefined(sentenceWordRange?.start)}
+              >${' '}</span
+            >`
+          : nothing;
 
-        const wordSpan = html`<span
-          data-highlight-position=${ifDefined(highlightPosition)}
-          data-sentence-start=${ifDefined(sentenceWordRange?.start)}
-          data-word-id="word-${segmentIndex}-${wordIndex}"
-          style=${styleMap(this.wordStyle(isHighlighted))}
-          part=${ifDefined(isHighlighted ? 'word' : undefined)}
-          x-caption-sentence-start=${ifDefined(sentenceWordRange?.start)}
-          x-caption-word-start="${word.start}"
-          x-caption-word-end="${word.end}"
-        >${word.word.trim()}</span>`;
+      const wordSpan = html`<span
+        data-highlight-position=${ifDefined(highlightPosition)}
+        data-sentence-start=${ifDefined(sentenceWordRange?.start)}
+        data-word-id="word-${segmentIndex}-${wordIndex}"
+        style=${styleMap(this.wordStyle(isHighlighted))}
+        part=${ifDefined(isHighlighted ? 'word' : undefined)}
+        x-caption-sentence-start=${ifDefined(sentenceWordRange?.start)}
+        x-caption-word-start="${word.start}"
+        x-caption-word-end="${word.end}"
+        >${word.word.trim()}</span
+      >`;
 
-        return html`${separatorSpan}${wordSpan}`;
-      },
-    );
+      return html`${separatorSpan}${wordSpan}`;
+    });
   }
 
   #renderSegment(

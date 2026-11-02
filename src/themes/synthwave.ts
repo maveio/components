@@ -402,9 +402,10 @@ export function build(name, LitElement, html, css) {
         max-width: 80%;
         color: white;
         line-height: 1.5rem;
-        transition: margin-bottom 300ms ease-out
-            var(--mave-subtitle-margin-transition-delay, 0s),
-          transform 200ms ease-in-out, opacity 200ms ease-in-out;
+        transition:
+          margin-bottom 300ms ease-out var(--mave-subtitle-margin-transition-delay, 0s),
+          transform 200ms ease-in-out,
+          opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(12px);

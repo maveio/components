@@ -70,10 +70,11 @@ export class List extends MaveElement {
         error: (error: unknown) =>
           // TODO: add error state with error player UI
           html`<p>${error instanceof Error ? error.message : nothing}</p>`,
-        complete: (data: any) => {
-          this._collection = data as Collection;
+        complete: (data) => {
+          const collection = data as Collection & { error?: unknown };
+          this._collection = collection;
           if (!data) return this.renderPending();
-          if (data.error) return console.warn(data.error);
+          if (collection.error) return console.warn(collection.error);
           const templates = this._slottedChildren
             .map((item) => {
               function createClone() {
@@ -183,7 +184,7 @@ export class List extends MaveElement {
 
                   [clip, title, img, template].forEach(
                     (el: Element | DocumentFragment | null) => {
-                      el?.addEventListener('click', (e) => {
+                      el?.addEventListener('click', () => {
                         this.emit(this.EVENT_TYPES.CLICK, {
                           action: 'show_embed',
                           embedId: video.id,
