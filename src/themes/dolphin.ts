@@ -360,18 +360,19 @@ export function build(name, LitElement, html, css) {
       }
 
       .subtitles > div {
-        display: flex;
+        display: block;
+        min-width: 0;
         text-align: center;
         align-items: center;
         justify-content: center;
         min-height: 22px;
         margin-bottom: 24px;
         font-weight: 500;
-        font-size: 19px;
+        font-size: clamp(14px, 3.5cqw, 19px);
         opacity: 0;
-        max-width: 80%;
+        max-width: 90%;
         color: white;
-        line-height: 1.5rem;
+        line-height: 1.3;
         transition:
           margin-bottom 300ms ease-out var(--mave-subtitle-margin-transition-delay, 0s),
           transform 200ms ease-in-out,
@@ -397,9 +398,9 @@ export function build(name, LitElement, html, css) {
       media-controller[mediaisfullscreen] .subtitles > div {
         min-height: 44px;
         padding: 14px 24px 12px 24px;
-        font-size: 26px;
-        line-height: 2rem;
-        max-width: 40%;
+        font-size: clamp(14px, 3.5cqw, 26px);
+        line-height: 1.3;
+        max-width: 80%;
         margin-bottom: 54px;
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(16px);
