@@ -33,6 +33,7 @@ import {
 } from '../utils/audio';
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
+import { subtitleCueContent } from '../utils/subtitle_cues';
 import { videoEvents } from '../utils/video_events';
 
 type ControlColors = {
@@ -2187,7 +2188,7 @@ export class Player extends MaveElement {
       const cue = cues[0] as VTTCue;
       this._subtitlesText.style.opacity = '1';
       this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(1)';
-      this._subtitlesText.innerHTML = cue.text.replace(/\n/g, '<br>');
+      this._subtitlesText.replaceChildren(subtitleCueContent(cue));
     } else {
       this._subtitlesText.style.opacity = '0';
       this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(0.99)';
