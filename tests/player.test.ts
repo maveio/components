@@ -335,3 +335,34 @@ it('preserves explicit and user-selected HLS subtitles', async () => {
     restore();
   }
 });
+
+it('renders parsed subtitle nodes without interpreting cue text as HTML', async () => {
+  const { player, track, restore } = await mountWithSubtitle('nl');
+  try {
+    const theme = player.shadowRoot!.querySelector('theme-player-test')!;
+    const root = theme.attachShadow({ mode: 'open' });
+    const target = document.createElement('div');
+    target.id = 'subtitles_text';
+    root.append(target);
+    const text = '<img src=x onerror=alert(1)>\nnext line';
+    const getCueAsHTML = vi.fn(() => {
+      const parsed = document.createDocumentFragment();
+      parsed.append(document.createTextNode(text));
+      return parsed;
+    });
+    Object.defineProperty(track, 'activeCues', {
+      value: [{ text, getCueAsHTML }],
+    });
+
+    player.shadowRoot!
+      .querySelector('track[kind="subtitles"]')!
+      .dispatchEvent(new Event('cuechange'));
+
+    expect(getCueAsHTML).toHaveBeenCalledOnce();
+    expect(target.querySelector('img')).toBeNull();
+    expect(target.querySelectorAll('br')).toHaveLength(1);
+    expect(target.textContent).toBe(text.replace('\n', ''));
+  } finally {
+    restore();
+  }
+});
