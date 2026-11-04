@@ -2055,6 +2055,8 @@ export class Player extends MaveElement {
       this.#clearMediaSource();
       this.#resetPosterSurfaces();
       this._audioTrackPath = undefined;
+      // Preserve the live HLS/native track count until the media changes.
+      this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     }
 
     this._embedObj = embed;
@@ -2064,7 +2066,6 @@ export class Player extends MaveElement {
       this._subtitlesText = undefined;
       this.loadTheme();
     }
-    this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     this.poster = this._embedObj.settings.poster;
     this.#preparePoster();
     this.#updateLoadingState();
@@ -3315,7 +3316,7 @@ export class Player extends MaveElement {
         slot="media"
         crossorigin="anonymous"
       >
-        ${shouldLoadMedia ? html`${this.#storyboard} ${this.#subtitles}` : nothing}
+        ${shouldLoadMedia ? html`${this.#storyboard} ${this.#subtitles} ${this.#descriptionTracks}` : nothing}
       </video>
       ${shouldLoadMedia ? this.#posterTemplate : nothing}
     </theme-${unsafeStatic(this._themeLoaded)}>`;
@@ -3380,6 +3381,29 @@ export class Player extends MaveElement {
         }
       });
     }
+  }
+
+  /** Descriptive WebVTT (`Kind: descriptions`) for screen readers; never listed as captions. */
+  get #descriptionTracks() {
+    return (this._embedObj.audio_descriptions ?? [])
+      .filter((description) => !!description.vtt?.path?.trim())
+      .map(
+        (description) => html`<track
+          ${ref(this.#hideDescriptionTrack)}
+          kind="descriptions"
+          srclang=${description.language}
+          label=${description.label || description.language}
+          src=${audioSourceURL(
+            description.vtt!.path,
+            this.embedController.embedFile(''),
+            this.token,
+          )}></track>`,
+      );
+  }
+
+  #hideDescriptionTrack(element?: Element) {
+    const track = (element as HTMLTrackElement | undefined)?.track;
+    if (track && track.mode === 'disabled') track.mode = 'hidden';
   }
 
   get #storyboard() {
