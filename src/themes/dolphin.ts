@@ -157,8 +157,7 @@ export function build(name, LitElement, html, css) {
       mave-captions-menu-button,
       media-settings-menu-button,
       media-audio-track-menu-button,
-      mave-audio-track-menu-button,
-      mave-audio-description-button {
+      mave-audio-track-menu-button {
         transform: translate3d(0, 0, 0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -173,8 +172,7 @@ export function build(name, LitElement, html, css) {
       mave-captions-menu-button:hover,
       media-settings-menu-button:hover,
       media-audio-track-menu-button:hover,
-      mave-audio-track-menu-button:hover,
-      mave-audio-description-button:hover {
+      mave-audio-track-menu-button:hover {
         --media-primary-color: var(--mave-control-fg, rgba(255, 255, 255, 1));
         transform: scale(1.3);
       }
@@ -191,8 +189,7 @@ export function build(name, LitElement, html, css) {
       mave-captions-menu-button div,
       media-settings-menu-button div,
       media-audio-track-menu-button div,
-      mave-audio-track-menu-button div,
-      mave-audio-description-button div {
+      mave-audio-track-menu-button div {
         width: 26px;
         padding-top: 6px;
       }
@@ -205,8 +202,7 @@ export function build(name, LitElement, html, css) {
       media-airplay-button svg,
       media-cast-button svg,
       media-audio-track-menu-button svg,
-      mave-audio-track-menu-button svg,
-      mave-audio-description-button svg {
+      mave-audio-track-menu-button svg {
         width: 23px;
         height: 23px;
       }
@@ -280,14 +276,6 @@ export function build(name, LitElement, html, css) {
       media-audio-track-menu-button,
       mave-audio-track-menu-button {
         display: var(--media-audio-track-menu-button-display, none);
-      }
-
-      mave-audio-description-button {
-        display: var(--mave-audio-description-button-display, none);
-      }
-
-      mave-audio-description-button[aria-pressed='true'] {
-        --media-primary-color: var(--mave-control-fg, rgba(255, 255, 255, 1));
       }
 
       media-settings-menu-button {
@@ -384,9 +372,10 @@ export function build(name, LitElement, html, css) {
         max-width: 80%;
         color: white;
         line-height: 1.5rem;
-        transition: margin-bottom 300ms ease-out
-            var(--mave-subtitle-margin-transition-delay, 0s),
-          transform 200ms ease-in-out, opacity 200ms ease-in-out;
+        transition:
+          margin-bottom 300ms ease-out var(--mave-subtitle-margin-transition-delay, 0s),
+          transform 200ms ease-in-out,
+          opacity 200ms ease-in-out;
         letter-spacing: -0.01em;
         background: rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(12px);
@@ -641,9 +630,11 @@ export function build(name, LitElement, html, css) {
           </div>
         </media-play-button>
         <media-loading-indicator loading-delay="0"></media-loading-indicator>
-        ${this.audio
-          ? this.renderAudioTimeline()
-          : html`<media-time-range></media-time-range>`}
+        ${
+          this.audio
+            ? this.renderAudioTimeline()
+            : html`<media-time-range></media-time-range>`
+        }
         <media-time-display showduration></media-time-display>
         <div style="flex-grow: 1;"></div>
         <media-playback-rate-button></media-playback-rate-button>
@@ -696,38 +687,6 @@ export function build(name, LitElement, html, css) {
             </svg>
           </div>
         </mave-audio-track-menu-button>
-        <mave-audio-description-button>
-          <div slot="off">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="2.75" y="4.75" width="18.5" height="14.5" rx="2.5"></rect>
-              <path
-                d="M6.25 15.25 8.5 8.75l2.25 6.5M7.03 13h2.94M13.25 8.75v6.5h1.25a3.25 3.25 0 0 0 0-6.5h-1.25Z"
-              ></path>
-            </svg>
-          </div>
-          <div slot="on">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM5.2 16 7.4 8h1.7l2.2 8H9.7l-.45-1.7H7.25L6.8 16H5.2Zm2.45-3.1h1.2l-.6-2.3-.6 2.3ZM12.8 8h2.4a3.4 4 0 0 1 0 8h-2.4V8Zm1.5 1.4v5.2h.9a2 2.6 0 0 0 0-5.2h-.9Z"
-              ></path>
-            </svg>
-          </div>
-        </mave-audio-description-button>
         <media-settings-menu-button id="mave-settings" aria-expanded="false">
           <div slot="icon">
             <svg

@@ -1,7 +1,6 @@
 import 'media-chrome';
 import 'media-chrome/media-poster-image';
 import 'media-chrome/menu';
-import './audio-description-button';
 import './audio-track-menu';
 import './captions-menu-button';
 
@@ -13,7 +12,7 @@ import type {
   MediaPlaylist,
 } from 'hls.js';
 import Hls from 'hls.js';
-import { css, html, nothing,type PropertyValues } from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
@@ -21,7 +20,7 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 import { MediaUIEvents } from 'media-chrome/dist/constants.js';
 
 import { Config } from '../config';
-import { Embed,type Rendition } from '../embed/api';
+import { Embed, type Rendition } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
 import { ThemeLoader } from '../themes/loader';
 import {
@@ -34,8 +33,8 @@ import {
 } from '../utils/audio';
 import { LanguageController, localized, msg } from '../utils/localization';
 import { MaveElement } from '../utils/mave_element';
+import { subtitleCueContent } from '../utils/subtitle_cues';
 import { videoEvents } from '../utils/video_events';
-import { AUDIO_DESCRIPTION_REQUEST } from './audio-description-button';
 
 type ControlColors = {
   bg: string;
@@ -89,8 +88,6 @@ type HTMLMediaElementWithAudioTracks = HTMLMediaElement & {
   audioTracks?: NativeMediaAudioTrackList;
 };
 
-type AudioDescriptionButtonElement = Element & { pressed?: boolean };
-
 @localized()
 export class Player extends MaveElement {
   private static readonly QUALITY_LONG_EDGE: Record<Rendition['size'], number> = {
@@ -100,9 +97,6 @@ export class Player extends MaveElement {
     qhd: 2560,
     uhd: 3840,
   };
-  private static readonly AUDIO_DESCRIPTION_STORAGE_KEY = 'mave:audio-description';
-  private static readonly AUDIO_DESCRIPTION_CHARACTERISTIC =
-    'public.accessibility.describes-video';
   private static readonly SUBTITLE_REQUEST_EVENTS = [
     MediaUIEvents.MEDIA_SHOW_SUBTITLES_REQUEST,
     MediaUIEvents.MEDIA_DISABLE_SUBTITLES_REQUEST,
@@ -190,7 +184,6 @@ export class Player extends MaveElement {
   _previousControls?: string[];
 
   @property({ attribute: 'audiotracks' }) audioTracks?: 'auto' | 'on' | 'off';
-  @property({ attribute: 'audiodescription' }) audioDescription?: 'auto' | 'on' | 'off';
 
   @property({ reflect: true }) title = '';
   @property() subtitle?: string;
@@ -307,13 +300,14 @@ export class Player extends MaveElement {
   private _subtitlesText?: HTMLElement;
   private _audioTrackCount = 0;
   private _cleanupHlsAudioTracks?: () => void;
+  private _cleanupHlsSources?: () => void;
   private _cleanupNativeAudioTracks?: () => void;
   private _hlsAudioTracks: MediaPlaylist[] = [];
   private _hlsAudioTrackIdMap = new Map<string, number>();
   private _nativeAudioTrackIdMap = new Map<string, NativeMediaAudioTrack>();
   private _nativeAudioTrackList?: NativeMediaAudioTrackList;
   private _pendingAudioTrackSetup?: number;
-  private _cleanupNativeHlsSubtitleState?: () => void;
+  private _cleanupSubtitleState?: () => void;
   private _activeSubtitleApplied = false;
   private _activeSubtitleUserOverride = false;
   private _mediaSourceLoaded = false;
@@ -343,12 +337,6 @@ export class Player extends MaveElement {
   private _posterOverlaySourceKey?: string;
   private _hiddenPosterBackground?: string;
   private _audioTrackPath?: string;
-  private _hlsPlayback = false;
-  private _audioDescriptionAvailable = false;
-  private _audioDescriptionActive = false;
-  private _audioDescriptionRestored = false;
-  private _hlsMainAudioTrack?: number;
-  private _nativeMainAudioTrack?: NativeMediaAudioTrack;
 
   static styles = css`
     :host {
@@ -362,8 +350,8 @@ export class Player extends MaveElement {
     }
 
     video::cue {
-      font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
-        sans-serif;
+      font-family:
+        Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
       font-weight: 500;
       display: var(--subtitle-display, initial);
       opacity: var(--subtitle-opacity, 0);
@@ -394,7 +382,9 @@ export class Player extends MaveElement {
 
     .audio-unavailable {
       padding: 20px;
-      font: 14px/1.5 system-ui, sans-serif;
+      font:
+        14px/1.5 system-ui,
+        sans-serif;
     }
 
     :host([data-audio]) {
@@ -788,10 +778,9 @@ export class Player extends MaveElement {
     this._metricsInstance?.demonitor();
     this._metricsInstance = undefined;
     this.#destroyHlsInstance();
-    this.#clearNativeHlsSubtitleState();
+    this.#clearSubtitleState();
     this.#clearNativeAudioTracks();
     this.#resetHlsAudioTracks();
-    this.#resetAudioDescription();
 
     if (this._videoElement?.src) {
       this._videoElement.removeAttribute('src');
@@ -933,7 +922,6 @@ export class Player extends MaveElement {
     Player.SUBTITLE_REQUEST_EVENTS.forEach((event) => {
       this.addEventListener(event, this.#handleSubtitleRequest, true);
     });
-    this.addEventListener(AUDIO_DESCRIPTION_REQUEST, this.#handleAudioDescriptionRequest);
 
     if (typeof window !== 'undefined' && window.matchMedia) {
       this._contrastQuery = window.matchMedia('(prefers-contrast: more)');
@@ -982,7 +970,7 @@ export class Player extends MaveElement {
       this._activeSubtitleApplied = false;
       this._activeSubtitleUserOverride = false;
       this.#applyActiveSubtitle();
-      this.#syncNativeHlsSubtitleState();
+      this.#syncSubtitleState();
     }
 
     if (changedProperties.has('autoplay')) {
@@ -1021,10 +1009,6 @@ export class Player extends MaveElement {
     Player.SUBTITLE_REQUEST_EVENTS.forEach((event) => {
       this.removeEventListener(event, this.#handleSubtitleRequest, true);
     });
-    this.removeEventListener(
-      AUDIO_DESCRIPTION_REQUEST,
-      this.#handleAudioDescriptionRequest,
-    );
     if (this._contrastQuery && this._contrastQueryHandler) {
       if (this._contrastQuery.removeEventListener) {
         this._contrastQuery.removeEventListener('change', this._contrastQueryHandler);
@@ -1038,7 +1022,7 @@ export class Player extends MaveElement {
     this.#clearProcessingRefresh();
     this.#clearQueuedMediaLoadSync();
     this.#clearDeferredMediaLoadObserver();
-    this.#clearNativeHlsSubtitleState();
+    this.#clearSubtitleState();
     this.#clearNativeAudioTracks();
     this.#resetHlsAudioTracks();
     this._currentAudioTrackMenu = undefined;
@@ -1211,27 +1195,46 @@ export class Player extends MaveElement {
   }
 
   #destroyHlsInstance() {
-    if (!this.hls) return;
-    try {
-      this.hls.destroy();
-    } catch {
-      // no-op
+    if (this.hls) {
+      try {
+        this.hls.destroy();
+      } catch {
+        // no-op
+      }
+      this.hls = undefined;
     }
-    this.hls = undefined;
+    this._cleanupHlsSources?.();
+    this._cleanupHlsSources = undefined;
   }
 
-  #shouldUseNativeHlsPlayback() {
-    if (typeof navigator === 'undefined') return false;
+  #setupHlsSources(hlsPath: string, remotePlaybackDisabled: boolean) {
+    const media = this._videoElement;
+    if (!media) return;
 
-    const userAgent = navigator.userAgent;
-    const isIOS =
-      /iPad|iPhone|iPod/.test(userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari =
-      /Safari/.test(userAgent) &&
-      !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Android/.test(userAgent);
+    let localSource: HTMLSourceElement | undefined;
+    if (media.src.startsWith('blob:')) {
+      localSource = document.createElement('source');
+      localSource.src = media.src;
+      localSource.type = 'video/mp4';
+      media.prepend(localSource);
+      media.removeAttribute('src');
+    }
 
-    return isIOS || isSafari;
+    // Safari can hand the alternate URL to AirPlay while MSE/MMS plays locally.
+    const airplaySource = document.createElement('source');
+    airplaySource.src = hlsPath;
+    airplaySource.type = 'application/x-mpegURL';
+    media.append(airplaySource);
+    // hls.js disables remote playback when attaching ManagedMediaSource. The
+    // alternate HLS source lets MMS open without disabling AirPlay.
+    media.disableRemotePlayback = remotePlaybackDisabled;
+    media.load();
+
+    this._cleanupHlsSources = () => {
+      localSource?.remove();
+      airplaySource.remove();
+      media.disableRemotePlayback = remotePlaybackDisabled;
+    };
   }
 
   #resetHlsAudioTracks() {
@@ -1245,17 +1248,17 @@ export class Player extends MaveElement {
     this._hlsAudioTracks = [];
   }
 
-  #clearNativeHlsSubtitleState() {
-    this._cleanupNativeHlsSubtitleState?.();
-    this._cleanupNativeHlsSubtitleState = undefined;
+  #clearSubtitleState() {
+    this._cleanupSubtitleState?.();
+    this._cleanupSubtitleState = undefined;
   }
 
-  #guardNativeHlsSubtitleState() {
+  #guardSubtitleState() {
     if (!this._videoElement) return;
 
-    this.#clearNativeHlsSubtitleState();
+    this.#clearSubtitleState();
 
-    const sync = () => this.#syncNativeHlsSubtitleState();
+    const sync = () => this.#syncSubtitleState();
     const textTracks = this._videoElement.textTracks;
     const timers: number[] = [];
 
@@ -1273,7 +1276,7 @@ export class Player extends MaveElement {
       });
     }
 
-    this._cleanupNativeHlsSubtitleState = () => {
+    this._cleanupSubtitleState = () => {
       this._videoElement?.removeEventListener('loadstart', sync);
       this._videoElement?.removeEventListener('loadedmetadata', sync);
       textTracks?.removeEventListener('addtrack', sync);
@@ -1283,7 +1286,7 @@ export class Player extends MaveElement {
     };
   }
 
-  #syncNativeHlsSubtitleState() {
+  #syncSubtitleState() {
     if (!this._videoElement) return;
 
     this.#applyActiveSubtitle();
@@ -1710,23 +1713,10 @@ export class Player extends MaveElement {
     const canPlayNativeHls =
       !!this.#hlsPath &&
       !!this._videoElement.canPlayType('application/vnd.apple.mpegurl');
-    const shouldUseNativeHls = canPlayNativeHls && this.#shouldUseNativeHlsPlayback();
-
     this.#destroyHlsInstance();
-    this.#resetAudioDescription();
-    this._hlsPlayback = canPlayNativeHls || (Hls.isSupported() && !!this.#hlsPath);
 
-    if (shouldUseNativeHls) {
-      this.#resetHlsAudioTracks();
-      this._videoElement.src = this.#hlsPath;
-      this.#guardNativeHlsSubtitleState();
-      this.#setupNativeAudioTracks();
-      if (Config.metrics.enabled)
-        this._metricsInstance = new Metrics(this._videoElement, this.embed, {
-          component: this.isAudio ? 'audio' : 'player',
-        });
-    } else if (Hls.isSupported() && this.#hlsPath) {
-      this.#clearNativeHlsSubtitleState();
+    if (Hls.isSupported() && this.#hlsPath) {
+      this.#clearSubtitleState();
       this.#clearNativeAudioTracks();
       this.#resetHlsAudioTracks();
 
@@ -1743,8 +1733,15 @@ export class Player extends MaveElement {
 
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => this.#syncHlsQualityPolicy());
       this.hls?.loadSource(this.#hlsPath);
+      const remotePlaybackDisabled = this._videoElement.disableRemotePlayback;
       this.hls?.attachMedia(this._videoElement);
+      if (canPlayNativeHls) {
+        this.#setupHlsSources(this.#hlsPath, remotePlaybackDisabled);
+      }
       this.#setupHlsAudioTracks();
+      // External VTT tracks can also be auto-enabled by Safari during MSE/MMS
+      // playback. Preserve the same explicit subtitle selection as native HLS.
+      if (this._embedObj.subtitles.length) this.#guardSubtitleState();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this.hls, this.embed, {
           component: this.isAudio ? 'audio' : 'player',
@@ -1752,14 +1749,14 @@ export class Player extends MaveElement {
     } else if (canPlayNativeHls) {
       this.#resetHlsAudioTracks();
       this._videoElement.src = this.#hlsPath;
-      this.#guardNativeHlsSubtitleState();
+      this.#guardSubtitleState();
       this.#setupNativeAudioTracks();
       if (Config.metrics.enabled)
         this._metricsInstance = new Metrics(this._videoElement, this.embed, {
           component: this.isAudio ? 'audio' : 'player',
         });
     } else {
-      this.#clearNativeHlsSubtitleState();
+      this.#clearSubtitleState();
       this.#clearNativeAudioTracks();
       this.#resetHlsAudioTracks();
       if (this.#srcPath) this._videoElement.src = this.#srcPath;
@@ -2058,7 +2055,7 @@ export class Player extends MaveElement {
       this.#clearMediaSource();
       this.#resetPosterSurfaces();
       this._audioTrackPath = undefined;
-      // Live HLS/native track lists update this count; don't reset it on every render.
+      // Preserve the live HLS/native track count until the media changes.
       this._audioTrackCount = embed.audio_tracks?.length ?? 0;
     }
 
@@ -2194,7 +2191,7 @@ export class Player extends MaveElement {
       const cue = cues[0] as VTTCue;
       this._subtitlesText.style.opacity = '1';
       this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(1)';
-      this._subtitlesText.innerHTML = cue.text.replace(/\n/g, '<br>');
+      this._subtitlesText.replaceChildren(subtitleCueContent(cue));
     } else {
       this._subtitlesText.style.opacity = '0';
       this._subtitlesText.style.transform = this.isAudio ? 'none' : 'scale(0.99)';
@@ -2242,7 +2239,7 @@ export class Player extends MaveElement {
       // Safari may expose an unlabeled native HLS captions track. Media Chrome
       // serializes it as an empty list entry, so keep the menu on our manifest tracks.
       if (
-        this._cleanupNativeHlsSubtitleState &&
+        this._cleanupSubtitleState &&
         mutations.some(
           (mutation) =>
             mutation.type === 'childList' ||
@@ -2250,7 +2247,7 @@ export class Player extends MaveElement {
             mutation.attributeName === 'mediasubtitlesshowing',
         )
       ) {
-        this.#syncNativeHlsSubtitleState();
+        this.#syncSubtitleState();
       }
     });
     observer.observe(root, {
@@ -2263,8 +2260,8 @@ export class Player extends MaveElement {
     this._themeMutationObserver = observer;
     this._themeMutationObserverRoot = root;
 
-    if (this._cleanupNativeHlsSubtitleState) {
-      this.#syncNativeHlsSubtitleState();
+    if (this._cleanupSubtitleState) {
+      this.#syncSubtitleState();
     }
   }
 
@@ -2772,14 +2769,6 @@ export class Player extends MaveElement {
       };
     });
 
-    const activeTrack = tracks.find((track) => track.enabled);
-    const activeIsDescription = this.#isNativeAudioDescription(activeTrack);
-    if (activeTrack && !activeIsDescription) this._nativeMainAudioTrack = activeTrack;
-    this.#syncAudioDescriptionState(
-      tracks.some((track) => this.#isNativeAudioDescription(track)),
-      activeIsDescription,
-    );
-
     this.#updateAudioTrackMenu(list);
   }
 
@@ -2798,7 +2787,7 @@ export class Player extends MaveElement {
         (typeof language === 'string' && language.trim()) ||
         `Track ${index + 1}`;
       const isEnabled =
-        activeId != null ? rawId === activeId : track?.default ?? index === 0;
+        activeId != null ? rawId === activeId : (track?.default ?? index === 0);
 
       return {
         id,
@@ -2807,15 +2796,6 @@ export class Player extends MaveElement {
         enabled: isEnabled,
       };
     });
-
-    const activeIndex = list.findIndex((track) => track.enabled);
-    const activeTrack = this._hlsAudioTracks[activeIndex];
-    const activeIsDescription = this.#isHlsAudioDescription(activeTrack);
-    if (activeTrack && !activeIsDescription) this._hlsMainAudioTrack = activeIndex;
-    this.#syncAudioDescriptionState(
-      this._hlsAudioTracks.some((track) => this.#isHlsAudioDescription(track)),
-      activeIsDescription,
-    );
 
     this.#updateAudioTrackMenu(list);
   }
@@ -2847,187 +2827,6 @@ export class Player extends MaveElement {
     this.requestUpdate();
   }
 
-  #handleAudioDescriptionRequest = (event: Event) => {
-    event.stopPropagation();
-    const enabled = !!(event as CustomEvent<boolean>).detail;
-    this.#storeAudioDescriptionPreference(enabled);
-    this.#setAudioDescription(enabled);
-  };
-
-  #resetAudioDescription() {
-    this._hlsPlayback = false;
-    this._audioDescriptionAvailable = false;
-    this._audioDescriptionActive = false;
-    this._audioDescriptionRestored = false;
-    this._hlsMainAudioTrack = undefined;
-    this._nativeMainAudioTrack = undefined;
-    this.#syncAudioDescriptionButton();
-  }
-
-  get #audioDescriptionVisible(): boolean {
-    const preference = this.audioDescription ?? 'auto';
-    if (preference === 'off' || this.isAudio || !this._audioDescriptionAvailable) {
-      return false;
-    }
-
-    const controlEnabled = this.controls.some((control) =>
-      ['audiodescription', 'audiotracks', 'full'].includes(control),
-    );
-    if (!controlEnabled) return false;
-
-    return preference === 'on' || !!this._embedObj?.audio_descriptions?.length;
-  }
-
-  #isHlsAudioDescription(track?: MediaPlaylist) {
-    return (track?.characteristics ?? '')
-      .split(',')
-      .some((value) => value.trim() === Player.AUDIO_DESCRIPTION_CHARACTERISTIC);
-  }
-
-  #isNativeAudioDescription(track?: NativeMediaAudioTrack) {
-    if (!track) return false;
-    // Safari maps CHARACTERISTICS="public.accessibility.describes-video" to these kinds.
-    return (
-      track.kind === 'description' ||
-      track.kind === 'main-desc' ||
-      /\(audio description\)\s*$/i.test(track.label ?? '')
-    );
-  }
-
-  /** Prefer the current audio language, then the video's language, then English. */
-  #pickAudioDescription<T>(
-    tracks: T[],
-    languageOf: (track: T) => string | undefined,
-    currentLanguage?: string,
-  ): T | undefined {
-    const base = (value?: string | null) =>
-      value?.trim().toLowerCase().split('-')[0] || undefined;
-
-    for (const preferred of [currentLanguage, this._embedObj?.video?.language, 'en']) {
-      const language = base(preferred);
-      if (!language) continue;
-      const match = tracks.find((track) => base(languageOf(track)) === language);
-      if (match) return match;
-    }
-
-    return tracks[0];
-  }
-
-  #setAudioDescription(enabled: boolean) {
-    if (this.hls) {
-      this.#setHlsAudioDescription(enabled);
-      return;
-    }
-
-    const video = this._videoElement as HTMLMediaElementWithAudioTracks | undefined;
-    if (this._hlsPlayback && video?.audioTracks) {
-      this.#setNativeAudioDescription(video.audioTracks, enabled);
-    }
-  }
-
-  #setHlsAudioDescription(enabled: boolean) {
-    const hls = this.hls;
-    if (!hls) return;
-
-    const tracks = hls.audioTracks?.length ? hls.audioTracks : this._hlsAudioTracks;
-    const current = tracks[hls.audioTrack];
-    let target: MediaPlaylist | undefined;
-
-    if (enabled) {
-      if (current && !this.#isHlsAudioDescription(current)) {
-        this._hlsMainAudioTrack = hls.audioTrack;
-      }
-      target = this.#pickAudioDescription(
-        tracks.filter((track) => this.#isHlsAudioDescription(track)),
-        (track) => track.lang ?? track.attrs?.LANGUAGE,
-        current?.lang ?? current?.attrs?.LANGUAGE,
-      );
-    } else {
-      const mainTracks = tracks.filter((track) => !this.#isHlsAudioDescription(track));
-      const previous =
-        this._hlsMainAudioTrack != null ? tracks[this._hlsMainAudioTrack] : undefined;
-      target =
-        (previous && mainTracks.includes(previous) ? previous : undefined) ??
-        mainTracks.find((track) => track.default) ??
-        mainTracks[0];
-    }
-
-    if (!target) return;
-
-    const index = tracks.indexOf(target);
-    if (hls.audioTrack !== index) hls.audioTrack = index;
-    this.#updateAudioTrackMenuFromHls(tracks, index);
-  }
-
-  #setNativeAudioDescription(audioTracks: NativeMediaAudioTrackList, enabled: boolean) {
-    const tracks = this.#nativeAudioTracks(audioTracks);
-    const current = tracks.find((track) => track.enabled);
-    let target: NativeMediaAudioTrack | undefined;
-
-    if (enabled) {
-      if (current && !this.#isNativeAudioDescription(current)) {
-        this._nativeMainAudioTrack = current;
-      }
-      target = this.#pickAudioDescription(
-        tracks.filter((track) => this.#isNativeAudioDescription(track)),
-        (track) => track.language,
-        current?.language,
-      );
-    } else {
-      const mainTracks = tracks.filter((track) => !this.#isNativeAudioDescription(track));
-      const previous = this._nativeMainAudioTrack;
-      target =
-        (previous && mainTracks.includes(previous) ? previous : undefined) ??
-        mainTracks[0];
-    }
-
-    if (target) this.#selectNativeAudioTrack(audioTracks, target);
-  }
-
-  #syncAudioDescriptionState(available: boolean, active: boolean) {
-    const wasAvailable = this._audioDescriptionAvailable;
-    this._audioDescriptionAvailable = this._hlsPlayback && available;
-    this._audioDescriptionActive = this._audioDescriptionAvailable && active;
-    this.#syncAudioDescriptionButton();
-    if (wasAvailable !== this._audioDescriptionAvailable) this.requestUpdate();
-
-    // Turn audio description back on for viewers who chose it before.
-    if (!this._audioDescriptionRestored && this.#audioDescriptionVisible) {
-      this._audioDescriptionRestored = true;
-      if (!this._audioDescriptionActive && this.#storedAudioDescriptionPreference()) {
-        this.#setAudioDescription(true);
-      }
-    }
-  }
-
-  #syncAudioDescriptionButton() {
-    const button = this.#mediaChromeRoot?.querySelector(
-      'mave-audio-description-button',
-    ) as AudioDescriptionButtonElement | null;
-    if (button) button.pressed = this._audioDescriptionActive;
-  }
-
-  #storedAudioDescriptionPreference() {
-    try {
-      return (
-        globalThis.localStorage?.getItem(Player.AUDIO_DESCRIPTION_STORAGE_KEY) === 'on'
-      );
-    } catch {
-      return false;
-    }
-  }
-
-  #storeAudioDescriptionPreference(enabled: boolean) {
-    try {
-      globalThis.localStorage?.setItem(
-        Player.AUDIO_DESCRIPTION_STORAGE_KEY,
-        enabled ? 'on' : 'off',
-      );
-    } catch {
-      // Storage can be unavailable (private mode, blocked cookies); the toggle still works.
-    }
-  }
-
   get styles() {
     const style: { [key: string]: string } = {};
     const embedHasSubtitles = !!this._embedObj?.subtitles?.length;
@@ -3046,7 +2845,6 @@ export class Player extends MaveElement {
           'seek',
           'volume',
           'audiotracks',
-          'audiodescription',
           'fullscreen',
           'subtitles',
           'rate',
@@ -3179,9 +2977,6 @@ export class Player extends MaveElement {
     }
 
     style['--media-audio-track-menu-button-display'] = audioTracksVisible
-      ? 'flex'
-      : 'none';
-    style['--mave-audio-description-button-display'] = this.#audioDescriptionVisible
       ? 'flex'
       : 'none';
 
@@ -3334,9 +3129,11 @@ export class Player extends MaveElement {
           class="processing-state"
           style=${styleMap(this.#placeholderBackgroundStyle())}
         >
-          ${showSpinner
-            ? html`<div class="processing-state__spinner" aria-hidden="true"></div>`
-            : nothing}
+          ${
+            showSpinner
+              ? html`<div class="processing-state__spinner" aria-hidden="true"></div>`
+              : nothing
+          }
           <span class="processing-state__text">${message}</span>
         </div>
       </div>
@@ -3369,9 +3166,7 @@ export class Player extends MaveElement {
     if (explicitHeight && explicitHeight !== 'auto') {
       style.height = explicitHeight;
     } else {
-      style.minHeight = this.isAudio
-        ? 'var(--mave-audio-min-height, 120px)'
-        : '200px';
+      style.minHeight = this.isAudio ? 'var(--mave-audio-min-height, 120px)' : '200px';
     }
 
     const aspectRatio = this.#placeholderAspectRatio();
@@ -3491,9 +3286,7 @@ export class Player extends MaveElement {
         title=${this.audioOptions?.title || this._embedObj.name || nothing}
         subtitle=${this.audioOptions?.subtitle || nothing}
         poster=${
-          audioControls(this.controls).thumbnail
-            ? this.poster || nothing
-            : nothing
+          audioControls(this.controls).thumbnail ? this.poster || nothing : nothing
         }
         .waveform=${this.#audioWaveform}
       >
@@ -3523,11 +3316,7 @@ export class Player extends MaveElement {
         slot="media"
         crossorigin="anonymous"
       >
-        ${
-          shouldLoadMedia
-            ? html`${this.#storyboard} ${this.#subtitles} ${this.#descriptionTracks}`
-            : nothing
-        }
+        ${shouldLoadMedia ? html`${this.#storyboard} ${this.#subtitles} ${this.#descriptionTracks}` : nothing}
       </video>
       ${shouldLoadMedia ? this.#posterTemplate : nothing}
     </theme-${unsafeStatic(this._themeLoaded)}>`;
@@ -3586,8 +3375,8 @@ export class Player extends MaveElement {
         if (this.#shouldRenderSubtitleTrack(track)) {
           return html`
             <track @load=${this.#subtitleTrackLoaded} @cuechange=${this.#cuechange} label=${
-            track.label
-          } kind="subtitles" srclang=${track.language} src=${track.path}></track>
+              track.label
+            } kind="subtitles" srclang=${track.language} src=${track.path}></track>
           `;
         }
       });
@@ -3605,7 +3394,7 @@ export class Player extends MaveElement {
           srclang=${description.language}
           label=${description.label || description.language}
           src=${audioSourceURL(
-            description.vtt.path,
+            description.vtt!.path,
             this.embedController.embedFile(''),
             this.token,
           )}></track>`,
@@ -3657,9 +3446,11 @@ export class Player extends MaveElement {
       >
         ${playerTemplate}
       </slot>
-      ${this._embedObj && this._isProcessing
-        ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
-        : nothing}
+      ${
+        this._embedObj && this._isProcessing
+          ? this.#renderProcessingPlaceholder(this._embedObj?.video?.status)
+          : nothing
+      }
       <slot name="start-screen"></slot>
       <slot name="end-screen"></slot>
       <slot name="hover-screen"></slot>

@@ -147,11 +147,14 @@ A more complex example is `<mave-list>`, which can be useful to show a collectio
 
 ### Local development
 
+Build tooling requires Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`.
+
 `npm run start`
 
 Build and typecheck with TypeScript 7 using `npm run build:prod` and `npm run typecheck`.
-The `typescript-native` alias selects that compiler; `typescript` stays on 6.0 for
-ESLint's compiler API compatibility. Run `npm run lint` to check code or
+The `typescript-native` alias selects that compiler. The `typescript` alias uses
+the official `@typescript/typescript6` compatibility package for ESLint's compiler
+API; it does not control the build or typecheck compiler. Run `npm run lint` to check code or
 `npm run lint:fix` to apply fixes.
 
 ### Localization

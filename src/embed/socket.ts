@@ -58,7 +58,7 @@ export default class Socket {
 
     try {
       await embedChannel.channel.leave();
-    } catch (_error) {
+    } catch {
       // ignore channel leave errors
     }
 

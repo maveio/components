@@ -338,8 +338,16 @@ export function createAudioTheme(
     private media?: HTMLMediaElement;
     private progressFrame?: number;
     private readonly progressEvents = [
-      'timeupdate', 'loadedmetadata', 'durationchange', 'emptied',
-      'playing', 'pause', 'ended', 'seeking', 'seeked', 'waiting',
+      'timeupdate',
+      'loadedmetadata',
+      'durationchange',
+      'emptied',
+      'playing',
+      'pause',
+      'ended',
+      'seeking',
+      'seeked',
+      'waiting',
     ];
     private stopProgressFrame() {
       if (this.progressFrame !== undefined) {
@@ -359,8 +367,13 @@ export function createAudioTheme(
           : 0;
       this.style.setProperty('--progress', `${progress}%`);
       if (
-        this.isConnected && this.type === 'wave' && this.waveform?.length &&
-        media && !media.paused && !media.ended && !media.seeking &&
+        this.isConnected &&
+        this.type === 'wave' &&
+        this.waveform?.length &&
+        media &&
+        !media.paused &&
+        !media.ended &&
+        !media.seeking &&
         media.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
       ) {
         if (this.progressFrame === undefined)
@@ -454,14 +467,14 @@ export function createAudioTheme(
       >
         <slot name="media" slot="media" @slotchange=${this.bindMedia}></slot>
         <div class="audio-heading">
-          ${this.thumbnail && this.poster
-            ? html`<img class="audio-poster" src=${this.poster} alt="" />`
-            : ''}
+          ${
+            this.thumbnail && this.poster
+              ? html`<img class="audio-poster" src=${this.poster} alt="" />`
+              : ''
+          }
           <div class="audio-details">
             <h2>${this.title || 'Audio'}</h2>
-            ${this.subtitle
-              ? html`<p class="audio-subtitle">${this.subtitle}</p>`
-              : ''}
+            ${this.subtitle ? html`<p class="audio-subtitle">${this.subtitle}</p>` : ''}
           </div>
         </div>
         <div class=${`audio-controls ${theme}`}>

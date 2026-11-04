@@ -1,6 +1,6 @@
 import { MediaCaptionsMenuButton } from 'media-chrome/dist/menu/media-captions-menu-button.js';
 import { t } from 'media-chrome/dist/utils/i18n.js';
-import { globalThis } from 'media-chrome/dist/utils/server-safe-globals.js';
+import { globalThis as serverSafeGlobal } from 'media-chrome/dist/utils/server-safe-globals.js';
 
 export class MaveCaptionsMenuButton extends MediaCaptionsMenuButton {
   static getTooltipContentHTML = () => t('Captions');
@@ -11,11 +11,7 @@ export class MaveCaptionsMenuButton extends MediaCaptionsMenuButton {
     this.#updateAriaLabel();
   }
 
-  attributeChangedCallback(
-    attrName: string,
-    oldValue: string,
-    newValue: string,
-  ): void {
+  attributeChangedCallback(attrName: string, oldValue: string, newValue: string): void {
     super.attributeChangedCallback(attrName, oldValue, newValue);
     this.#updateAriaLabel();
   }
@@ -34,8 +30,8 @@ export class MaveCaptionsMenuButton extends MediaCaptionsMenuButton {
   }
 }
 
-if (!globalThis.customElements.get('mave-captions-menu-button')) {
-  globalThis.customElements.define(
+if (!serverSafeGlobal.customElements.get('mave-captions-menu-button')) {
+  serverSafeGlobal.customElements.define(
     'mave-captions-menu-button',
     MaveCaptionsMenuButton,
   );

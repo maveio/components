@@ -106,7 +106,7 @@ export type AudioDescription = {
   language: string;
   label: string;
   audio: { path: string; hls_playlist?: string | null };
-  vtt: { path: string };
+  vtt?: { path: string } | null;
 };
 
 export type Collection = {

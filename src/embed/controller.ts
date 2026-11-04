@@ -84,7 +84,7 @@ export class EmbedController {
           }
         } catch (e) {
           console.log(e);
-          throw new Error(`Failed to fetch "${this.embed}"`);
+          throw new Error(`Failed to fetch "${this.embed}"`, { cause: e });
         }
       },
       () => [this.embed, this.token, this.enabled],
@@ -246,7 +246,7 @@ export class EmbedController {
     );
 
     if (file.includes('?')) {
-      const [_file, query] = file.split('?');
+      const [, query] = file.split('?');
       const query_params = new URLSearchParams(query);
       query_params.forEach((value, key) => {
         params.append(key, value);
