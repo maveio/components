@@ -54,28 +54,6 @@
   <source>unable to load this video</source>
   <target>Kan video niet laden</target>
 </trans-unit>
-<trans-unit id="s99379c693ea604df">
-  <source>Audio description</source>
-  <target>Audiodescriptie</target>
-</trans-unit>
-<trans-unit id="sb4942c8563d01d6a">
-  <source>audio failed to process</source>
-</trans-unit>
-<trans-unit id="s81f7611acc53fea6">
-  <source>preparing your audio...</source>
-</trans-unit>
-<trans-unit id="s1ee65762202c6a6d">
-  <source>loading audio...</source>
-</trans-unit>
-<trans-unit id="se83f8b260b548b25">
-  <source>unable to load this audio</source>
-</trans-unit>
-<trans-unit id="s9cc09ba5ee551310">
-  <source>No audio track available</source>
-</trans-unit>
-<trans-unit id="s20d91335dedc941e">
-  <source>something went wrong</source>
-</trans-unit>
 </body>
 </file>
 </xliff>
