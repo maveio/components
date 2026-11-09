@@ -299,6 +299,35 @@
       gap: 12px;
     }
 
+    .video-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .list-item {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+      text-align: left;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .list-item mave-img {
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+    }
+
+    .list-item-title {
+      display: block;
+      padding: 12px;
+      font-weight: 600;
+    }
+
     .file-row {
       padding: 12px 14px;
       border-radius: 14px;
@@ -484,11 +513,12 @@
       <p class="eyebrow">Component examples</p>
       <h1>Everyday patterns for Mave components</h1>
       <p class="lead">
-        A curated set of demos for player, audio, clip, files, and upload so you can
+        A curated set of demos for player, audio, clip, list, files, and upload so you can
         quickly validate integrations.
       </p>
       <div class="pill-row">
         <a class="pill" href="#audio">Audio example</a>
+        <a class="pill" href="#list">List example</a>
         <a class="pill" href="/wcag.html">WCAG-focused examples</a>
       </div>
     </div>
@@ -498,6 +528,7 @@
         <li>Default player with subtitles and locale set.</li>
         <li>Audio player using a dedicated audio upload.</li>
         <li>Clip preview that opens a full player in a pop.</li>
+        <li>Video lists with public posters and playback.</li>
         <li>File listing and a custom upload experience.</li>
       </ul>
       <div class="note">Tip: Use this page to smoke-test the components.</div>
@@ -590,6 +621,28 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <section id="list" class="card reveal" style="--delay: 0.15s;">
+      <div>
+        <span class="tag">List</span>
+        <h2>Public video list</h2>
+        <p class="muted">
+          The same public demo collection as the list documentation, rendered with the local
+          component build. The collection token is used only to fetch the list; posters and
+          playback use public URLs.
+        </p>
+      </div>
+      <!-- Public demo token from https://www.mave.io/docs/list/ -->
+      <mave-list id="list-preview" class="video-list" token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1Ymc1MDVkdTUzY2dvSkEifQ.4ckEUBuvz_Wpf92KKng824oEaPPfUl-TctdCGy5HBL0">
+        <template>
+          <button type="button" class="list-item">
+            <mave-img></mave-img>
+            <span class="list-item-title" slot="item-title"></span>
+          </button>
+        </template>
+      </mave-list>
+      <div id="list-player"></div>
     </section>
 
     <section class="card reveal" style="--delay: 0.15s;">
@@ -724,7 +777,24 @@
 
   <script crossorigin type="module">
     import { Player, Audio, Upload, List, Clip, setConfig } from "../dist/index.js";
-    setConfig({ enabled: false });
+    // Public documentation fixtures, rendered by the local component build.
+    setConfig({
+      api: { endpoint: 'https://api.mave.io/api/v1' },
+      cdn: { endpoint: 'https://space-${this.spaceId}.video-dns.com' },
+      metrics: { enabled: false },
+    });
+
+    const list = document.querySelector('#list-preview');
+    list.addEventListener('mave:user_click', (event) => {
+      if (event.detail.action !== 'show_embed') return;
+      const player = document.createElement('mave-player');
+      player.embed = event.detail.embedId;
+      player.className = 'player';
+      const shell = document.createElement('div');
+      shell.className = 'player-shell';
+      shell.append(player);
+      document.querySelector('#list-player').replaceChildren(shell);
+    });
   </script>
 
   <script>

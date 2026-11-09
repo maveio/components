@@ -141,6 +141,17 @@ We often find ourselves using simple `.mp4` files, because we just want to show 
 
 A more complex example is `<mave-list>`, which can be useful to show a collection of videos. Combined with our `x-mave-pop` attribute, it can become pretty powerful.
 
+The list's `token` only authorizes the collection request and is not forwarded to
+nested media components. `mave-img` displays `thumbnail.jpg` by default.
+Use the list with publicly accessible media; listing a
+private video does not grant access to its poster or playback. The list does not
+provide secure playback. Use the individual media components with explicit
+playback tokens for that integration instead.
+
+This replaces the automatic token forwarding from earlier versions. The
+[local example](examples/index.html#list) loads the public documentation demo
+collection with the local component build and shows public posters and playback.
+
 [**More can be found on our docs**](https://mave.io/docs/)
 
 ## Contributing
