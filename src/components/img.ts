@@ -43,9 +43,9 @@ export class Image extends MaveElement {
   `;
 
   get poster(): string {
-    if (!this.token) return `${this.cdn_root}/${this.embedId}/poster.webp`;
+    if (!this.token) return `${this.cdn_root}/${this.embedId}/thumbnail.jpg`;
     const source = playbackSource(this.token, this.embed);
-    const url = new URL(`${source.media_base_url}/poster.webp`);
+    const url = new URL(`${source.media_base_url}/thumbnail.jpg`);
     url.searchParams.set('token', source.token);
     return url.toString();
   }

@@ -38,7 +38,7 @@ export class List extends MaveElement {
 
   get _slottedChildren() {
     const slot = this.shadowRoot?.querySelector('slot');
-    return slot?.assignedElements({ flatten: true }) || [];
+    return slot?.assignedElements({ flatten: true }) ?? Array.from(this.children);
   }
 
   updated() {
@@ -172,11 +172,6 @@ export class List extends MaveElement {
                   this.#setEmbedAttribute(template, 'mave-clip', video.id);
                   this.#setEmbedAttribute(template, 'mave-player', video.id);
                   this.#setEmbedAttribute(template, 'mave-img', video.id);
-                  this.#setTokenProperty(template, 'mave-clip');
-                  this.#setTokenProperty(template, 'mave-player');
-                  this.#setTokenProperty(template, 'mave-img');
-                  this.#setTokenProperty(template, 'mave-text');
-                  this.#setTokenProperty(template, 'mave-files');
 
                   const clip = template.querySelector('mave-clip');
                   const title = this.#querySlotElement(template, 'item-title');
@@ -238,13 +233,6 @@ export class List extends MaveElement {
     if (!element) return;
     element.setAttribute('embed', embed);
     this.#clearSlotAttributes(element);
-  }
-
-  #setTokenProperty(template: DocumentFragment, selector: string) {
-    const element = template.querySelector(selector) as
-      (HTMLElement & { token?: string }) | null;
-    if (!element || !this.token) return;
-    element.token = this.token;
   }
 
   #setTextContent(template: DocumentFragment, slotName: string, text: string) {
