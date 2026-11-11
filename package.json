@@ -12,6 +12,51 @@
       "import": "./dist/index.js",
       "default": "./dist/index.cjs"
     },
+    "./player": {
+      "types": "./dist/player.d.ts",
+      "import": "./dist/player.js",
+      "default": "./dist/player.cjs"
+    },
+    "./audio": {
+      "types": "./dist/audio.d.ts",
+      "import": "./dist/audio.js",
+      "default": "./dist/audio.cjs"
+    },
+    "./clip": {
+      "types": "./dist/clip.d.ts",
+      "import": "./dist/clip.js",
+      "default": "./dist/clip.cjs"
+    },
+    "./files": {
+      "types": "./dist/files.d.ts",
+      "import": "./dist/files.js",
+      "default": "./dist/files.cjs"
+    },
+    "./img": {
+      "types": "./dist/img.d.ts",
+      "import": "./dist/img.js",
+      "default": "./dist/img.cjs"
+    },
+    "./list": {
+      "types": "./dist/list.d.ts",
+      "import": "./dist/list.js",
+      "default": "./dist/list.cjs"
+    },
+    "./pop": {
+      "types": "./dist/pop.d.ts",
+      "import": "./dist/pop.js",
+      "default": "./dist/pop.cjs"
+    },
+    "./text": {
+      "types": "./dist/text.d.ts",
+      "import": "./dist/text.js",
+      "default": "./dist/text.cjs"
+    },
+    "./upload": {
+      "types": "./dist/upload.d.ts",
+      "import": "./dist/upload.js",
+      "default": "./dist/upload.cjs"
+    },
     "./config": {
       "types": "./dist/config.d.ts",
       "import": "./dist/config.js",

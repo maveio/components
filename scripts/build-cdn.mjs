@@ -36,7 +36,8 @@ async function files(dir) {
   return found;
 }
 
-const entries = ['index', 'config', 'themes/default', 'themes/dolphin', 'themes/synthwave',
+const components = ['player', 'audio', 'clip', 'files', 'img', 'list', 'pop', 'text', 'upload'];
+const entries = ['index', 'config', ...components, 'themes/default', 'themes/dolphin', 'themes/synthwave',
   'generated/locales/en', 'generated/locales/nl', 'generated/locales/de', 'generated/locales/fr'];
 const result = await build({
   absWorkingDir: source,
@@ -68,6 +69,9 @@ for (const filename of await files(versionDir)) {
 }
 // Keep historical +esm URLs, including the theme/locale submodule endpoints.
 await put(`${prefix}/+esm`, forward(`/${prefix}/esm/index.js`));
+for (const name of components) {
+  put(`${prefix}/${name}/+esm`, forward(`/${prefix}/esm/${name}.js`));
+}
 for (const name of entries) {
   await put(`${prefix}/dist/${name}.js/+esm`, forward(`/${prefix}/esm/${name}.js`));
 }

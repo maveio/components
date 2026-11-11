@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Individual npm imports and CDN ESM endpoints for each public component.
+
 ## 0.0.201 - 2026-11-09
 
 ## 0.0.200 - 2026-11-02
