@@ -1,12 +1,25 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, readFile, writeFile, symlink, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile, symlink, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { createApp, h, nextTick } from 'vue';
+
+const componentExports = {
+  player: 'Player',
+  audio: 'Audio',
+  clip: 'Clip',
+  files: 'Files',
+  img: 'Image',
+  list: 'List',
+  pop: 'Pop',
+  text: 'Text',
+  upload: 'Upload',
+};
 
 let directory: string;
 let packageRoot: string;
@@ -15,6 +28,29 @@ let pkg: { exports: Record<string, { import: string; types: string }> };
 async function entry(name: string) {
   return import(
     /* @vite-ignore */ `/@fs/${path.join(packageRoot, pkg.exports[name].import)}`
+  );
+}
+
+// Run each browser bundle in a fresh process and custom-element registry.
+function runWithDOM(script: string) {
+  execFileSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `
+    import { Window } from ${JSON.stringify(pathToFileURL(path.resolve('node_modules/happy-dom/lib/index.js')).href)};
+    import assert from 'node:assert/strict';
+    const window = new Window();
+    for (const key of ['window', 'document', 'customElements', 'HTMLElement', 'Element',
+      'Node', 'Document', 'CSSStyleSheet', 'MutationObserver', 'ResizeObserver', 'navigator']) {
+      Object.defineProperty(globalThis, key, { configurable: true, value: window[key] });
+    }
+    ${script}
+    await window.happyDOM.close();
+  `,
+    ],
+    { stdio: 'pipe' },
   );
 }
 
@@ -49,6 +85,12 @@ beforeAll(async () => {
     path.join(packageRoot, 'node_modules'),
     'dir',
   );
+  await mkdir(path.join(directory, 'node_modules/@maveio'), { recursive: true });
+  await symlink(
+    packageRoot,
+    path.join(directory, 'node_modules/@maveio/components'),
+    'dir',
+  );
   pkg = JSON.parse(await readFile(path.join(packageRoot, 'package.json'), 'utf8'));
 });
 
@@ -80,6 +122,29 @@ it('ships working native exports and configuration in the npm tarball', async ()
   }
 });
 
+it.each(Object.entries(componentExports))(
+  'ships the standalone %s package export',
+  async (name, className) => {
+    const standalone = await entry(`./${name}`);
+    const full = await entry('.');
+    expect(Object.keys(standalone)).toEqual([className]);
+    expect(standalone[className]).toBe(full[className]);
+  },
+);
+
+it('resolves individual CommonJS package exports', () => {
+  runWithDOM(`
+    import { createRequire } from 'node:module';
+    const load = createRequire(${JSON.stringify(path.join(directory, 'consumer.cjs'))});
+    const full = load('@maveio/components');
+    for (const [name, className] of Object.entries(${JSON.stringify(componentExports)})) {
+      const component = load('@maveio/components/' + name);
+      assert.deepEqual(Object.keys(component), [className]);
+      assert.equal(component[className], full[className]);
+    }
+  `);
+});
+
 it('renders React and Vue wrappers from the packed entrypoints', async () => {
   const react = await entry('./react');
   const vue = await entry('./vue');
@@ -105,9 +170,15 @@ it('ships declarations that typecheck for consumers using NodeNext resolution', 
   await writeFile(
     path.join(directory, 'consumer.ts'),
     `
-    import { Player, Audio, Upload } from './package/dist/index.js';
-    import { Player as ReactPlayer } from './package/dist/react.js';
-    import { Player as VuePlayer } from './package/dist/vue.js';
+    import { Player, Audio, Upload } from '@maveio/components';
+    import { Player as ReactPlayer } from '@maveio/components/react';
+    import { Player as VuePlayer } from '@maveio/components/vue';
+    ${Object.entries(componentExports)
+      .map(
+        ([name, className]) =>
+          `import { ${className} as Standalone${className} } from '@maveio/components/${name}';\nexport { Standalone${className} };`,
+      )
+      .join('\n')}
     export { Player, Audio, Upload, ReactPlayer, VuePlayer };
   `,
   );
@@ -147,6 +218,31 @@ it('builds the CDN from the npm tarball without unresolved browser dependencies'
       (object: { key: string }) => object.key === 'npm/@maveio/components/+esm',
     ),
   ).toBe(true);
+  for (const [name, className] of Object.entries(componentExports)) {
+    const version = JSON.parse(
+      await readFile(path.join(packageRoot, 'package.json'), 'utf8'),
+    ).version;
+    for (const prefix of [
+      'npm/@maveio/components',
+      `npm/@maveio/components@${version}`,
+    ]) {
+      expect(
+        manifest.objects.some(
+          (object: { key: string }) => object.key === `${prefix}/${name}/+esm`,
+        ),
+      ).toBe(true);
+    }
+    // Each entry runs with a fresh registry, so loading the full package in an
+    // earlier test cannot hide missing registration or unrelated components.
+    runWithDOM(`
+      const component = await import(${JSON.stringify(pathToFileURL(path.join(output, 'build/esm', `${name}.js`)).href)});
+      assert.equal(window.customElements.get('mave-${name}'), component.${className});
+      const expected = ${JSON.stringify(name === 'audio' ? ['audio', 'player'] : name === 'pop' ? ['pop', 'player'] : name === 'list' ? ['list', 'pop', 'player'] : [name])};
+      for (const tag of ${JSON.stringify(Object.keys(componentExports))}) {
+        assert.equal(Boolean(window.customElements.get('mave-' + tag)), expected.includes(tag), tag);
+      }
+    `);
+  }
   const meta = JSON.parse(await readFile(path.join(output, 'build-meta.json'), 'utf8'));
   for (const entry of Object.values(meta.outputs) as {
     imports: { external?: boolean }[];

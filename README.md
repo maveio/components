@@ -35,6 +35,38 @@ Include the following in your site (and [create an account](https://app.mave.io/
 
 and start using our [components](#usage)!
 
+## Individual components
+
+Load a single component and its dependencies instead of the full library:
+
+```html
+<script
+  type="module"
+  src="https://cdn.video-dns.com/npm/@maveio/components/clip/+esm"
+></script>
+
+<mave-clip embed="{embed id}"></mave-clip>
+```
+
+The available component paths are `player`, `audio`, `clip`, `files`, `img`,
+`list`, `pop`, `text`, and `upload`. Use `img` for `<mave-img>` (the `Image` export).
+For a fixed release, use `@maveio/components@<version>/clip/+esm`.
+These paths are available from the release that introduces individual components.
+The existing full-library URL continues to work.
+
+For npm projects, import the same component path:
+
+```js
+import '@maveio/components/clip';
+// Or, when you need the class:
+import { Clip } from '@maveio/components/clip';
+```
+
+Dependencies are included automatically: for example, Audio and Pop use Player,
+and List uses Pop. Components referenced in your own markup still need their own
+imports, such as `img` inside a list template. Shared code is reused when you load
+multiple components from the same release. Themes and locales load as needed.
+
 ## Install
 
 If you want to use our component library locally within your project:
