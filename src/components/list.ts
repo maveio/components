@@ -1,7 +1,10 @@
-import { css, html, nothing } from 'lit';
+import { msg } from '@lit/localize';
+import { css, html, nothing, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
+import { guard } from 'lit/directives/guard.js';
+import { repeat } from 'lit/directives/repeat.js';
 
-import { Collection } from '../embed/api';
+import { Collection, Video } from '../embed/api';
 import { EmbedController, EmbedType } from '../embed/controller';
 import { MaveElement } from '../utils/mave_element';
 import { checkPop } from './pop.js';
@@ -15,6 +18,7 @@ export class List extends MaveElement {
 
   set token(value: string) {
     if (this._token !== value) {
+      this.resetPages();
       this._token = value;
       this.embedController.token = value;
       this.requestUpdate('token');
@@ -26,14 +30,36 @@ export class List extends MaveElement {
     :host {
       display: block;
     }
+
+    [part='pagination'] {
+      grid-column: 1 / -1;
+      padding-block: 0.5rem;
+    }
   `;
 
   private embedController = new EmbedController(this, EmbedType.Collection);
-  private _collection: Collection;
+  private firstPage?: Collection;
+  private _collection?: Collection;
+  private nextPageRequest?: AbortController;
+  private nextPageFailed = false;
 
   connectedCallback() {
     super.connectedCallback();
     this.embedController.token = this.token;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.nextPageRequest?.abort();
+    this.nextPageRequest = undefined;
+  }
+
+  protected willUpdate(changed: PropertyValues<this>) {
+    super.willUpdate(changed);
+    if (changed.has('order') || !this.embedController.collectionOrder) {
+      this.resetPages();
+      this.embedController.collectionOrder = this.order || 'newest';
+    }
   }
 
   get _slottedChildren() {
@@ -48,11 +74,12 @@ export class List extends MaveElement {
   }
 
   refresh(): Promise<unknown> {
+    this.resetPages();
     return this.embedController.refresh();
   }
 
   containsEmbed(embedId: string): boolean {
-    return this._collection?.videos?.some((video) => video.id === embedId);
+    return this._collection?.videos?.some((video) => video.id === embedId) ?? false;
   }
 
   getNextForEmbed(embedId: string) {
@@ -62,19 +89,83 @@ export class List extends MaveElement {
     return videos[index + 1];
   }
 
+  private showCollection(embed: string) {
+    this.resetPages();
+    this.embedController.embed = embed;
+  }
+
+  private resetPages() {
+    this.nextPageRequest?.abort();
+    this.nextPageRequest = undefined;
+    this.nextPageFailed = false;
+    this.firstPage = undefined;
+    this._collection = undefined;
+  }
+
+  private async loadMore() {
+    const collection = this._collection;
+    if (!collection?.has_more || this.nextPageRequest) return;
+
+    const request = new AbortController();
+    this.nextPageRequest = request;
+    this.nextPageFailed = false;
+    this.requestUpdate();
+
+    try {
+      const page = (collection.current_page ?? 1) + 1;
+      const result = await this.embedController.fetchCollectionPage(page, request.signal);
+      if (request.signal.aborted) return;
+      if (result.current_page !== page) throw new Error('Unexpected collection page');
+
+      const existingIds = new Set(collection.videos.map((video) => video.id));
+      this._collection = {
+        ...collection,
+        ...result,
+        videos: [
+          ...collection.videos,
+          ...result.videos.filter((video) => !existingIds.has(video.id)),
+        ],
+      };
+    } catch {
+      if (!request.signal.aborted) this.nextPageFailed = true;
+    } finally {
+      if (this.nextPageRequest === request) {
+        this.nextPageRequest = undefined;
+        this.requestUpdate();
+      }
+    }
+  }
+
+  private async onMoreClick(event: Event) {
+    const trigger =
+      event.target instanceof Element &&
+      event.target.closest('[slot="more-link"], [data-slot="more-link"]');
+    if (!trigger) return;
+
+    event.preventDefault();
+    if (this.nextPageRequest || trigger.getAttribute('aria-disabled') === 'true') return;
+
+    trigger.setAttribute('aria-disabled', 'true');
+    try {
+      await this.loadMore();
+    } finally {
+      trigger.removeAttribute('aria-disabled');
+    }
+  }
+
   render() {
     return html`
       ${this.embedController.render({
-        // TODO: add loading state with loading player UI
         pending: this.renderPending,
-        error: (error: unknown) =>
-          // TODO: add error state with error player UI
-          html`<p>${error instanceof Error ? error.message : nothing}</p>`,
+        error: () => this.renderError(),
         complete: (data) => {
           const collection = data as Collection & { error?: unknown };
-          this._collection = collection;
           if (!data) return this.renderPending();
-          if (collection.error) return console.warn(collection.error);
+          if (collection.error) return this.renderError();
+          if (this.firstPage !== collection) {
+            this.firstPage = collection;
+            this._collection = collection;
+          }
           const templates = this._slottedChildren
             .map((item) => {
               function createClone() {
@@ -89,10 +180,31 @@ export class List extends MaveElement {
                 return clone;
               }
 
+              if (item.getAttribute('name') === 'mave-list-more') {
+                if (!this._collection?.has_more) return nothing;
+
+                const state = this.nextPageRequest
+                  ? 'loading'
+                  : this.nextPageFailed
+                    ? 'error'
+                    : 'idle';
+
+                return html`
+                  <div
+                    part="pagination"
+                    data-state=${state}
+                    aria-busy=${state === 'loading'}
+                    @click=${this.onMoreClick}
+                  >
+                    ${guard([item], () => createClone())}
+                  </div>
+                `;
+              }
+
               if (item.getAttribute('name') == 'list-title') {
                 const template = createClone();
 
-                template.textContent = this._collection?.name;
+                template.textContent = this._collection?.name ?? '';
                 return html`${template}`;
               }
 
@@ -106,7 +218,7 @@ export class List extends MaveElement {
                   link.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.emit(this.EVENT_TYPES.CLICK, { action: 'back', embedId: '' });
-                    this.embedController.embed = '';
+                    this.showCollection('');
                   });
                   this.#clearSlotAttributes(link);
                 }
@@ -114,24 +226,24 @@ export class List extends MaveElement {
               }
 
               if (item.getAttribute('name') == 'mave-list-folder') {
-                const result = this._collection.collections?.map((collection) => {
+                const result = this._collection?.collections?.map((collection) => {
                   const template = createClone();
 
-                  const link = this.#querySlotElement(template, 'folder-link');
+                  const link =
+                    this.#querySlotElement(template, 'folder-link') ??
+                    (template instanceof Element ? template : template.firstElementChild);
 
-                  [item, link].forEach((element) => {
-                    if (element instanceof Element) {
-                      element.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        this.emit(this.EVENT_TYPES.CLICK, {
-                          action: 'show_collection',
-                          collectionId: collection.id,
-                        });
-                        this.embedController.embed = collection.id;
+                  if (link) {
+                    link.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      this.emit(this.EVENT_TYPES.CLICK, {
+                        action: 'show_collection',
+                        collectionId: collection.id,
                       });
-                      this.#clearSlotAttributes(element);
-                    }
-                  });
+                      this.showCollection(collection.id);
+                    });
+                    this.#clearSlotAttributes(link);
+                  }
 
                   this.#setTextContent(template, 'folder-title', collection.name);
                   if (typeof collection.video_count == 'number') {
@@ -158,38 +270,47 @@ export class List extends MaveElement {
                 ].includes(item.hasAttribute('name') ? item.getAttribute('name')! : '') &&
                   item.nodeName == 'TEMPLATE')
               ) {
-                const result = this.#getVideos().map((video, index) => {
-                  const template = createClone();
-                  const position = index + 1;
+                const result = repeat(
+                  this.#getVideos(),
+                  (video) => video.id,
+                  (video, index) =>
+                    guard([item, video, index], () => {
+                      const template = createClone();
+                      const position = index + 1;
 
-                  this.#setTextContent(template, 'item-title', video.name);
-                  this.#setTextContent(template, 'item-position', position.toString());
-                  this.#setTextContent(
-                    template,
-                    'item-duration',
-                    this.durationToTime(video.duration),
-                  );
-                  this.#setEmbedAttribute(template, 'mave-clip', video.id);
-                  this.#setEmbedAttribute(template, 'mave-player', video.id);
-                  this.#setEmbedAttribute(template, 'mave-img', video.id);
+                      this.#setTextContent(template, 'item-title', video.name);
+                      this.#setTextContent(
+                        template,
+                        'item-position',
+                        position.toString(),
+                      );
+                      this.#setTextContent(
+                        template,
+                        'item-duration',
+                        this.durationToTime(video.duration),
+                      );
+                      this.#setEmbedAttribute(template, 'mave-clip', video.id);
+                      this.#setEmbedAttribute(template, 'mave-player', video.id);
+                      this.#setEmbedAttribute(template, 'mave-img', video.id);
 
-                  const clip = template.querySelector('mave-clip');
-                  const title = this.#querySlotElement(template, 'item-title');
-                  const img = template.querySelector('mave-img');
+                      const clip = template.querySelector('mave-clip');
+                      const title = this.#querySlotElement(template, 'item-title');
+                      const img = template.querySelector('mave-img');
 
-                  [clip, title, img, template].forEach(
-                    (el: Element | DocumentFragment | null) => {
-                      el?.addEventListener('click', () => {
-                        this.emit(this.EVENT_TYPES.CLICK, {
-                          action: 'show_embed',
-                          embedId: video.id,
-                          position,
-                        });
-                      });
-                    },
-                  );
-                  return html`${template}`;
-                });
+                      [clip, title, img, template].forEach(
+                        (el: Element | DocumentFragment | null) => {
+                          el?.addEventListener('click', () => {
+                            this.emit(this.EVENT_TYPES.CLICK, {
+                              action: 'show_embed',
+                              embedId: video.id,
+                              position,
+                            });
+                          });
+                        },
+                      );
+                      return html`${template}`;
+                    }),
+                );
 
                 return html`${result}`;
               }
@@ -202,26 +323,38 @@ export class List extends MaveElement {
     `;
   }
 
-  #getVideos() {
-    if (!this._collection) return [];
-    let videos = this._collection.videos;
+  private renderError() {
+    return html`
+      <div part="pagination">
+        <p role="alert">${msg('Could not load videos.')}</p>
+        <button type="button" @click=${this.refresh}>${msg('Try again')}</button>
+      </div>
+    `;
+  }
+
+  #getVideos(): Video[] {
+    const collection = this._collection;
+    if (!collection) return [];
+    const videos = collection.videos ?? [];
+    if (collection.current_page !== undefined) return videos;
+
     if (this.order == 'newest') {
-      videos = this._collection.videos?.sort((a, b) => {
+      return [...videos].sort((a, b) => {
         return b.created - a.created;
       });
     }
     if (this.order == 'oldest') {
-      videos = this._collection.videos?.sort((a, b) => {
+      return [...videos].sort((a, b) => {
         return a.created - b.created;
       });
     }
     if (this.order == 'az') {
-      videos = this._collection.videos?.sort((a, b) => {
+      return [...videos].sort((a, b) => {
         return a.name.localeCompare(b.name);
       });
     }
     if (this.order == 'za') {
-      videos = this._collection.videos?.sort((a, b) => {
+      return [...videos].sort((a, b) => {
         return b.name.localeCompare(a.name);
       });
     }
@@ -253,7 +386,10 @@ export class List extends MaveElement {
   }
 
   renderPending() {
-    return html`<slot style="display: none"></slot>`;
+    return html`
+      <slot style="display: none"></slot>
+      <p role="status" part="pagination">${msg('Loading videos…')}</p>
+    `;
   }
 }
 

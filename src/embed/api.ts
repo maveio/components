@@ -116,6 +116,10 @@ export type Collection = {
   videos: Video[];
   collections: Collection[];
   video_count?: number;
+  current_page?: number;
+  total_pages?: number;
+  total_items?: number;
+  has_more?: boolean;
 };
 
 export type Video = {

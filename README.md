@@ -173,6 +173,22 @@ We often find ourselves using simple `.mp4` files, because we just want to show 
 
 A more complex example is `<mave-list>`, which can be useful to show a collection of videos. Combined with our `x-mave-pop` attribute, it can become pretty powerful.
 
+On a paginated API, the list shows the first 25 videos. To offer more pages,
+place your own control inside `mave-list`, after the video template.
+
+```html
+<div name="mave-list-more">
+  <button type="button" slot="more-link" class="my-button">Load more videos</button>
+</div>
+```
+
+The block appears while another page is available. Use your own markup, text,
+and CSS classes, just as with the video and folder templates. The block also
+accepts `<template name="mave-list-more">`. Its wrapper exposes `data-state`
+as `idle`, `loading`, or `error` for styling and status messages. After a
+failed request, clicking the control retries the same page. Changing the folder
+or the `order` attribute returns to the first page.
+
 The list's `token` only authorizes the collection request and is not forwarded to
 nested media components. `mave-img` displays `thumbnail.jpg` by default.
 Use the list with publicly accessible media; listing a
