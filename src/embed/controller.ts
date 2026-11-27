@@ -25,6 +25,7 @@ export class EmbedController {
   private _version: number;
   private _enabled: boolean;
   private _embedData: Partial<API.Embed>;
+  collectionOrder?: string;
   caching: boolean = true;
   loading: boolean = true;
 
@@ -56,6 +57,7 @@ export class EmbedController {
 
           const requestEmbed = this.embed;
           const requestToken = this.token;
+          const requestOrder = this.collectionOrder;
           const source =
             this.type == EmbedType.Embed && requestToken
               ? playbackSource(requestToken, requestEmbed)
@@ -64,14 +66,18 @@ export class EmbedController {
           if (this.embed !== requestEmbed || this.token !== requestToken) return;
           this._playbackSource = source;
 
-          const data = await this.fetchManifestWithRetry(() => {
-            if (!this.enabled) return;
-            if (this.embed !== requestEmbed || this.token !== requestToken) return;
+          const data =
+            this.type == EmbedType.Collection
+              ? await this.fetchCollectionPage(1)
+              : await this.fetchManifestWithRetry(() => {
+                  if (!this.enabled) return;
+                  if (this.embed !== requestEmbed || this.token !== requestToken) return;
 
-            return this.manifest_url;
-          });
+                  return this.manifest_url;
+                });
 
           if (!data) return;
+          if (this.collectionOrder !== requestOrder) return;
 
           this.loading = false;
 
@@ -87,7 +93,7 @@ export class EmbedController {
           throw new Error(`Failed to fetch "${this.embed}"`, { cause: e });
         }
       },
-      () => [this.embed, this.token, this.enabled],
+      () => [this.embed, this.token, this.enabled, this.collectionOrder],
     );
   }
 
@@ -160,12 +166,28 @@ export class EmbedController {
   get manifest_url(): string {
     if (this.type == EmbedType.Embed) {
       return this.embedFile('manifest.json');
-    } else {
-      const url = new URL(`${API.baseUrl()}/collection/${this.token}`);
-      if (this.embed && this.embed?.length > 1)
-        url.searchParams.append('embed', this.embed);
-      return url.toString();
     }
+    return this.collectionUrl(1);
+  }
+
+  private collectionUrl(page: number): string {
+    const url = new URL(`${API.baseUrl()}/collection/${this.token}`);
+    if (this.embed?.length > 1) url.searchParams.set('embed', this.embed);
+    if (this.collectionOrder) {
+      url.searchParams.set('page', String(page));
+      url.searchParams.set('per_page', '25');
+      url.searchParams.set('order', this.collectionOrder);
+      url.searchParams.set('view', 'list');
+    }
+    return url.toString();
+  }
+
+  async fetchCollectionPage(page: number, signal?: AbortSignal): Promise<API.Collection> {
+    const url = this.collectionUrl(page);
+    const response = signal ? await fetch(url, { signal }) : await fetch(url);
+    if (!response.ok)
+      throw new Error(`Collection request failed with status ${response.status}`);
+    return response.json();
   }
 
   set embed(value: string) {
