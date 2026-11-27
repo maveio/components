@@ -60,7 +60,7 @@ function image(list: List) {
 it('uses the collection token only for listing, leaving posters public', async () => {
   const list = await mount();
   expect(fetch).toHaveBeenCalledWith(
-    'https://api.example.test/api/v1/collection/collection-jwt?page=1&per_page=25&order=newest&view=list',
+    'https://api.example.test/api/v1/collection/collection-jwt?page=1&per_page=25&order=newest&compact=true',
   );
   expect(image(list).token).toBeUndefined();
   expect(image(list).poster).toBe(
@@ -81,7 +81,7 @@ it('keeps public images when the collection token changes', async () => {
   list.setAttribute('token', 'refreshed-collection-jwt');
   await vi.waitFor(() =>
     expect(fetch).toHaveBeenCalledWith(
-      'https://api.example.test/api/v1/collection/refreshed-collection-jwt?page=1&per_page=25&order=newest&view=list',
+      'https://api.example.test/api/v1/collection/refreshed-collection-jwt?page=1&per_page=25&order=newest&compact=true',
     ),
   );
   await vi.waitFor(() => expect(image(list)?.embed).toBe('aaaaabbbbbccccc'));
