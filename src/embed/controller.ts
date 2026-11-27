@@ -177,7 +177,6 @@ export class EmbedController {
       url.searchParams.set('page', String(page));
       url.searchParams.set('per_page', '25');
       url.searchParams.set('order', this.collectionOrder);
-      url.searchParams.set('compact', 'true');
     }
     return url.toString();
   }
